@@ -2,31 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Fingerprint;
+use App\Models\Intern;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class FingerprintController extends Controller
 {
-    public function index()
+    public function index(Intern $intern)
     {
-        return Inertia::render('FingerprintEnrollment');
+        return Inertia::render('FingerprintEnrollment', [
+            'intern' => $intern
+        ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Intern $intern)
     {
+        // dd($request);
         $request->validate([
             'fingerprint_data' => 'required|string',
         ]);
-
-        // In a real app, you would associate this with a user
-        // $user = auth()->user();
         
-        Fingerprint::create([
-            'user_name' => 'Demo User', // Or take from request
+        $intern->update([
             'fingerprint_data' => $request->fingerprint_data,
         ]);
 
-        return redirect()->back()->with('success', 'Fingerprint saved successfully!');
+        return redirect()->route('interns.index')->with('success', 'Fingerprint for ' . $intern->name . ' saved successfully!');
     }
 }

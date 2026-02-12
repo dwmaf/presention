@@ -56,22 +56,19 @@ php artisan migrate:fresh --seed
 
 Akses aplikasi di browser melalui `http://127.0.0.1:8000`.
 
-### Dokumentasi
+# Dokumentasi
 ## lokasi server C# & SDK JS
 1. Server C# nanti akan ditempatkan di folder local_services dan sdk js dari digital persona akan ditempatkan di folder public/vendor
 
-## Keterangan Model, Controller, dan Resources yang Ada (Akan terus diupdate)
+## Fitur yang Sudah Ada (Akan terus diupdate)
 Projek ini menggunakan Laravel (Backend), React (Frontend), Inertia (Komunikasi antar Laravel dan React sehingga laravel bisa tetap jadi controller biasa dan nda perlu jadi API), dan server C# yang akan dibuat nanti di folder local_services.
-1. **resources/js/Pages/FingerprintEnrollment.jsx**
-    File ini adalah ui untuk mendaftarkan data fingerprint_data ke tabel fingerprints
-2. **app/Http/Controllers/FingerprintController.php**
-    Controller ini menangani untuk menampilkan halaman pendaftaran data fingerprint_data dan menyimpan data tersebut ke database
-3. **app/Models/Fingerprint.php**
-    Ini adalah model dari tabel fingerprints, isinya ada intern_id (relasi ke tabel intern), fingerprint_data (data feature set dari sidik jari yang didaftarin).
-4. **app/Models/Intern.php**
-    Ini adalah model dari tabel intern, isinya adalah nama dan divisi, tabel ini untuk menyimpan data mahasiswa yang magang di UPA.
+1. **Mengelola Divisi**
+routenya /divisions, di halaman ini bisa menambah, mengedit, dan menghapus divisi yang ada (Tidak akan bisa hapus jika ada intern yang berelasi ke divisi tersebut). dibuat untuk menjaga integritas data, walau tidak akan pernah diubah, datanya sudah ada di DatabaseSeeder.php. Controllernya adalah DivisionController.php, di situ ada function index, store, update, destroy. File ui nya adalah resources/js/Pages/Division.jsx. Perlu login untuk akses halaman ini, kredensialnya terdapat di DatabaseSeeder.php.
 
-## Daftar Route yang Sudah Ada (Akan Terus diupdate)
-| HTTP Method | URI | Nama Route | Deskripsi |
-| :--- | :--- | :--- | :--- |
-| **GET** | `/fingerprint/enroll` | `fingerprint.enroll` | Menampilkan antarmuka pendaftaran sidik jari. |
+2. **Mengelola Intern**
+routenya /interns, di halaman ini bisa menambah, mengedit, dan menghapus data intern (nama, barcode, divisi, dan foto). bbrp datanya sudah ada di DatabaseSeeder.php. Controllernya adalah InternController.php, di situ ada function index, store, update, destroy. File ui nya adalah resources/js/Pages/Division.jsx, di situ menampilkan daftar intern, ada tombol untuk atur fingerprint yang akan mengarah ke /interns/{intern}/fingerprint, di situ nanti fingerprint akan didaftarkan. Perlu login untuk akses halaman ini, kredensialnya terdapat di DatabaseSeeder.php.
+
+3. **Mendaftarkan fingerprint untuk intern**
+routenya adalah /interns/{intern}/fingerprint, bisa diakses jika masuk ke /interns dan menekan tombol atur fingerprint. di situ ada tombol mulai scan, ditekan, kemudian taruh jempol ke device HID, kemudian jika device berhasil mendeteksi sidik jari, ada feedback ✓ Data sidik jari berhasil diambil, kemudian tekan tombol Simpan ke Database, dan akan diarahkan kembali ke /interns.
+
+### Fitur yang belum ada tertera di file FUTURE_DEV.md

@@ -11,11 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('fingerprints', function (Blueprint $table) {
+        Schema::create('divisions', function (Blueprint $table) {
             $table->id();
-            // Assuming we might attach this to a user later, but for now just storing the data
-            $table->foreignId('intern_id')->constrained()->cascadeOnDelete();
-            $table->text('fingerprint_data'); // This will store the Feature Set (base64)
+            $table->string('nama_divisi');
             $table->timestamps();
         });
     }
@@ -25,6 +23,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('fingerprints');
+        Schema::dropIfExists('divisions');
     }
 };

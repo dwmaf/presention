@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FingerprintController;
+use App\Http\Controllers\DivisionController;
+use App\Http\Controllers\InternController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -20,12 +22,15 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
+    Route::resource('divisions', DivisionController::class);
+    Route::resource('interns', InternController::class);
 });
 
 require __DIR__.'/auth.php';
 
-Route::get('/fingerprint/enroll', [FingerprintController::class, 'index'])->name('fingerprint.enroll');
-Route::post('/fingerprint/enroll', [FingerprintController::class, 'store'])->name('fingerprint.store');
+Route::get('/interns/{intern}/fingerprint', [FingerprintController::class, 'index'])->name('interns.fingerprint');
+Route::post('/interns/{intern}/fingerprint', [FingerprintController::class, 'store'])->name('interns.fingerprint.store');
