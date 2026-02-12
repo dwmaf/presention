@@ -15,7 +15,6 @@ return new class extends Migration
             $table->id();
             // Assuming we might attach this to a user later, but for now just storing the data
             $table->foreignId('intern_id')->constrained()->cascadeOnDelete();
-            $table->string('user_name')->nullable(); // For demo purposes
             $table->text('fingerprint_data'); // This will store the Feature Set (base64)
             $table->timestamps();
         });
