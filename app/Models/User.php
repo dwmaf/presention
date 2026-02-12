@@ -45,4 +45,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function fingerprint()
+    {
+        return $this->hasOne(Fingerprint::class);
+    }
 }
