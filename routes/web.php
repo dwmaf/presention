@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
+use App\Http\Controllers\AttendanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -34,3 +35,6 @@ require __DIR__.'/auth.php';
 
 Route::get('/interns/{intern}/fingerprint', [FingerprintController::class, 'index'])->name('interns.fingerprint');
 Route::post('/interns/{intern}/fingerprint', [FingerprintController::class, 'store'])->name('interns.fingerprint.store');
+
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');

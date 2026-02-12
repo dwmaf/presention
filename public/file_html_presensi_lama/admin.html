@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin Presensi</title>
+
+<!-- LIBRARY EXCEL -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+body{font-family:Arial;background:#eef2f7}
+.box{max-width:1100px;margin:40px auto;background:#fff;padding:20px;border-radius:10px}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid #ddd;padding:8px;text-align:center;font-size:14px}
+th{background:#16a34a;color:white}
+.telat{color:red;font-weight:bold}
+.hadir{color:green;font-weight:bold}
+.tidak{color:#555}
+button{margin:2px;padding:6px 10px;cursor:pointer}
+.btn-del{background:#dc2626;color:white;border:none}
+.btn-edit{background:#f59e0b;color:white;border:none}
+.top-btns{margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>📊 Rekap Presensi Hari Ini</h2>
+
+<div class="top-btns">
+  <button onclick="logout()">Logout</button>
+  <button onclick="downloadExcel()">Download Excel</button>
+  <button onclick="resetData()" class="btn-del">Reset Semua</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Kode</th>
+  <th>Nama</th>
+  <th>Jam Datang</th>
+  <th>Jam Pulang</th>
+  <th>Status</th>
+  <th>Aksi</th>
+</tr>
+</thead>
+<tbody id="adminTable"></tbody>
+</table>
+
+</div>
+
+<script>
+// ================= PROTEKSI LOGIN =================
+if(localStorage.getItem("adminLogin")!=="true"){
+  location.href="login.html";
+}
+
+// ================= DATA KARYAWAN =================
+const karyawan = {
+  "EMP001": "Antonia Preselia Marsa Samat",
+  "EMP002": "Arif Khumeini",
+  "EMP003": "Berlian Auraly Kastyanos",
+  "EMP004": "Dhimas Fauzan Al Asri",
+  "EMP005": "Fandri Gea",
+  "EMP006": "Hafizuddin",
+  "EMP007": "Ihsan Azhar Rhamadan",
+  "EMP008": "Kayla Maudy Ananda",
+  "EMP009": "Lesmana Dwi Prayudha",
+  "EMP010": "Lusia Odiliana Menge",
+  "EMP011": "Maria Goreti",
+  "EMP012": "Mecava Sheba Mitsymara",
+  "EMP013": "Melisa Vikayana",
+  "EMP014": "Muhammad Fayadh Hanif Musyafa",
+  "EMP015": "Muhammad Za'im Shidqi",
+  "EMP016": "Nadila Maulidya",
+  "EMP017": "Naisha Fitria",
+  "EMP018": "Refa Suryana",
+  "EMP019": "Resti Fitriani",
+  "EMP020": "Muhammad Farhan Hanif",
+  "EMP021": "Indra Juan Saputra",
+  "EMP022": "Indira Mariska Dwi Aulia",
+  "EMP023": "Alyssa Putri Setyawan",
+  "EMP024": "Tasya Lindri Destami",
+  "EMP025": "Yosi Ferdian Nugroho",
+  "EMP026": "Putra Ibrahimovic",
+  "EMP027": "Jimi Alviandi Mahendra",
+  "EMP028": "Syariffullah",
+  "EMP029": "Tarisa Nur Safitri",
+  "EMP030": "Abimanyu Ridho Ramadhani",
+  "EMP031": "Muhammad Nazwan Fadhilah",
+  "EMP032": "Dawam Agung Fathoni",
+  "EMP033": "Hansent Theja",
+  "EMP034": "Rayhan NuerJamman"
+};
+
+// ================= DATA PRESENSI =================
+let data = JSON.parse(localStorage.getItem("presensi_hari_ini")) || {};
+const adminTable = document.getElementById("adminTable");
+
+// ================= CEK TERLAMBAT =================
+function isLate(jam){
+  if(!jam) return false;
+  return jam > "08:30";
+}
+
+// ================= SIMPAN =================
+function simpan(){
+  localStorage.setItem("presensi_hari_ini", JSON.stringify(data));
+}
+
+// ================= RENDER =================
+function render(){
+  adminTable.innerHTML="";
+
+  Object.keys(karyawan).forEach(code=>{
+    const d = data[code] || {};
+
+    let status = "Tidak Hadir";
+    let cls = "tidak";
+
+    if(d.datang){
+      status = isLate(d.datang) ? "Terlambat" : "Hadir";
+      cls = status==="Terlambat" ? "telat" : "hadir";
+    }
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${code}</td>
+      <td>${karyawan[code]}</td>
+      <td>${d.datang || "-"}</td>
+      <td>${d.pulang || "-"}</td>
+      <td class="${cls}">${status}</td>
+      <td>
+        <button class="btn-edit" onclick="hapusDatang('${code}')">Hapus Datang</button>
+        <button class="btn-del" onclick="hapusPulang('${code}')">Hapus Pulang</button>
+      </td>
+    `;
+    adminTable.appendChild(tr);
+  });
+}
+render();
+
+// ================= HAPUS DATANG =================
+function hapusDatang(code){
+  if(!data[code]?.datang){
+    alert("Belum ada jam datang.");
+    return;
+  }
+
+  if(!confirm("Hapus jam datang karyawan ini?")) return;
+
+  delete data[code].datang;
+
+  if(!data[code].pulang){
+    delete data[code];
+  }
+
+  simpan();
+  render();
+}
+
+// ================= HAPUS PULANG =================
+function hapusPulang(code){
+  if(!data[code]?.pulang){
+    alert("Belum ada jam pulang.");
+    return;
+  }
+
+  if(!confirm("Hapus jam pulang karyawan ini?")) return;
+
+  delete data[code].pulang;
+
+  simpan();
+  render();
+}
+
+// ================= DOWNLOAD EXCEL =================
+function downloadExcel(){
+
+  const sheetData = [
+    ["Kode","Nama","Jam Datang","Jam Pulang","Status"]
+  ];
+
+  Object.keys(karyawan).forEach(code=>{
+    const d = data[code] || {};
+    const status = d.datang
+      ? (isLate(d.datang) ? "Terlambat" : "Hadir")
+      : "Tidak Hadir";
+
+    sheetData.push([
+      code,
+      karyawan[code],
+      d.datang || "-",
+      d.pulang || "-",
+      status
+    ]);
+  });
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(sheetData);
+  XLSX.utils.book_append_sheet(wb, ws, "Presensi");
+
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth()+1).padStart(2,'0');
+  const dd = String(now.getDate()).padStart(2,'0');
+  const filename = `Presensi_${yyyy}-${mm}-${dd}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+}
+
+// ================= RESET SEMUA =================
+function resetData(){
+  if(!confirm("Yakin mau hapus SEMUA data presensi hari ini?")) return;
+
+  localStorage.removeItem("presensi_hari_ini");
+  localStorage.removeItem("lastDate");
+
+  alert("Data presensi berhasil dikosongkan.");
+  location.reload();
+}
+
+// ================= LOGOUT =================
+function logout(){
+  localStorage.removeItem("adminLogin");
+  location.href="login.html";
+}
+</script>
+
+</body>
+</html>

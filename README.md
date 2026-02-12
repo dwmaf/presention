@@ -69,6 +69,9 @@ routenya /divisions, di halaman ini bisa menambah, mengedit, dan menghapus divis
 routenya /interns, di halaman ini bisa menambah, mengedit, dan menghapus data intern (nama, barcode, divisi, dan foto). bbrp datanya sudah ada di DatabaseSeeder.php. Controllernya adalah InternController.php, di situ ada function index, store, update, destroy. File ui nya adalah resources/js/Pages/Division.jsx, di situ menampilkan daftar intern, ada tombol untuk atur fingerprint yang akan mengarah ke /interns/{intern}/fingerprint, di situ nanti fingerprint akan didaftarkan. Perlu login untuk akses halaman ini, kredensialnya terdapat di DatabaseSeeder.php.
 
 3. **Mendaftarkan fingerprint untuk intern**
-routenya adalah /interns/{intern}/fingerprint, bisa diakses jika masuk ke /interns dan menekan tombol atur fingerprint. di situ ada tombol mulai scan, ditekan, kemudian taruh jempol ke device HID, kemudian jika device berhasil mendeteksi sidik jari, ada feedback ✓ Data sidik jari berhasil diambil, kemudian tekan tombol Simpan ke Database, dan akan diarahkan kembali ke /interns.
+routenya adalah /interns/{intern}/fingerprint, bisa diakses jika masuk ke /interns dan menekan tombol atur fingerprint. di situ ada tombol mulai scan, ditekan, kemudian taruh jempol ke device HID, kemudian jika device berhasil mendeteksi sidik jari, ada feedback ✓ Data sidik jari berhasil diambil, kemudian tekan tombol Simpan ke Database, dan akan diarahkan kembali ke /interns. Controllernya adalah FingerprintController.php dan file ui nya adalah FingerprintEnrollment.jsx.
+
+4. **Fitur Presensi**
+routenya adalah /attendace, tidak perlu login, controllernya AttendanceController.php dan file ui nya adalah Attendance.jsx, file modelnya adalah Attendance.php. Silahkan coba sendiri, jika ada flaw dalam logic nya. Belum bisa dengan fingerprint.
 
 ### Fitur yang belum ada tertera di file FUTURE_DEV.md

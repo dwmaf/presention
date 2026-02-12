@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin - Detail Presensi</title>
+<style>
+body{font-family:Arial;background:#eef2f7}
+.box{max-width:1000px;margin:40px auto;background:#fff;padding:20px;border-radius:10px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#2563eb;color:white}
+img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+</style>
+</head>
+<body>
+
+<div class="box">
+<h2>🕒 Detail Jam Presensi</h2>
+
+<a href="admin.html">⬅️ Kembali ke Rekap</a>
+
+<table>
+<thead>
+<tr>
+<th>Foto</th><th>Nama</th><th>Status</th><th>Waktu</th>
+</tr>
+</thead>
+<tbody id="logTable"></tbody>
+</table>
+
+</div>
+
+<script>
+if(localStorage.getItem("adminLogin")!=="true"){
+  location.href="login.html";
+}
+
+const log = JSON.parse(localStorage.getItem("presensi_log")) || [];
+const table = document.getElementById("logTable");
+
+log.forEach(p=>{
+  const tr=document.createElement("tr");
+  tr.innerHTML=`
+    <td><img src="${p.foto}"></td>
+    <td>${p.nama}</td>
+    <td>${p.status}</td>
+    <td>${p.time}</td>`;
+  table.appendChild(tr);
+});
+</script>
+
+</body>
+</html>

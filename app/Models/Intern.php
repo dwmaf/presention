@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Intern extends Model
 {
-    protected $fillable = ['name', 'division_id', 'is_active', 'foto', 'barcode','fingerprint_data'];
+    protected $fillable = ['name', 'division_id', 'is_active', 'foto', 'barcode', 'fingerprint_data'];
 
     public function fingerprint()
     {
@@ -16,5 +16,11 @@ class Intern extends Model
     public function division()
     {
         return $this->belongsTo(Division::class);
+    }
+
+    public function attendance()
+    {
+        // Mengambil satu attendance terbaru (berguna untuk eager loading harian)
+        return $this->hasOne(Attendance::class)->latestOfMany();
     }
 }

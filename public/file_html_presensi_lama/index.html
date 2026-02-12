@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Presensi Karyawan</title>
+<style>
+body{font-family:Arial;background:#eef2f7}
+.box{max-width:900px;margin:40px auto;background:#fff;padding:20px;border-radius:10px}
+input{width:100%;padding:14px;font-size:18px;margin-bottom:15px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:10px;text-align:center}
+th{background:#2563eb;color:white}
+img{width:50px;height:50px;border-radius:50%;object-fit:cover}
+.hadir{background:#dcfce7;color:#166534;font-weight:bold}
+.tidak{background:#fee2e2;color:#991b1b;font-weight:bold}
+.pulang{background:#dbeafe;color:#1e40af;font-weight:bold}
+.info{margin:10px;font-weight:bold;text-align:center}
+.menu{text-align:right;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="box">
+
+<div class="menu">
+<a href="login.html">🧑‍💼 Admin</a>
+</div>
+
+<h2 style="text-align:center">📷 Presensi Karyawan</h2>
+
+<input id="barcodeInput" placeholder="Klik lalu scan barcode..." autofocus>
+
+<div id="info" class="info"></div>
+
+<table>
+<thead>
+<tr>
+<th>Foto</th><th>Nama</th><th>Status</th><th>Jam</th>
+</tr>
+</thead>
+<tbody id="tabelKaryawan"></tbody>
+</table>
+
+</div>
+
+<script>
+// ================= DATA KARYAWAN =================
+const karyawan = {
+   "EMP001": {nama:"Antonia Preselia Marsa Samat", foto:"foto/emp001.jpg"},
+  "EMP002": {nama:"Arif Khumeini", foto:"foto/emp002.jpg"},
+  "EMP003": {nama:"Berlian Auraly Kastyanos", foto:"foto/emp003.jpg"},
+  "EMP004": {nama:"Dhimas Fauzan Al Asri", foto:"foto/emp004.jpg"},
+  "EMP005": {nama:"Fandri Gea", foto:"foto/emp005.jpg"},
+  "EMP006": {nama:"Hafizuddin", foto:"foto/emp006.jpg"},
+  "EMP007": {nama:"Ihsan Azhar Rhamadan", foto:"foto/emp007.jpg"},
+  "EMP008": {nama:"Kayla Maudy Ananda", foto:"foto/emp008.jpg"},
+  "EMP009": {nama:"Lesmana Dwi Prayudha", foto:"foto/emp009.jpg"},
+  "EMP010": {nama:"Lusia Odiliana Menge", foto:"foto/emp010.jpg"},
+  "EMP011": {nama:"Maria Goreti", foto:"foto/emp011.jpg"},
+  "EMP012": {nama:"Mecava Sheba Mitsymara", foto:"foto/emp012.jpg"},
+  "EMP013": {nama:"Melisa Vikayana", foto:"foto/emp013.jpg"},
+  "EMP014": {nama:"Muhammad Fayadh Hanif Musyafa", foto:"foto/emp014.jpg"},
+  "EMP015": {nama:"Muhammad Za'im Shidqi", foto:"foto/emp015.jpg"},
+  "EMP016": {nama:"Nadila Maulidya", foto:"foto/emp016.jpg"},
+  "EMP017": {nama:"Naisha Fitria", foto:"foto/emp017.jpg"},
+  "EMP018": {nama:"Refa Suryana", foto:"foto/emp018.jpg"},
+  "EMP019": {nama:"Resti Fitriani", foto:"foto/emp019.jpg"},
+  "EMP020": {nama:"Muhammad Farhan Hanif", foto:"foto/emp020.jpg"},
+  "EMP021": {nama:"Indra Juan Saputra", foto:"foto/emp021.jpg"},
+  "EMP022": {nama:"Indira Mariska Dwi Aulia", foto:"foto/emp022.jpg"},
+  "EMP023": {nama:"Alyssa Putri Setyawan", foto:"foto/emp023.jpg"},
+  "EMP024": {nama:"Tasya Lindri Destami", foto:"foto/emp024.jpg"},
+  "EMP025": {nama:"Yosi Ferdian Nugroho", foto:"foto/emp025.jpg"},
+  "EMP026": {nama:"Putra Ibrahimovic", foto:"foto/emp026.jpg"},
+  "EMP027": {nama:"Jimi Alviandi Mahendra", foto:"foto/emp027.jpg"},
+  "EMP028": {nama:"Syariffullah", foto:"foto/emp028.jpg"},
+  "EMP029": {nama:"Tarisa Nur Safitri", foto:"foto/emp029.jpg"},
+  "EMP030": {nama:"Abimanyu Ridho Ramadhani", foto:"foto/emp030.jpg"},
+  "EMP031": {nama:"Muhammad Nazwan Fadhilah", foto:"foto/emp031.jpg"},
+  "EMP032": {nama:"Dawam Agung Fathoni", foto:"foto/emp032.jpg"},
+  "EMP033": {nama:"Hansent Theja", foto:"foto/emp033.jpg"},
+  "EMP034": {nama:"Rayhan NuerJamman", foto:"foto/emp034.jpg"}
+};
+
+// ================= RESET OTOMATIS JAM 00:00 =================
+const todayKey = new Date().toDateString();
+const savedDate = localStorage.getItem("lastDate");
+
+if(savedDate !== todayKey){
+  localStorage.setItem("lastDate", todayKey);
+  localStorage.removeItem("presensi_hari_ini");
+}
+
+// ================= STORAGE =================
+let presensi = JSON.parse(localStorage.getItem("presensi_hari_ini")) || {};
+
+const tabel = document.getElementById("tabelKaryawan");
+const info = document.getElementById("info");
+
+// ================= COOLDOWN =================
+const cooldown = {}; 
+const COOLDOWN_TIME = 30 * 60 * 1000; // 30 menit
+
+// ================= RENDER =================
+function render(){
+  tabel.innerHTML="";
+  Object.keys(karyawan).forEach(code=>{
+    const data = presensi[code];
+
+    let statusText = "Tidak Hadir";
+    let cls = "tidak";
+    let jam = "-";
+
+    if(data?.datang && !data.pulang){
+      statusText = "Hadir";
+      cls="hadir";
+      jam = data.datang;
+    }
+    if(data?.pulang){
+      statusText="Pulang";
+      cls="pulang";
+      jam = data.pulang;
+    }
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td><img src="${karyawan[code].foto}"></td>
+      <td>${karyawan[code].nama}</td>
+      <td class="${cls}">${statusText}</td>
+      <td>${jam}</td>`;
+    tabel.appendChild(tr);
+  });
+}
+render();
+
+// ================= SCAN =================
+const input = document.getElementById("barcodeInput");
+
+input.addEventListener("change", ()=>{
+  const code = input.value.trim();
+  input.value="";
+  input.focus();
+
+  if(!karyawan[code]){
+    info.innerHTML="❌ Barcode tidak dikenal";
+    return;
+  }
+
+  const jam = new Date().toLocaleTimeString("id-ID",{hour:"2-digit",minute:"2-digit"});
+  const now = Date.now();
+
+  // ===== COOLDOWN 30 MENIT =====
+  if(cooldown[code] && (now - cooldown[code] < COOLDOWN_TIME)){
+    const sisa = Math.ceil((COOLDOWN_TIME - (now - cooldown[code])) / 60000);
+    info.innerHTML = `⏳ Tunggu ${sisa} menit sebelum scan lagi`;
+    return;
+  }
+  cooldown[code] = now;
+
+  // ===== PRESENSI =====
+  if(!presensi[code]){
+    presensi[code] = {datang: jam};
+    info.innerHTML = `✔ ${karyawan[code].nama} datang ${jam}`;
+  }
+  else if(presensi[code].datang && !presensi[code].pulang){
+    presensi[code].pulang = jam;
+    info.innerHTML = `👋 ${karyawan[code].nama} pulang ${jam}`;
+  }
+  else{
+    info.innerHTML = `ℹ️ ${karyawan[code].nama} sudah presensi`;
+  }
+
+  localStorage.setItem("presensi_hari_ini", JSON.stringify(presensi));
+  render();
+});
+</script>
+
+
+</body>
+</html>
