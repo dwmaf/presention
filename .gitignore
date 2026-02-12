@@ -1,0 +1,38 @@
+*.log
+.DS_Store
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# 1. Ignore Sampah Build C# (Wajib!)
+/local-service/**/bin/
+/local-service/**/obj/
+/local-service/**/*.suo
+/local-service/**/*.user
+/local-service/**/TestResults/
+
+# 2. Ignore Database SQLite (Kalau pake)
+*.sqlite
+*.sqlite-journal
+
+# 3. Tapi... JANGAN ignore DLL SDK yang kita copy manual
+!/local-service/**/Libs/*.dll
