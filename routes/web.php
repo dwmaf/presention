@@ -5,6 +5,7 @@ use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\TesKomparasiSidikJariController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -38,3 +39,5 @@ Route::post('/interns/{intern}/fingerprint', [FingerprintController::class, 'sto
 
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
 Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+
+Route::get('/test-fingerprint', [TesKomparasiSidikJariController::class, 'index'])->name('test.fingerprint');

@@ -60,8 +60,22 @@ Akses aplikasi di browser melalui `http://127.0.0.1:8000`.
 ## lokasi server C# & SDK JS
 1. Server C# nanti akan ditempatkan di folder local_services dan sdk js dari digital persona akan ditempatkan di folder public/vendor
 
+## Server :5000, server C# yang akan menangani logic verification sidik jari
+1. **Buka terminal baru dan masuk ke path local_services**
+    ```bash
+    cd .\local_services\
+    ```
+
+2. Jalankan command berikut untuk membuat file FingerprintService.exe
+    ```bash
+    C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe /target:winexe /out:FingerprintBridge.exe /r:System.Runtime.Serialization.dll /r:System.Windows.Forms.dll /r:System.Drawing.dll /r:"$PWD\DPUruNet.dll" FingerprintService.cs
+    ```
+
+3. Pasang device, double click file FingerprintSerivce.exe, dan web sudah siap untuk mendaftarkan dan tes fingerprint.
+
 ## Fitur yang Sudah Ada (Akan terus diupdate)
 Projek ini menggunakan Laravel (Backend), React (Frontend), Inertia (Komunikasi antar Laravel dan React sehingga laravel bisa tetap jadi controller biasa dan nda perlu jadi API), dan server C# yang akan dibuat nanti di folder local_services.
+
 1. **Mengelola Divisi**
 routenya /divisions, di halaman ini bisa menambah, mengedit, dan menghapus divisi yang ada (Tidak akan bisa hapus jika ada intern yang berelasi ke divisi tersebut). dibuat untuk menjaga integritas data, walau tidak akan pernah diubah, datanya sudah ada di DatabaseSeeder.php. Controllernya adalah DivisionController.php, di situ ada function index, store, update, destroy. File ui nya adalah resources/js/Pages/Division.jsx. Perlu login untuk akses halaman ini, kredensialnya terdapat di DatabaseSeeder.php.
 
@@ -73,5 +87,8 @@ routenya adalah /interns/{intern}/fingerprint, bisa diakses jika masuk ke /inter
 
 4. **Fitur Presensi**
 routenya adalah /attendace, tidak perlu login, controllernya AttendanceController.php dan file ui nya adalah Attendance.jsx, file modelnya adalah Attendance.php. Silahkan coba sendiri, jika ada flaw dalam logic nya. Belum bisa dengan fingerprint.
+
+5. **Tes Kecocokan**
+routenya adalah /test-fingerprint, tidak perlu login, sejauh ini sudah berhasil coba tes sidik jari dikomparasi dgn sidik jari yang ada di database. File controllernya adalah TesKomparasiSidikJariController.php, tugasnya membawa data semua intern yg ada fingerprintnya di db, kemudin file ui nya adalah FingerprintTest.jsx.
 
 ### Fitur yang belum ada tertera di file FUTURE_DEV.md
