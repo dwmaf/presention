@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'name' => 'Admin User',
             'email' => 'admin@upa.com',
-            'password' => bcrypt('1234'),
+            'password' => bcrypt('password'),
         ]);
 
         // 2. Buat Data Division
@@ -35,43 +35,36 @@ class DatabaseSeeder extends Seeder
         Intern::create([
             'name' => 'Antonia Preselia Marsa Samat', 
             'division_id' => $divDataManage->id,
-            'barcode' => 'EMP001',
             'foto' => 'foto/emp001.jpg'
         ]);
         Intern::create([
             'name' => 'Arif Khumeini', 
             'division_id' => $divDesign->id,
-            'barcode' => 'EMP002',
             'foto' => 'foto/emp002.jpg'  
         ]);
         Intern::create([
             'name' => 'Berlian Auraly Kastyanos', 
             'division_id' => $divDataManage->id,
-            'barcode' => 'EMP003',
             'foto' => 'foto/emp003.jpg',
         ]);
         Intern::create([
             'name' => 'Dawam Agung Fathoni', 
             'division_id' => $divSoftwareDev->id,
-            'barcode' => 'EMP032',
             'foto' => 'foto/emp032.jpg',
         ]);
         Intern::create([
             'name' => 'Syariffullah', 
             'division_id' => $divSoftwareDev->id,
-            'barcode' => 'EMP028',
             'foto' => 'foto/emp028.jpg',
         ]);
         Intern::create([
             'name' => 'Abimanyu Ridho Ramadhani', 
             'division_id' => $divSoftwareDev->id,
-            'barcode' => 'EMP030',
             'foto' => 'foto/emp030.jpg',
         ]);
         Intern::create([
             'name' => 'Rayhan NuerJamman', 
             'division_id' => $divSoftwareDev->id,
-            'barcode' => 'EMP034',
             'foto' => 'foto/emp034.jpg',
         ]);
     }
