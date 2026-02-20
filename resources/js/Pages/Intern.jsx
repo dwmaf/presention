@@ -151,7 +151,6 @@ export default function Intern({ auth, interns, divisions }) {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Divisi</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jadwal</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poin</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Fingerprint</th>
@@ -174,7 +173,6 @@ export default function Intern({ auth, interns, divisions }) {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {intern.division ? intern.division.nama_divisi : '-'}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{intern.barcode}</td>
 
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <span className="text-sm text-gray-700">
@@ -278,20 +276,6 @@ export default function Intern({ auth, interns, divisions }) {
 
                         </select>
                         <InputError message={errors.division_id} className="mt-2" />
-                    </div>
-
-                    <div className="mt-4">
-                        <InputLabel htmlFor="barcode" value="Barcode (6 Digit)" />
-                        <TextInput
-                            id="barcode"
-                            type="text"
-                            name="barcode"
-                            value={data.barcode}
-                            onChange={(e) => setData('barcode', e.target.value)}
-                            className="mt-1 block w-full"
-                            placeholder="Contoh: 123456"
-                        />
-                        <InputError message={errors.barcode} className="mt-2" />
                     </div>
 
                     {/* Jadwal */}

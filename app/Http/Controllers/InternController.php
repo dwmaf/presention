@@ -26,7 +26,7 @@ class InternController extends Controller
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'division_id' => 'required|exists:divisions,id',
-            'barcode' => 'required|string|unique:interns,barcode',
+            'barcode' => 'nullable|string|unique:interns,barcode',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
             // Jadwal + poin
@@ -48,7 +48,7 @@ class InternController extends Controller
         $validatedData['poin'] = (int) ($validatedData['poin'] ?? 0);
 
         if ($request->hasFile('foto')) {
-            $path = $request->file('foto')->store('intern-photos', 'public');
+            $path = $request->file('foto')->store('foto', 'public');
             $validatedData['foto'] = $path;
         }
 
@@ -59,10 +59,11 @@ class InternController extends Controller
 
     public function update(Request $request, Intern $intern)
     {
+        // dd($request);
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'division_id' => 'required|exists:divisions,id',
-            'barcode' => 'required|string|unique:interns,barcode,' . $intern->id,
+            'barcode' => 'nullable|string|unique:interns,barcode,' . $intern->id,
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
 
             // Jadwal + poin
@@ -88,8 +89,11 @@ class InternController extends Controller
                 Storage::disk('public')->delete($intern->foto);
             }
 
-            $path = $request->file('foto')->store('intern-photos', 'public');
+            $path = $request->file('foto')->store('foto', 'public');
             $validatedData['foto'] = $path;
+        } else {
+            // Jika tidak ada file baru yang diupload, jangan hapus data foto yang lama
+            unset($validatedData['foto']);
         }
 
         $intern->update($validatedData);
