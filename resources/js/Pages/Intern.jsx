@@ -1,14 +1,17 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { useState } from 'react';
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import Modal from '@/Components/Modal';
-import SecondaryButton from '@/Components/SecondaryButton';
-import TextInput from '@/Components/TextInput';
-import PrimaryButton from '@/Components/PrimaryButton';
-import DangerButton from '@/Components/DangerButton';
-import { Link } from '@inertiajs/react';
+import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { Head, useForm, usePage } from "@inertiajs/react";
+import { useState } from "react";
+import InputError from "@/Components/InputError";
+import InputLabel from "@/Components/InputLabel";
+import Modal from "@/Components/Modal";
+import SecondaryButton from "@/Components/SecondaryButton";
+import TextInput from "@/Components/TextInput";
+import SearchBar from "@/Components/SearchBar";
+import PrimaryButton from "@/Components/PrimaryButton";
+import DangerButton from "@/Components/DangerButton";
+import InternCard from "@/Components/InternCard";
+import CustomSelect from "@/Components/CustomSelect";
+import { Link } from "@inertiajs/react";
 
 export default function Intern({ auth, interns, divisions }) {
     const { flash } = usePage().props;
@@ -17,52 +20,91 @@ export default function Intern({ auth, interns, divisions }) {
     const [currentIntern, setCurrentIntern] = useState(null);
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
     const [internToDelete, setInternToDelete] = useState(null);
+    const [photoPreview, setPhotoPreview] = useState(null);
 
-    const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
-        name: '',
-        division_id: divisions?.length ? String(divisions[0].id) : '',
-        barcode: '',
-        foto: null,
+    const { data, setData, post, processing, errors, reset, clearErrors } =
+        useForm({
+            name: "",
+            division_id: divisions?.length ? String(divisions[0].id) : "",
+            barcode: "",
+            foto: null,
 
-        // Jadwal (boolean)
-        senin: false,
-        selasa: false,
-        rabu: false,
-        kamis: false,
-        jumat: false,
+            // Jadwal (boolean)
+            senin: false,
+            selasa: false,
+            rabu: false,
+            kamis: false,
+            jumat: false,
 
-        // Poin
-        poin: 0,
+            // Poin
+            poin: 5,
 
-        _method: 'POST',
-    });
+            _method: "POST",
+        });
 
     const deleteForm = useForm({});
 
     const openModal = (intern = null) => {
+        if (intern) {
+            // Mode edit
+            setCurrentIntern(intern);
+            setIsEditMode(true);
+            setData({
+                name: intern.name,
+                division_id: String(intern.division_id) || "",
+                senin: intern.senin,
+                selasa: intern.selasa,
+                rabu: intern.rabu,
+                kamis: intern.kamis,
+                jumat: intern.jumat,
+                poin: intern.poin ?? 5,
+                foto: null,
+            });
+            setPhotoPreview(null);
+        } else {
+            // Mode tambah - reset ke default
+            setCurrentIntern(null);
+            setIsEditMode(false);
+            setData({
+                name: "",
+                division_id: "", // Pastikan ini string kosong
+                senin: false,
+                selasa: false,
+                rabu: false,
+                kamis: false,
+                jumat: false,
+                poin: 5,
+                foto: null,
+            });
+            setPhotoPreview(null);
+        }
         setIsModalOpen(true);
-        setIsEditMode(!!intern);
-        setCurrentIntern(intern);
 
-        setData({
-            name: intern ? intern.name : '',
-            division_id: intern
-                    ? String(intern.division_id ?? '')
-                    : (divisions.length > 0 ? String(divisions[0].id) : ''),
+        // setIsModalOpen(true);
+        // setIsEditMode(!!intern);
+        // setCurrentIntern(intern);
 
-            barcode: intern ? intern.barcode : '',
-            foto: null,
+        // setData({
+        //     name: intern ? intern.name : "",
+        //     division_id: intern
+        //         ? String(intern.division_id ?? "")
+        //         : divisions.length > 0
+        //           ? String(divisions[0].id)
+        //           : "",
 
-            // Prefill jadwal + poin saat edit
-            senin: intern ? !!intern.senin : false,
-            selasa: intern ? !!intern.selasa : false,
-            rabu: intern ? !!intern.rabu : false,
-            kamis: intern ? !!intern.kamis : false,
-            jumat: intern ? !!intern.jumat : false,
-            poin: intern ? (intern.poin ?? 0) : 0,
+        //     barcode: intern ? intern.barcode : "",
+        //     foto: null,
 
-            _method: intern ? 'PUT' : 'POST',
-        });
+        //     // Prefill jadwal + poin saat edit
+        //     senin: intern ? !!intern.senin : false,
+        //     selasa: intern ? !!intern.selasa : false,
+        //     rabu: intern ? !!intern.rabu : false,
+        //     kamis: intern ? !!intern.kamis : false,
+        //     jumat: intern ? !!intern.jumat : false,
+        //     poin: intern ? (intern.poin ?? 0) : 0,
+
+        //     _method: intern ? "PUT" : "POST",
+        // });
 
         clearErrors();
     };
@@ -70,18 +112,33 @@ export default function Intern({ auth, interns, divisions }) {
     const closeModal = () => {
         setIsModalOpen(false);
         setCurrentIntern(null);
+        setPhotoPreview(null);
         reset();
+    };
+
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setData("foto", file);
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setPhotoPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     const submit = (e) => {
         e.preventDefault();
 
+        data._method = "PUT";
         if (isEditMode) {
-            post(route('interns.update', currentIntern.id), {
+            post(route("interns.update", currentIntern.id), {
                 onSuccess: closeModal,
             });
         } else {
-            post(route('interns.store'), {
+            data._method = "POST";
+            post(route("interns.store"), {
                 onSuccess: closeModal,
             });
         }
@@ -98,63 +155,144 @@ export default function Intern({ auth, interns, divisions }) {
     };
 
     const deleteIntern = () => {
-        deleteForm.delete(route('interns.destroy', internToDelete.id), {
+        deleteForm.delete(route("interns.destroy", internToDelete.id), {
             onSuccess: closeDeletionModal,
         });
     };
 
     const renderJadwal = (intern) => {
         const hari = [
-            ['Sen', 'senin'],
-            ['Sel', 'selasa'],
-            ['Rab', 'rabu'],
-            ['Kam', 'kamis'],
-            ['Jum', 'jumat'],
+            ["Sen", "senin"],
+            ["Sel", "selasa"],
+            ["Rab", "rabu"],
+            ["Kam", "kamis"],
+            ["Jum", "jumat"],
         ];
 
         const aktif = hari
             .filter(([, key]) => !!intern?.[key])
             .map(([label]) => label);
 
-        return aktif.length ? aktif.join(', ') : '-';
+        if (aktif.length === 5) return "Setiap hari";
+
+        return aktif.length ? aktif.join(", ") : "-";
+    };
+
+    const isAllDaysChecked = () => {
+        return (
+            data.senin && data.selasa && data.rabu && data.kamis && data.jumat
+        );
+    };
+
+    // Toggle semua hari
+    const handleToggleAllDays = (checked) => {
+        setData({
+            ...data,
+            senin: checked,
+            selasa: checked,
+            rabu: checked,
+            kamis: checked,
+            jumat: checked,
+        });
     };
 
     return (
         <AuthenticatedLayout
             user={auth.user}
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Manajemen Anak Magang</h2>}
+            header={
+                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                    Manajemen Karyawan
+                </h2>
+            }
         >
-            <Head title="Anak Magang" />
+            <Head title="Karyawan" />
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {flash.success && (
-                        <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
-                            <span className="block sm:inline">{flash.success}</span>
+                        <div
+                            className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+                            role="alert"
+                        >
+                            <span className="block sm:inline">
+                                {flash.success}
+                            </span>
                         </div>
                     )}
                     {flash.error && (
-                        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                            <span className="block sm:inline">{flash.error}</span>
+                        <div
+                            className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+                            role="alert"
+                        >
+                            <span className="block sm:inline">
+                                {flash.error}
+                            </span>
                         </div>
                     )}
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <div className="flex justify-end mb-4">
-                            <PrimaryButton onClick={() => openModal()}>Tambah Anak Magang</PrimaryButton>
-                        </div>
+                    {/* Search bar dan tambah karyawan */}
+                    <div className="flex justify-end mb-4 gap-4">
+                        <SearchBar />
+                        <PrimaryButton
+                            icon={
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="18px"
+                                    height="18px"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <g fill="none">
+                                        <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+                                        <path
+                                            fill="oklch(42.4% 0.199 265.638)"
+                                            d="M16 14a5 5 0 0 1 5 5v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a5 5 0 0 1 5-5zm4-6a1 1 0 0 1 1 1v1h1a1 1 0 1 1 0 2h-1v1a1 1 0 1 1-2 0v-1h-1a1 1 0 1 1 0-2h1V9a1 1 0 0 1 1-1m-8-6a5 5 0 1 1 0 10a5 5 0 0 1 0-10"
+                                        />
+                                    </g>
+                                </svg>
+                            }
+                            onClick={() => openModal()}
+                        >
+                            Tambah Karyawan
+                        </PrimaryButton>
+                    </div>
 
+                    {/* Daftar karyawan */}
+                    <div className="grid grid-cols-5 gap-4 mb-8">
+                        {interns.map((intern) => (
+                            <InternCard
+                                key={intern.id}
+                                intern={intern}
+                                onClick={() => openModal(intern)}
+                            />
+                        ))}
+                    </div>
+
+                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
                                     <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Foto</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Divisi</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jadwal</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poin</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Fingerprint</th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Foto
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Nama
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Divisi
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Jadwal
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Poin
+                                        </th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Status Fingerprint
+                                        </th>
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Aksi
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
@@ -162,16 +300,25 @@ export default function Intern({ auth, interns, divisions }) {
                                         <tr key={intern.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {intern.foto ? (
-                                                    <img src={`/storage/${intern.foto}`} alt={intern.name} className="h-10 w-10 rounded-full object-cover" />
+                                                    <img
+                                                        src={`/storage/${intern.foto}`}
+                                                        alt={intern.name}
+                                                        className="h-10 w-10 rounded-full object-cover"
+                                                    />
                                                 ) : (
                                                     <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
                                                         No Img
                                                     </div>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">{intern.name}</td>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                {intern.division ? intern.division.nama_divisi : '-'}
+                                                {intern.name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {intern.division
+                                                    ? intern.division
+                                                          .nama_divisi
+                                                    : "-"}
                                             </td>
 
                                             <td className="px-6 py-4 whitespace-nowrap">
@@ -200,21 +347,28 @@ export default function Intern({ auth, interns, divisions }) {
 
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <Link
-                                                    href={route('interns.fingerprint', intern.id)}
+                                                    href={route(
+                                                        "interns.fingerprint",
+                                                        intern.id,
+                                                    )}
                                                     className="text-green-600 hover:text-green-900 mr-4"
                                                 >
                                                     Atur Fingerprint
                                                 </Link>
 
                                                 <button
-                                                    onClick={() => openModal(intern)}
+                                                    onClick={() =>
+                                                        openModal(intern)
+                                                    }
                                                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                 >
                                                     Edit
                                                 </button>
 
                                                 <button
-                                                    onClick={() => confirmDeletion(intern)}
+                                                    onClick={() =>
+                                                        confirmDeletion(intern)
+                                                    }
                                                     className="text-red-600 hover:text-red-900"
                                                 >
                                                     Hapus
@@ -225,8 +379,11 @@ export default function Intern({ auth, interns, divisions }) {
 
                                     {interns.length === 0 && (
                                         <tr>
-                                            <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
-                                                Tidak ada data anak magang.
+                                            <td
+                                                colSpan="8"
+                                                className="px-6 py-4 text-center text-gray-500"
+                                            >
+                                                Tidak ada data Karyawan.
                                             </td>
                                         </tr>
                                     )}
@@ -238,155 +395,310 @@ export default function Intern({ auth, interns, divisions }) {
             </div>
 
             <Modal show={isModalOpen} onClose={closeModal}>
-                <form onSubmit={submit} className="p-6" encType="multipart/form-data">
+                <form
+                    onSubmit={submit}
+                    className="p-6 w-fit"
+                    encType="multipart/form-data"
+                >
                     <h2 className="text-lg font-medium text-gray-900">
-                        {isEditMode ? 'Edit Anak Magang' : 'Tambah Anak Magang'}
+                        {isEditMode ? "Edit Karyawan" : "Tambah Karyawan"}
                     </h2>
+                    <div className="flex gap-4">
+                        {/* Upload & Preview Foto */}
+                        <div className="mt-2 w-fit">
+                            <InputLabel htmlFor="foto">
+                                {photoPreview || currentIntern?.foto ? (
+                                    // === MODE PREVIEW ===
+                                    <div className="relative w-40 h-[17rem]">
+                                        <img
+                                            src={
+                                                photoPreview
+                                                    ? photoPreview
+                                                    : `/storage/${currentIntern.foto}`
+                                            }
+                                            alt="Preview"
+                                            className="w-full h-full object-cover rounded-xl border-2 border-blue-500"
+                                        />
 
-                    <div className="mt-6">
-                        <InputLabel htmlFor="name" value="Nama" />
-                        <TextInput
-                            id="name"
-                            type="text"
-                            name="name"
-                            value={data.name}
-                            onChange={(e) => setData('name', e.target.value)}
-                            className="mt-1 block w-full"
-                            isFocused
-                            placeholder="Nama Anak Magang"
-                        />
-                        <InputError message={errors.name} className="mt-2" />
-                    </div>
+                                        {/* Tombol ganti */}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setPhotoPreview(null);
+                                                setData("foto", null);
+                                            }}
+                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
+                                        >
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="10px"
+                                                height="10px"
+                                                viewBox="0 0 15 15"
+                                            >
+                                                <path
+                                                    fill="#fff"
+                                                    d="M3.64 2.27L7.5 6.13l3.84-3.84A.92.92 0 0 1 12 2a1 1 0 0 1 1 1a.9.9 0 0 1-.27.66L8.84 7.5l3.89 3.89A.9.9 0 0 1 13 12a1 1 0 0 1-1 1a.92.92 0 0 1-.69-.27L7.5 8.87l-3.85 3.85A.92.92 0 0 1 3 13a1 1 0 0 1-1-1a.9.9 0 0 1 .27-.66L6.16 7.5L2.27 3.61A.9.9 0 0 1 2 3a1 1 0 0 1 1-1c.24.003.47.1.64.27"
+                                                />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex justify-center items-center flex-col cursor-pointer border-2 border-dashed rounded-xl py-8 px-6 w-40 h-[17rem]">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="60px"
+                                            height="60px"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                fill="oklch(70.7% 0.022 261.325)"
+                                                d="M10 16h4c.55 0 1-.45 1-1v-5h1.59c.89 0 1.34-1.08.71-1.71L12.71 3.7a.996.996 0 0 0-1.41 0L6.71 8.29c-.63.63-.19 1.71.7 1.71H9v5c0 .55.45 1 1 1m-4 2h12c.55 0 1 .45 1 1s-.45 1-1 1H6c-.55 0-1-.45-1-1s.45-1 1-1"
+                                            />
+                                        </svg>
+                                        <p className="text-gray-400 text-center">
+                                            {data.foto
+                                                ? data.foto.name
+                                                : "Upload foto"}
+                                        </p>
+                                        <input
+                                            id="foto"
+                                            type="file"
+                                            name="foto"
+                                            accept="image/*"
+                                            onChange={handlePhotoChange}
+                                            className="hidden"
+                                        />
+                                    </div>
+                                )}
+                            </InputLabel>
 
-                    <div className="mt-4">
-                        <InputLabel htmlFor="division_id" value="Divisi" />
-                        <select
+                            <InputError
+                                message={errors.foto}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        <div>
+                            <div className="mt-6">
+                                <InputLabel htmlFor="name" value="Nama" />
+                                <TextInput
+                                    id="name"
+                                    type="text"
+                                    name="name"
+                                    value={data.name}
+                                    onChange={(e) =>
+                                        setData("name", e.target.value)
+                                    }
+                                    className="mt-1 block w-full"
+                                    isFocused
+                                    placeholder="Nama Karyawan"
+                                />
+                                <InputError
+                                    message={errors.name}
+                                    className="mt-2"
+                                />
+                            </div>
+
+                            {/* Divisi */}
+                            <div className="mt-2">
+                                <InputLabel
+                                    htmlFor="division_id"
+                                    value="Divisi"
+                                />
+                                <CustomSelect
+                                    value={data.division_id}
+                                    onChange={(value) =>
+                                        setData("division_id", value)
+                                    }
+                                    options={divisions.map((div) => ({
+                                        value: String(div.id),
+                                        label: div.nama_divisi,
+                                    }))}
+                                    placeholder="Pilih Divisi"
+                                    error={errors.division_id}
+                                />
+                                {/* <select
                             id="division_id"
                             name="division_id"
                             value={data.division_id}
-                            onChange={(e) => setData('division_id', e.target.value)}
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"
+                            onChange={(e) =>
+                                setData("division_id", e.target.value)
+                            }
+                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm cursor-pointer"
                         >
-                            <option value="">Pilih Divisi</option>
-                            {divisions.map((div) => (
-                            <option key={div.id} value={String(div.id)}>
-                                {div.nama_divisi}
+                            <option value="" hidden selected>
+                                Pilih Divisi
                             </option>
+                            {divisions.map((div) => (
+                                <option
+                                    key={div.id}
+                                    value={String(div.id)}
+                                    className="cursor-pointer"
+                                >
+                                    {div.nama_divisi}
+                                </option>
                             ))}
-
-                        </select>
-                        <InputError message={errors.division_id} className="mt-2" />
-                    </div>
-
-                    {/* Jadwal */}
-                    <div className="mt-4">
-                        <InputLabel value="Jadwal (Pilih hari masuk)" />
-                        <div className="mt-2 grid grid-cols-2 sm:grid-cols-5 gap-2">
-                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.senin}
-                                    onChange={(e) => setData('senin', e.target.checked)}
+                        </select> */}
+                                <InputError
+                                    message={errors.division_id}
+                                    className="mt-2"
                                 />
-                                <span className="text-sm text-gray-700">Senin</span>
-                            </label>
+                            </div>
 
-                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.selasa}
-                                    onChange={(e) => setData('selasa', e.target.checked)}
-                                />
-                                <span className="text-sm text-gray-700">Selasa</span>
-                            </label>
+                            {/* Jadwal */}
+                            <div className="mt-2">
+                                <InputLabel value="Jadwal (Pilih hari masuk)" />
+                                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={isAllDaysChecked()}
+                                            onChange={(e) =>
+                                                handleToggleAllDays(
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Setiap Hari
+                                        </span>
+                                    </label>
 
-                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.rabu}
-                                    onChange={(e) => setData('rabu', e.target.checked)}
-                                />
-                                <span className="text-sm text-gray-700">Rabu</span>
-                            </label>
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.senin}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "senin",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Senin
+                                        </span>
+                                    </label>
 
-                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.kamis}
-                                    onChange={(e) => setData('kamis', e.target.checked)}
-                                />
-                                <span className="text-sm text-gray-700">Kamis</span>
-                            </label>
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.selasa}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "selasa",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Selasa
+                                        </span>
+                                    </label>
 
-                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
-                                <input
-                                    type="checkbox"
-                                    checked={data.jumat}
-                                    onChange={(e) => setData('jumat', e.target.checked)}
-                                />
-                                <span className="text-sm text-gray-700">Jumat</span>
-                            </label>
-                        </div>
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.rabu}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "rabu",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Rabu
+                                        </span>
+                                    </label>
 
-                        {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
-                        {(errors.senin || errors.selasa || errors.rabu || errors.kamis || errors.jumat) && (
-                            <InputError
-                                message={
-                                    errors.senin ||
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.kamis}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "kamis",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Kamis
+                                        </span>
+                                    </label>
+
+                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={data.jumat}
+                                            onChange={(e) =>
+                                                setData(
+                                                    "jumat",
+                                                    e.target.checked,
+                                                )
+                                            }
+                                            className="rounded-sm cursor-pointer focus:ring-transparent"
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Jumat
+                                        </span>
+                                    </label>
+                                </div>
+
+                                {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
+                                {(errors.senin ||
                                     errors.selasa ||
                                     errors.rabu ||
                                     errors.kamis ||
-                                    errors.jumat
-                                }
-                                className="mt-2"
-                            />
-                        )}
-                    </div>
-
-                    {/* Poin */}
-                    <div className="mt-4">
-                        <InputLabel htmlFor="poin" value="Poin" />
-                        <TextInput
-                            id="poin"
-                            type="number"
-                            min="0"
-                            name="poin"
-                            value={data.poin}
-                            onChange={(e) => setData('poin', Number(e.target.value))}
-                            className="mt-1 block w-full"
-                            placeholder="0"
-                        />
-                        <InputError message={errors.poin} className="mt-2" />
-                    </div>
-
-                    <div className="mt-4">
-                        <InputLabel htmlFor="foto" value="Foto" />
-                        {currentIntern && currentIntern.foto && (
-                            <div className="mb-2">
-                                <p className="text-sm text-gray-500">Foto saat ini:</p>
-                                <img src={`/storage/${currentIntern.foto}`} alt="Current" className="h-16 w-16 object-cover rounded mt-1" />
+                                    errors.jumat) && (
+                                    <InputError
+                                        message={
+                                            errors.senin ||
+                                            errors.selasa ||
+                                            errors.rabu ||
+                                            errors.kamis ||
+                                            errors.jumat
+                                        }
+                                        className="mt-2"
+                                    />
+                                )}
                             </div>
-                        )}
-                        <input
-                            id="foto"
-                            type="file"
-                            name="foto"
-                            accept="image/*"
-                            onChange={(e) => setData('foto', e.target.files[0])}
-                            className="mt-1 block w-full text-sm text-gray-500
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-md file:border-0
-                                file:text-sm file:font-semibold
-                                file:bg-indigo-50 file:text-indigo-700
-                                hover:file:bg-indigo-100"
-                        />
-                        <InputError message={errors.foto} className="mt-2" />
+
+                            {/* Poin */}
+                            {/* <div className="mt-4">
+                                <InputLabel htmlFor="poin" value="Poin" />
+                                <TextInput
+                                    id="poin"
+                                    type="number"
+                                    min="0"
+                                    name="poin"
+                                    value={data.poin}
+                                    onChange={(e) =>
+                                        setData("poin", Number(e.target.value))
+                                    }
+                                    className="mt-1 block w-full"
+                                    placeholder="0"
+                                />
+                                <InputError
+                                    message={errors.poin}
+                                    className="mt-2"
+                                />
+                            </div> */}
+                        </div>
                     </div>
 
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeModal}>Batal</SecondaryButton>
+                    <div className="mt-12 flex justify-end">
+                        <SecondaryButton onClick={closeModal}>
+                            Batal
+                        </SecondaryButton>
                         <PrimaryButton className="ml-3" disabled={processing}>
-                            {isEditMode ? 'Update' : 'Simpan'}
+                            {isEditMode ? "Update" : "Simpan"}
                         </PrimaryButton>
                     </div>
                 </form>
@@ -401,8 +713,14 @@ export default function Intern({ auth, interns, divisions }) {
                         Tindakan ini tidak dapat dibatalkan.
                     </p>
                     <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeDeletionModal}>Batal</SecondaryButton>
-                        <DangerButton className="ml-3" onClick={deleteIntern} disabled={deleteForm.processing}>
+                        <SecondaryButton onClick={closeDeletionModal}>
+                            Batal
+                        </SecondaryButton>
+                        <DangerButton
+                            className="ml-3"
+                            onClick={deleteIntern}
+                            disabled={deleteForm.processing}
+                        >
                             Hapus
                         </DangerButton>
                     </div>
