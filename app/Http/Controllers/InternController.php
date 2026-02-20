@@ -28,7 +28,24 @@ class InternController extends Controller
             'division_id' => 'required|exists:divisions,id',
             'barcode' => 'required|string|unique:interns,barcode',
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
+            // Jadwal + poin
+            'senin' => 'nullable|boolean',
+            'selasa' => 'nullable|boolean',
+            'rabu' => 'nullable|boolean',
+            'kamis' => 'nullable|boolean',
+            'jumat' => 'nullable|boolean',
+            'poin' => 'nullable|integer|min:0',
         ]);
+
+        // Pastikan checkbox yang tidak dikirim jadi false
+        $validatedData['senin']  = $request->boolean('senin');
+        $validatedData['selasa'] = $request->boolean('selasa');
+        $validatedData['rabu']   = $request->boolean('rabu');
+        $validatedData['kamis']  = $request->boolean('kamis');
+        $validatedData['jumat']  = $request->boolean('jumat');
+
+        $validatedData['poin'] = (int) ($validatedData['poin'] ?? 0);
 
         if ($request->hasFile('foto')) {
             $path = $request->file('foto')->store('intern-photos', 'public');
@@ -47,12 +64,30 @@ class InternController extends Controller
             'division_id' => 'required|exists:divisions,id',
             'barcode' => 'required|string|unique:interns,barcode,' . $intern->id,
             'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+
+            // Jadwal + poin
+            'senin' => 'nullable|boolean',
+            'selasa' => 'nullable|boolean',
+            'rabu' => 'nullable|boolean',
+            'kamis' => 'nullable|boolean',
+            'jumat' => 'nullable|boolean',
+            'poin' => 'nullable|integer|min:0',
         ]);
+
+        $validatedData['senin']  = $request->boolean('senin');
+        $validatedData['selasa'] = $request->boolean('selasa');
+        $validatedData['rabu']   = $request->boolean('rabu');
+        $validatedData['kamis']  = $request->boolean('kamis');
+        $validatedData['jumat']  = $request->boolean('jumat');
+
+        // kalau tidak dikirim, pakai nilai lama (biar aman)
+        $validatedData['poin'] = (int) ($validatedData['poin'] ?? ($intern->poin ?? 0));
 
         if ($request->hasFile('foto')) {
             if ($intern->foto && Storage::disk('public')->exists($intern->foto)) {
                 Storage::disk('public')->delete($intern->foto);
             }
+
             $path = $request->file('foto')->store('intern-photos', 'public');
             $validatedData['foto'] = $path;
         }
@@ -67,7 +102,7 @@ class InternController extends Controller
         if ($intern->foto && Storage::disk('public')->exists($intern->foto)) {
             Storage::disk('public')->delete($intern->foto);
         }
-        
+
         $intern->delete();
 
         return redirect()->back()->with('success', 'Data magang deleted successfully!');

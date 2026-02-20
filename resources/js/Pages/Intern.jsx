@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage, router } from '@inertiajs/react';
-import { useState, useEffect } from 'react';
+import { Head, useForm, usePage } from '@inertiajs/react';
+import { useState } from 'react';
 import InputError from '@/Components/InputError';
 import InputLabel from '@/Components/InputLabel';
 import Modal from '@/Components/Modal';
@@ -8,7 +8,7 @@ import SecondaryButton from '@/Components/SecondaryButton';
 import TextInput from '@/Components/TextInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import DangerButton from '@/Components/DangerButton';
-import { Link } from '@inertiajs/react'; // Pastikan import Link
+import { Link } from '@inertiajs/react';
 
 export default function Intern({ auth, interns, divisions }) {
     const { flash } = usePage().props;
@@ -20,9 +20,20 @@ export default function Intern({ auth, interns, divisions }) {
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm({
         name: '',
-        division_id: '',
+        division_id: divisions?.length ? String(divisions[0].id) : '',
         barcode: '',
         foto: null,
+
+        // Jadwal (boolean)
+        senin: false,
+        selasa: false,
+        rabu: false,
+        kamis: false,
+        jumat: false,
+
+        // Poin
+        poin: 0,
+
         _method: 'POST',
     });
 
@@ -32,14 +43,27 @@ export default function Intern({ auth, interns, divisions }) {
         setIsModalOpen(true);
         setIsEditMode(!!intern);
         setCurrentIntern(intern);
-        
+
         setData({
             name: intern ? intern.name : '',
-            division_id: intern ? intern.division_id : (divisions.length > 0 ? divisions[0].id : ''),
+            division_id: intern
+                    ? String(intern.division_id ?? '')
+                    : (divisions.length > 0 ? String(divisions[0].id) : ''),
+
             barcode: intern ? intern.barcode : '',
-            foto: null, // Reset file input
+            foto: null,
+
+            // Prefill jadwal + poin saat edit
+            senin: intern ? !!intern.senin : false,
+            selasa: intern ? !!intern.selasa : false,
+            rabu: intern ? !!intern.rabu : false,
+            kamis: intern ? !!intern.kamis : false,
+            jumat: intern ? !!intern.jumat : false,
+            poin: intern ? (intern.poin ?? 0) : 0,
+
             _method: intern ? 'PUT' : 'POST',
         });
+
         clearErrors();
     };
 
@@ -51,6 +75,7 @@ export default function Intern({ auth, interns, divisions }) {
 
     const submit = (e) => {
         e.preventDefault();
+
         if (isEditMode) {
             post(route('interns.update', currentIntern.id), {
                 onSuccess: closeModal,
@@ -76,6 +101,22 @@ export default function Intern({ auth, interns, divisions }) {
         deleteForm.delete(route('interns.destroy', internToDelete.id), {
             onSuccess: closeDeletionModal,
         });
+    };
+
+    const renderJadwal = (intern) => {
+        const hari = [
+            ['Sen', 'senin'],
+            ['Sel', 'selasa'],
+            ['Rab', 'rabu'],
+            ['Kam', 'kamis'],
+            ['Jum', 'jumat'],
+        ];
+
+        const aktif = hari
+            .filter(([, key]) => !!intern?.[key])
+            .map(([label]) => label);
+
+        return aktif.length ? aktif.join(', ') : '-';
     };
 
     return (
@@ -111,6 +152,8 @@ export default function Intern({ auth, interns, divisions }) {
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Divisi</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jadwal</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Poin</th>
                                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status Fingerprint</th>
                                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                                     </tr>
@@ -132,6 +175,19 @@ export default function Intern({ auth, interns, divisions }) {
                                                 {intern.division ? intern.division.nama_divisi : '-'}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap">{intern.barcode}</td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="text-sm text-gray-700">
+                                                    {renderJadwal(intern)}
+                                                </span>
+                                            </td>
+
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700">
+                                                    {intern.poin ?? 0}
+                                                </span>
+                                            </td>
+
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {intern.fingerprint_data ? (
                                                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
@@ -143,19 +199,22 @@ export default function Intern({ auth, interns, divisions }) {
                                                     </span>
                                                 )}
                                             </td>
+
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                                 <Link
-                                                href={route('interns.fingerprint', intern.id)}
-                                                className="text-green-600 hover:text-green-900 mr-4"
-                                            >
-                                                Atur Fingerprint
-                                            </Link>
+                                                    href={route('interns.fingerprint', intern.id)}
+                                                    className="text-green-600 hover:text-green-900 mr-4"
+                                                >
+                                                    Atur Fingerprint
+                                                </Link>
+
                                                 <button
                                                     onClick={() => openModal(intern)}
                                                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                                                 >
                                                     Edit
                                                 </button>
+
                                                 <button
                                                     onClick={() => confirmDeletion(intern)}
                                                     className="text-red-600 hover:text-red-900"
@@ -165,9 +224,10 @@ export default function Intern({ auth, interns, divisions }) {
                                             </td>
                                         </tr>
                                     ))}
+
                                     {interns.length === 0 && (
                                         <tr>
-                                            <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                                            <td colSpan="8" className="px-6 py-4 text-center text-gray-500">
                                                 Tidak ada data anak magang.
                                             </td>
                                         </tr>
@@ -211,10 +271,11 @@ export default function Intern({ auth, interns, divisions }) {
                         >
                             <option value="">Pilih Divisi</option>
                             {divisions.map((div) => (
-                                <option key={div.id} value={div.id}>
-                                    {div.nama_divisi}
-                                </option>
+                            <option key={div.id} value={String(div.id)}>
+                                {div.nama_divisi}
+                            </option>
                             ))}
+
                         </select>
                         <InputError message={errors.division_id} className="mt-2" />
                     </div>
@@ -230,12 +291,93 @@ export default function Intern({ auth, interns, divisions }) {
                             className="mt-1 block w-full"
                             placeholder="Contoh: 123456"
                         />
-                         <InputError message={errors.barcode} className="mt-2" />
+                        <InputError message={errors.barcode} className="mt-2" />
+                    </div>
+
+                    {/* Jadwal */}
+                    <div className="mt-4">
+                        <InputLabel value="Jadwal (Pilih hari masuk)" />
+                        <div className="mt-2 grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={data.senin}
+                                    onChange={(e) => setData('senin', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Senin</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={data.selasa}
+                                    onChange={(e) => setData('selasa', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Selasa</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={data.rabu}
+                                    onChange={(e) => setData('rabu', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Rabu</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={data.kamis}
+                                    onChange={(e) => setData('kamis', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Kamis</span>
+                            </label>
+
+                            <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2">
+                                <input
+                                    type="checkbox"
+                                    checked={data.jumat}
+                                    onChange={(e) => setData('jumat', e.target.checked)}
+                                />
+                                <span className="text-sm text-gray-700">Jumat</span>
+                            </label>
+                        </div>
+
+                        {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
+                        {(errors.senin || errors.selasa || errors.rabu || errors.kamis || errors.jumat) && (
+                            <InputError
+                                message={
+                                    errors.senin ||
+                                    errors.selasa ||
+                                    errors.rabu ||
+                                    errors.kamis ||
+                                    errors.jumat
+                                }
+                                className="mt-2"
+                            />
+                        )}
+                    </div>
+
+                    {/* Poin */}
+                    <div className="mt-4">
+                        <InputLabel htmlFor="poin" value="Poin" />
+                        <TextInput
+                            id="poin"
+                            type="number"
+                            min="0"
+                            name="poin"
+                            value={data.poin}
+                            onChange={(e) => setData('poin', Number(e.target.value))}
+                            className="mt-1 block w-full"
+                            placeholder="0"
+                        />
+                        <InputError message={errors.poin} className="mt-2" />
                     </div>
 
                     <div className="mt-4">
                         <InputLabel htmlFor="foto" value="Foto" />
-                         {currentIntern && currentIntern.foto && (
+                        {currentIntern && currentIntern.foto && (
                             <div className="mb-2">
                                 <p className="text-sm text-gray-500">Foto saat ini:</p>
                                 <img src={`/storage/${currentIntern.foto}`} alt="Current" className="h-16 w-16 object-cover rounded mt-1" />
@@ -265,7 +407,7 @@ export default function Intern({ auth, interns, divisions }) {
                     </div>
                 </form>
             </Modal>
-            
+
             <Modal show={confirmingDeletion} onClose={closeDeletionModal}>
                 <div className="p-6">
                     <h2 className="text-lg font-medium text-gray-900">

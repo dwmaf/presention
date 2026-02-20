@@ -6,7 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Intern extends Model
 {
-    protected $fillable = ['name', 'division_id', 'is_active', 'foto', 'barcode', 'fingerprint_data'];
+    protected $fillable = [
+        'name',
+        'division_id',
+        'is_active',
+        'foto',
+        'barcode',
+        'fingerprint_data',
+
+        'senin',
+        'selasa',
+        'rabu',
+        'kamis',
+        'jumat',
+        'poin',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'senin' => 'boolean',
+        'selasa' => 'boolean',
+        'rabu' => 'boolean',
+        'kamis' => 'boolean',
+        'jumat' => 'boolean',
+        'poin' => 'integer',
+    ];
 
     public function fingerprint()
     {
