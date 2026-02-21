@@ -1,6 +1,6 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm, usePage } from "@inertiajs/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import InputError from "@/Components/InputError";
 import InputLabel from "@/Components/InputLabel";
 import Modal from "@/Components/Modal";
@@ -10,6 +10,7 @@ import SearchBar from "@/Components/SearchBar";
 import PrimaryButton from "@/Components/PrimaryButton";
 import DangerButton from "@/Components/DangerButton";
 import InternCard from "@/Components/InternCard";
+import InternDetail from "@/Components/InternDetail";
 import CustomSelect from "@/Components/CustomSelect";
 import { Link } from "@inertiajs/react";
 
@@ -17,10 +18,13 @@ export default function Intern({ auth, interns, divisions }) {
     const { flash } = usePage().props;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [currentIntern, setCurrentIntern] = useState(null);
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
     const [internToDelete, setInternToDelete] = useState(null);
     const [photoPreview, setPhotoPreview] = useState(null);
+    const [search, setSearch] = useState("");
+    const [backToTop, setBackToTop] = useState(false);
 
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
@@ -107,6 +111,11 @@ export default function Intern({ auth, interns, divisions }) {
         // });
 
         clearErrors();
+    };
+
+    const openDetailModal = (intern) => {
+        setCurrentIntern(intern);
+        setIsDetailOpen(true);
     };
 
     const closeModal = () => {
@@ -196,6 +205,40 @@ export default function Intern({ auth, interns, divisions }) {
         });
     };
 
+    const filteredInterns = interns.filter((intern) => {
+        const keyword = search.toLowerCase();
+
+        const nameMatch = intern.name?.toLowerCase().includes(keyword);
+
+        const divisionMatch = intern.division?.nama_divisi
+            ?.toLowerCase()
+            .includes(keyword);
+
+        return nameMatch || divisionMatch;
+    });
+
+    // Balik ke atas
+    useEffect(() => {
+        const handleScroll = () => {
+            if (window.scrollY > 300) {
+                setBackToTop(true);
+            } else {
+                setBackToTop(false);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
+    // Scroll to top function
+    const scrollToTop = () => {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth",
+        });
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -207,7 +250,7 @@ export default function Intern({ auth, interns, divisions }) {
         >
             <Head title="Karyawan" />
 
-            <div className="py-12">
+            <div className="py-12 relative">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     {flash.success && (
                         <div
@@ -232,7 +275,7 @@ export default function Intern({ auth, interns, divisions }) {
 
                     {/* Search bar dan tambah karyawan */}
                     <div className="flex justify-end mb-4 gap-4">
-                        <SearchBar />
+                        <SearchBar onSearch={setSearch} />
                         <PrimaryButton
                             icon={
                                 <svg
@@ -258,13 +301,19 @@ export default function Intern({ auth, interns, divisions }) {
 
                     {/* Daftar karyawan */}
                     <div className="grid grid-cols-5 gap-4 mb-8">
-                        {interns.map((intern) => (
+                        {filteredInterns.map((intern) => (
                             <InternCard
                                 key={intern.id}
                                 intern={intern}
-                                onClick={() => openModal(intern)}
+                                onClick={() => openDetailModal(intern)}
                             />
                         ))}
+
+                        {filteredInterns.length === 0 && (
+                            <div className="col-span-5 px-6 py-4 text-center text-gray-500">
+                                Tidak ada data Karyawan.
+                            </div>
+                        )}
                     </div>
 
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
@@ -296,7 +345,7 @@ export default function Intern({ auth, interns, divisions }) {
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                    {interns.map((intern) => (
+                                    {filteredInterns.map((intern) => (
                                         <tr key={intern.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {intern.foto ? (
@@ -377,7 +426,7 @@ export default function Intern({ auth, interns, divisions }) {
                                         </tr>
                                     ))}
 
-                                    {interns.length === 0 && (
+                                    {filteredInterns.length === 0 && (
                                         <tr>
                                             <td
                                                 colSpan="8"
@@ -392,9 +441,52 @@ export default function Intern({ auth, interns, divisions }) {
                         </div>
                     </div>
                 </div>
+
+                {/* Back to Top Button */}
+                {backToTop && (
+                    <button
+                        onClick={scrollToTop}
+                        className="p-2 bg-blue-100 hover:bg-blue-200 text-white rounded-full flex items-center justify-center fixed bottom-8 right-8 shadow-lg transition-all duration-300 z-50 group"
+                        aria-label="Back to top"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="40"
+                            height="40"
+                            viewBox="0 0 12 24"
+                            className="-rotate-90 group-hover:-translate-y-1 transition-transform"
+                        >
+                            <path
+                                fill="oklch(42.4% 0.199 265.638)"
+                                fillRule="evenodd"
+                                d="M10.157 12.711L4.5 18.368l-1.414-1.414l4.95-4.95l-4.95-4.95L4.5 5.64l5.657 5.657a1 1 0 0 1 0 1.414"
+                            />
+                        </svg>
+                    </button>
+                )}
             </div>
 
-            <Modal show={isModalOpen} onClose={closeModal}>
+            <Modal
+                show={isDetailOpen}
+                onClose={() => setIsDetailOpen(false)}
+                maxWidth="70%"
+                maxHeight="70%"
+            >
+                {currentIntern && (
+                    <InternDetail
+                        intern={currentIntern}
+                        divisions={divisions}
+                        onClose={() => setIsDetailOpen(false)}
+                    />
+                )}
+            </Modal>
+
+            <Modal
+                show={isModalOpen}
+                onClose={closeModal}
+                maxWidth="fit"
+                maxHeight="fit"
+            >
                 <form
                     onSubmit={submit}
                     className="p-6 w-fit"
@@ -408,8 +500,8 @@ export default function Intern({ auth, interns, divisions }) {
                         <div className="mt-2 w-fit">
                             <InputLabel htmlFor="foto">
                                 {photoPreview || currentIntern?.foto ? (
-                                    // === MODE PREVIEW ===
-                                    <div className="relative w-40 h-[17rem]">
+                                    // Preview
+                                    <div className="relative w-40 h-60">
                                         <img
                                             src={
                                                 photoPreview
@@ -443,7 +535,8 @@ export default function Intern({ auth, interns, divisions }) {
                                         </button>
                                     </div>
                                 ) : (
-                                    <div className="flex justify-center items-center flex-col cursor-pointer border-2 border-dashed rounded-xl py-8 px-6 w-40 h-[17rem]">
+                                    // Upload
+                                    <div className="flex justify-center items-center flex-col cursor-pointer border-2 border-dashed rounded-xl py-8 px-6 w-40 h-60">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="60px"
@@ -479,7 +572,7 @@ export default function Intern({ auth, interns, divisions }) {
                         </div>
 
                         <div>
-                            <div className="mt-6">
+                            <div>
                                 <InputLabel htmlFor="name" value="Nama" />
                                 <TextInput
                                     id="name"
