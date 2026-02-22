@@ -52,31 +52,31 @@ class DatabaseSeeder extends Seeder
                 'foto' => 'foto/emp003.jpg',
                 'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
             ],
-            [
-                'name' => 'Dawam Agung Fathoni', 
-                'division_id' => $divSoftwareDev->id,
-                'foto' => 'foto/emp032.jpg',
-                'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
-                'barcode' => '88888888'
-            ],
-            [
-                'name' => 'Syariffullah', 
-                'division_id' => $divSoftwareDev->id,
-                'foto' => 'foto/emp028.jpg',
-                'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
-            ],
-            [
-                'name' => 'Abimanyu Ridho Ramadhani', 
-                'division_id' => $divSoftwareDev->id,
-                'foto' => 'foto/emp030.jpg',
-                'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
-            ],
-            [
-                'name' => 'Rayhan NuerJamman', 
-                'division_id' => $divSoftwareDev->id,
-                'foto' => 'foto/emp034.jpg',
-                'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
-            ],
+            // [
+            //     'name' => 'Dawam Agung Fathoni', 
+            //     'division_id' => $divSoftwareDev->id,
+            //     'foto' => 'foto/emp032.jpg',
+            //     'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+            //     'barcode' => '88888888'
+            // ],
+            // [
+            //     'name' => 'Syariffullah', 
+            //     'division_id' => $divSoftwareDev->id,
+            //     'foto' => 'foto/emp028.jpg',
+            //     'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+            // ],
+            // [
+            //     'name' => 'Abimanyu Ridho Ramadhani', 
+            //     'division_id' => $divSoftwareDev->id,
+            //     'foto' => 'foto/emp030.jpg',
+            //     'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+            // ],
+            // [
+            //     'name' => 'Rayhan NuerJamman', 
+            //     'division_id' => $divSoftwareDev->id,
+            //     'foto' => 'foto/emp034.jpg',
+            //     'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+            // ],
         ];
 
         foreach ($interns as $data) {
