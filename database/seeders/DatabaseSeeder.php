@@ -359,7 +359,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Rayhan NuerJamman', 
                 'division_id' => $divSoftwareDev->id,
                 'foto' => 'foto/emp034.jpg',
-                'senin' => false, 'selasa' => true, 'false' => true, 'kamis' => true, 'jumat' => false,
+                'senin' => false, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => false,
             ],
         ];
 
