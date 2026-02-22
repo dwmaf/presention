@@ -1,9 +1,32 @@
 import { useState } from "react";
+import { router, useForm } from "@inertiajs/react";
+import PrimaryButton from "./PrimaryButton";
+import SecondaryButton from "./SecondaryButton";
+import InputLabel from "./InputLabel";
+import TextInput from "./TextInput";
+import InputError from "./InputError";
+import CustomSelect from "./CustomSelect";
+import DownloadBtn from "./DownloadBtn";
 
-export default function InternDetail({ intern }) {
+export default function InternDetail({ intern, divisions }) {
     if (!intern) return null;
 
     const [upload, setUpload] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [showStatusForm, setShowStatusForm] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState("");
+    const [currentAttendanceId, setCurrentAttendanceId] = useState(null);
+
+    const { data, setData, errors, reset } = useForm({
+        name: intern?.name || "",
+        division_id: String(intern?.division_id || ""),
+        senin: intern?.senin || false,
+        selasa: intern?.selasa || false,
+        rabu: intern?.rabu || false,
+        kamis: intern?.kamis || false,
+        jumat: intern?.jumat || false,
+        poin: intern?.poin ?? 5,
+    });
 
     const poin = intern.poin ?? 0;
     const poinStyle =
@@ -24,9 +47,28 @@ export default function InternDetail({ intern }) {
 
         if (days.length === 5) return "Setiap hari";
 
-        return days.length > 0 ? days.join(", ") : "-";
+        return days.length > 0 ? days.join(", ") : "Belum ada jadwal";
     };
 
+    // Jadwal
+    const isAllDaysChecked = () => {
+        return (
+            data.senin && data.selasa && data.rabu && data.kamis && data.jumat
+        );
+    };
+
+    const handleToggleAllDays = (checked) => {
+        setData({
+            ...data,
+            senin: checked,
+            selasa: checked,
+            rabu: checked,
+            kamis: checked,
+            jumat: checked,
+        });
+    };
+
+    // Ubah Foto
     const handlePhotoClick = () => {
         document.getElementById("photo-upload").click();
     };
@@ -35,7 +77,6 @@ export default function InternDetail({ intern }) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Validasi file
         const validTypes = ["image/jpeg", "image/jpg", "image/png"];
         if (!validTypes.includes(file.type)) {
             alert("Format file harus JPG, JPEG, atau PNG");
@@ -43,7 +84,6 @@ export default function InternDetail({ intern }) {
         }
 
         if (file.size > 2048000) {
-            // 2MB
             alert("Ukuran file maksimal 2MB");
             return;
         }
@@ -68,9 +108,91 @@ export default function InternDetail({ intern }) {
         });
     };
 
+    // Arahkan ke page FingerPrint Enrollment
+    const handleFingerEnrollment = () => {
+        router.visit(`/interns/${intern.id}/fingerprint-enrollment`);
+    };
+
+    // Simpan perubahan form
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        router.put(`/interns/${intern.id}`, data, {
+            onSuccess: () => {
+                setShowForm(false);
+            },
+        });
+    };
+
+    // Close form & reset data
+    const handleCloseForm = () => {
+        reset();
+        setShowForm(false);
+    };
+
+    const attendanceStyle = (status) => {
+        const styles = {
+            hadir: "bg-green-100 text-green-700",
+            izin: "bg-yellow-100 text-yellow-700",
+            sakit: "bg-indigo-100 text-indigo-700",
+            alpha: "bg-red-100 text-red-700",
+        };
+
+        return styles[status] || "bg-gray-100 text-gray-700";
+    };
+
+    const attendanceLabel = (status) => {
+        const labels = {
+            hadir: "Hadir",
+            izin: "Izin",
+            sakit: "Sakit",
+            alpha: "Alpha",
+        };
+
+        return labels[status] || "Tidak ada";
+    };
+
+    // ✅ TAMBAHKAN HANDLER untuk toggle form status
+    const handleToggleStatusForm = (attendanceId, currentStatus) => {
+        setShowStatusForm(!showStatusForm);
+        setCurrentAttendanceId(attendanceId);
+        setSelectedStatus(currentStatus);
+    };
+
+    // ✅ TAMBAHKAN HANDLER untuk update status
+    const handleUpdateStatus = (e) => {
+        e.preventDefault();
+
+        router.put(
+            `/attendances/${currentAttendanceId}/status`,
+            {
+                status: selectedStatus,
+            },
+            {
+                onSuccess: () => {
+                    setShowStatusForm(false);
+                    setSelectedStatus("");
+                    setCurrentAttendanceId(null);
+                },
+                onError: (errors) => {
+                    alert(
+                        "Gagal mengubah status: " +
+                            Object.values(errors).join(", "),
+                    );
+                },
+            },
+        );
+    };
+
+    // ✅ TAMBAHKAN HANDLER untuk cancel
+    const handleCancelStatusUpdate = () => {
+        setShowStatusForm(false);
+        setSelectedStatus("");
+        setCurrentAttendanceId(null);
+    };
+
     return (
         <div className="px-8 py-6">
-            <div className="flex justify-between">
+            <div className="flex justify-between relative">
                 {/* Foto & Detail Singkat Karyawan */}
                 <div className="flex gap-4">
                     <div className="w-40 h-40 relative group cursor-pointer">
@@ -104,84 +226,45 @@ export default function InternDetail({ intern }) {
                     <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2">
                             <p className="font-bold text-2xl">{intern.name}</p>
-                            {/* <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="23px"
-                                height="23px"
-                                viewBox="0 0 24 24"
-                                className="cursor-pointer"
-                            >
-                                <g class="edit-outline">
-                                    <g
-                                        fill="oklch(55.1% 0.027 264.364)"
-                                        fill-rule="evenodd"
-                                        class="Vector"
-                                        clip-rule="evenodd"
-                                    >
-                                        <path d="M2 6.857A4.857 4.857 0 0 1 6.857 2H12a1 1 0 1 1 0 2H6.857A2.857 2.857 0 0 0 4 6.857v10.286A2.857 2.857 0 0 0 6.857 20h10.286A2.857 2.857 0 0 0 20 17.143V12a1 1 0 1 1 2 0v5.143A4.857 4.857 0 0 1 17.143 22H6.857A4.857 4.857 0 0 1 2 17.143z" />
-                                        <path d="m15.137 13.219l-2.205 1.33l-1.033-1.713l2.205-1.33l.003-.002a1.2 1.2 0 0 0 .232-.182l5.01-5.036a3 3 0 0 0 .145-.157c.331-.386.821-1.15.228-1.746c-.501-.504-1.219-.028-1.684.381a6 6 0 0 0-.36.345l-.034.034l-4.94 4.965a1.2 1.2 0 0 0-.27.41l-.824 2.073a.2.2 0 0 0 .29.245l1.032 1.713c-1.805 1.088-3.96-.74-3.18-2.698l.825-2.072a3.2 3.2 0 0 1 .71-1.081l4.939-4.966l.029-.029c.147-.15.641-.656 1.24-1.02c.327-.197.849-.458 1.494-.508c.74-.059 1.53.174 2.15.797a2.9 2.9 0 0 1 .845 1.75a3.15 3.15 0 0 1-.23 1.517c-.29.717-.774 1.244-.987 1.457l-5.01 5.036q-.28.281-.62.487m4.453-7.126s-.004.003-.013.006z" />
-                                    </g>
-                                </g>
-                            </svg> */}
                         </div>
 
                         <div className="flex items-center gap-2">
                             <p className="font-medium text-md">
                                 {intern.division?.nama_divisi || "-"}
                             </p>
-                            {/* <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="18px"
-                                height="18px"
-                                viewBox="0 0 24 24"
-                                className="cursor-pointer"
-                            >
-                                <g class="edit-outline">
-                                    <g
-                                        fill="oklch(55.1% 0.027 264.364)"
-                                        fill-rule="evenodd"
-                                        class="Vector"
-                                        clip-rule="evenodd"
-                                    >
-                                        <path d="M2 6.857A4.857 4.857 0 0 1 6.857 2H12a1 1 0 1 1 0 2H6.857A2.857 2.857 0 0 0 4 6.857v10.286A2.857 2.857 0 0 0 6.857 20h10.286A2.857 2.857 0 0 0 20 17.143V12a1 1 0 1 1 2 0v5.143A4.857 4.857 0 0 1 17.143 22H6.857A4.857 4.857 0 0 1 2 17.143z" />
-                                        <path d="m15.137 13.219l-2.205 1.33l-1.033-1.713l2.205-1.33l.003-.002a1.2 1.2 0 0 0 .232-.182l5.01-5.036a3 3 0 0 0 .145-.157c.331-.386.821-1.15.228-1.746c-.501-.504-1.219-.028-1.684.381a6 6 0 0 0-.36.345l-.034.034l-4.94 4.965a1.2 1.2 0 0 0-.27.41l-.824 2.073a.2.2 0 0 0 .29.245l1.032 1.713c-1.805 1.088-3.96-.74-3.18-2.698l.825-2.072a3.2 3.2 0 0 1 .71-1.081l4.939-4.966l.029-.029c.147-.15.641-.656 1.24-1.02c.327-.197.849-.458 1.494-.508c.74-.059 1.53.174 2.15.797a2.9 2.9 0 0 1 .845 1.75a3.15 3.15 0 0 1-.23 1.517c-.29.717-.774 1.244-.987 1.457l-5.01 5.036q-.28.281-.62.487m4.453-7.126s-.004.003-.013.006z" />
-                                    </g>
-                                </g>
-                            </svg> */}
                         </div>
 
                         {/* Jadwal */}
                         <div className="flex items-center gap-2">
-                            <p className="text-sm">Jadwal : {renderJadwal()}</p>
-                            {/* <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="18px"
-                                height="18px"
-                                viewBox="0 0 24 24"
-                                className="cursor-pointer"
-                            >
-                                <g class="edit-outline">
-                                    <g
-                                        fill="oklch(55.1% 0.027 264.364)"
-                                        fill-rule="evenodd"
-                                        class="Vector"
-                                        clip-rule="evenodd"
-                                    >
-                                        <path d="M2 6.857A4.857 4.857 0 0 1 6.857 2H12a1 1 0 1 1 0 2H6.857A2.857 2.857 0 0 0 4 6.857v10.286A2.857 2.857 0 0 0 6.857 20h10.286A2.857 2.857 0 0 0 20 17.143V12a1 1 0 1 1 2 0v5.143A4.857 4.857 0 0 1 17.143 22H6.857A4.857 4.857 0 0 1 2 17.143z" />
-                                        <path d="m15.137 13.219l-2.205 1.33l-1.033-1.713l2.205-1.33l.003-.002a1.2 1.2 0 0 0 .232-.182l5.01-5.036a3 3 0 0 0 .145-.157c.331-.386.821-1.15.228-1.746c-.501-.504-1.219-.028-1.684.381a6 6 0 0 0-.36.345l-.034.034l-4.94 4.965a1.2 1.2 0 0 0-.27.41l-.824 2.073a.2.2 0 0 0 .29.245l1.032 1.713c-1.805 1.088-3.96-.74-3.18-2.698l.825-2.072a3.2 3.2 0 0 1 .71-1.081l4.939-4.966l.029-.029c.147-.15.641-.656 1.24-1.02c.327-.197.849-.458 1.494-.508c.74-.059 1.53.174 2.15.797a2.9 2.9 0 0 1 .845 1.75a3.15 3.15 0 0 1-.23 1.517c-.29.717-.774 1.244-.987 1.457l-5.01 5.036q-.28.281-.62.487m4.453-7.126s-.004.003-.013.006z" />
+                            <p className="text-sm flex gap-1 items-center font-medium text-gray-500">
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="18"
+                                    height="18"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <g fill="none">
+                                        <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+                                        <path
+                                            fill="oklch(55.1% 0.027 264.364)"
+                                            d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7zm-5-9a1 1 0 0 1 1 1v1h2a2 2 0 0 1 2 2v3H3V7a2 2 0 0 1 2-2h2V4a1 1 0 0 1 2 0v1h6V4a1 1 0 0 1 1-1"
+                                        />
                                     </g>
-                                </g>
-                            </svg> */}
+                                </svg>
+                                {renderJadwal()}
+                            </p>
                         </div>
 
                         {/* Poin & Status Fingerprint */}
                         <div className="flex gap-2">
                             <p
-                                className={`${poinStyle} w-fit  py-0.5 px-2 rounded-lg text-xs font-semibold`}
+                                className={`${poinStyle} w-fit  py-0.5 px-2 rounded-lg text-xs font-semibold flex items-center`}
                             >
                                 {poin} Poin
                             </p>
-                            <div
+                            {/* Kalo di klik bakal ke Fingerprint Enrollment */}
+                            <button
+                                onClick={handleFingerEnrollment}
                                 className={`${fingerStyle} rounded-full flex items-center `}
                             >
                                 <svg
@@ -197,10 +280,209 @@ export default function InternDetail({ intern }) {
                                         clipRule="evenodd"
                                     />
                                 </svg>
-                            </div>
+                            </button>
+
+                            <button
+                                onClick={() => setShowForm(!showForm)}
+                                className="font-medium text-blue-700"
+                            >
+                                Edit
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                {/* Form edit info */}
+                {showForm && (
+                    <form
+                        action=""
+                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12"
+                        onSubmit={handleSubmit}
+                    >
+                        <p className="font-medium text-lg mb-2">
+                            Edit Informasi Karyawan
+                        </p>
+                        {/* Nama */}
+                        <div>
+                            <InputLabel htmlFor="name" value="Nama" />
+                            <TextInput
+                                id="name"
+                                type="text"
+                                name="name"
+                                value={data.name}
+                                onChange={(e) =>
+                                    setData("name", e.target.value)
+                                }
+                                className="rounded-md border-gray-400 w-full"
+                            />
+                        </div>
+
+                        {/* Divisi */}
+                        <div>
+                            <InputLabel htmlFor="division_id" value="Divisi" />
+                            <CustomSelect
+                                value={String(data.division_id)}
+                                onChange={(value) =>
+                                    setData("division_id", value)
+                                }
+                                options={divisions.map((div) => ({
+                                    value: String(div.id),
+                                    label: div.nama_divisi,
+                                }))}
+                                placeholder="Pilih Divisi"
+                                error={errors.division_id}
+                            />
+                            <InputError
+                                message={errors.division_id}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        {/* Jadwal */}
+                        <div className="mt-2">
+                            <InputLabel value="Jadwal (Pilih hari masuk)" />
+                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={isAllDaysChecked()}
+                                        onChange={(e) =>
+                                            handleToggleAllDays(
+                                                e.target.checked,
+                                            )
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Setiap Hari
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.senin}
+                                        onChange={(e) =>
+                                            setData("senin", e.target.checked)
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Senin
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.selasa}
+                                        onChange={(e) =>
+                                            setData("selasa", e.target.checked)
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Selasa
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.rabu}
+                                        onChange={(e) =>
+                                            setData("rabu", e.target.checked)
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Rabu
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.kamis}
+                                        onChange={(e) =>
+                                            setData("kamis", e.target.checked)
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Kamis
+                                    </span>
+                                </label>
+
+                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.jumat}
+                                        onChange={(e) =>
+                                            setData("jumat", e.target.checked)
+                                        }
+                                        className="rounded-sm cursor-pointer focus:ring-transparent"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Jumat
+                                    </span>
+                                </label>
+                            </div>
+
+                            {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
+                            {(errors.senin ||
+                                errors.selasa ||
+                                errors.rabu ||
+                                errors.kamis ||
+                                errors.jumat) && (
+                                <InputError
+                                    message={
+                                        errors.senin ||
+                                        errors.selasa ||
+                                        errors.rabu ||
+                                        errors.kamis ||
+                                        errors.jumat
+                                    }
+                                    className="mt-2"
+                                />
+                            )}
+                        </div>
+
+                        {/* Poin */}
+                        <div className="">
+                            <InputLabel htmlFor="poin" value="Poin" />
+                            <TextInput
+                                id="poin"
+                                type="number"
+                                min="0"
+                                name="poin"
+                                value={data.poin}
+                                onChange={(e) =>
+                                    setData("poin", Number(e.target.value))
+                                }
+                                className="mt-1 block w-full"
+                                placeholder="0"
+                            />
+                            <InputError
+                                message={errors.poin}
+                                className="mt-2"
+                            />
+                        </div>
+
+                        {/* Aksi */}
+                        <div className="flex gap-2 justify-end">
+                            <SecondaryButton
+                                onClick={handleCloseForm}
+                                className="w-full justify-center"
+                            >
+                                Batal
+                            </SecondaryButton>
+                            <PrimaryButton className="w-full justify-center">
+                                Simpan
+                            </PrimaryButton>
+                        </div>
+                    </form>
+                )}
 
                 {/* Detail Kehadiran Karyawan */}
                 <div className="flex flex-col justify-between">
@@ -292,6 +574,372 @@ export default function InternDetail({ intern }) {
                     </div>
                 </div>
             </div>
+
+            <div className="mt-8 flex justify-between items-center">
+                <p className="font-semibold text-lg">Riwayat Kehadiran</p>
+
+                <DownloadBtn />
+            </div>
+
+            <table className="w-full mt-2">
+                <thead className="bg-gray-100 border-b-2 border-gray-400 text-left">
+                    <tr>
+                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
+                            Tanggal
+                        </th>
+                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
+                            Hari
+                        </th>
+                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
+                            Jam Masuk
+                        </th>
+                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
+                            Jam Pulang
+                        </th>
+                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
+                            Status Kehadiran
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {/* Tabel Dinamis - Row tabel otomatis bertambah sesuai dengan jadwal intern & isinya juga*/}
+                    {/* {intern.attendances && intern.attendances.length > 0 ? (
+                        intern.attendances?.map((attendance) => (
+                            <tr
+                                key={attendance.id}
+                                className="hover:bg-gray-50 border-b-2 border-gray-400"
+                            >
+                                <td className="px-4 py-2">
+                                    {new Date(
+                                        attendance.tanggal,
+                                    ).toLocaleDateString("id-ID", {
+                                        day: "2-digit",
+                                        month: "long",
+                                        year: "numeric",
+                                    })}
+                                </td>
+                                <td className="px-4 py-2">{attendance.hari}</td>
+                                <td className="px-4 py-2 ">
+                                    <div className="flex gap-1 items-center">
+                                        {attendance.jam_masuk || "-"}
+                                        {attendance.terlambat && (
+                                            <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
+                                                (+{attendance.terlambat}m)
+                                            </span>
+                                        )}
+                                    </div>
+                                </td>
+                                <td className="px-4 py-2">
+                                    {attendance.jam_pulang}
+                                </td>
+                                <td className="px-4 py-2">
+                                    <button
+                                        onClick={() =>
+                                            handleToggleStatusForm(
+                                                attendance.id,
+                                                attendance.status,
+                                            )
+                                        }
+                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle(attendance.status)}`}
+                                    >
+                                        {attendanceLabel(attendance.status)}
+                                    </button>
+                                    {showStatusForm &&
+                                        currentAttendanceId === attendance.id && (
+                                            <form
+                                                onSubmit={handleUpdateStatus}
+                                                className="bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50"
+                                            >
+                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
+                                                    <input
+                                                        type="radio"
+                                                        name="status kehadiran"
+                                                        value="hadir"
+                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                                    />
+                                                    <span
+                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
+                                                    >
+                                                        {attendanceLabel(
+                                                            "hadir",
+                                                        )}
+                                                    </span>
+                                                </label>
+                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="status kehadiran"
+                                                        value="izin"
+                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                                    />
+                                                    <span
+                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
+                                                    >
+                                                        {attendanceLabel(
+                                                            "izin",
+                                                        )}
+                                                    </span>
+                                                </label>
+                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="status kehadiran"
+                                                        value="sakit"
+                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                                    />
+                                                    <span
+                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
+                                                    >
+                                                        {attendanceLabel(
+                                                            "sakit",
+                                                        )}
+                                                    </span>
+                                                </label>
+                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                                    <input
+                                                        type="radio"
+                                                        name="status kehadiran"
+                                                        value="alpha"
+                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                                    />
+                                                    <span
+                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
+                                                    >
+                                                        {attendanceLabel(
+                                                            "alpha",
+                                                        )}
+                                                    </span>
+                                                </label>
+                                                <div className="flex gap-2 my-2 w-full">
+                                                    <PrimaryButton
+                                                        type="submit"
+                                                        className="flex-1 justify-center text-sm ml-2"
+                                                    >
+                                                        Simpan
+                                                    </PrimaryButton>
+                                                    <SecondaryButton
+                                                        type="button"
+                                                        onClick={
+                                                            handleCancelStatusUpdate
+                                                        }
+                                                        className="flex-1 justify-center text-sm mr-2"
+                                                    >
+                                                        Batal
+                                                    </SecondaryButton>
+                                                </div>
+                                            </form>
+                                        )}
+                                </td>
+                            </tr>
+                        ))
+                    ) : (
+                        <tr>
+                            <td
+                                colSpan="5"
+                                className="px-4 py-8 text-center text-gray-500"
+                            >
+                                Belum ada riwayat kehadiran
+                            </td>
+                        </tr>
+                    )} */}
+
+                    <tr className="hover:bg-gray-50 border-b-2 border-gray-400">
+                        <td className="px-4 py-2">16 Februari 2026</td>
+                        <td className="px-4 py-2">Senin</td>
+                        <td className="px-4 py-2 ">
+                            <div className="flex gap-1 items-center">
+                                08:00
+                                <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
+                                    (+15m)
+                                </span>
+                            </div>
+                        </td>
+                        <td className="px-4 py-2">17:00</td>
+                        <td className="px-4 py-2 relative">
+                            <button
+                                onClick={() =>
+                                    handleToggleStatusForm(1, "sakit")
+                                }
+                                className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
+                            >
+                                {attendanceLabel("sakit")}
+                            </button>
+                            {showStatusForm && currentAttendanceId === 1 && (
+                                <form
+                                    onSubmit={handleUpdateStatus}
+                                    className="bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50"
+                                >
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="hadir"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
+                                        >
+                                            {attendanceLabel("hadir")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="izin"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
+                                        >
+                                            {attendanceLabel("izin")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="sakit"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
+                                        >
+                                            {attendanceLabel("sakit")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="alpha"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
+                                        >
+                                            {attendanceLabel("alpha")}
+                                        </span>
+                                    </label>
+                                    <div className="flex gap-2 my-2 w-full">
+                                        <PrimaryButton
+                                            type="submit"
+                                            className="flex-1 justify-center text-sm ml-2"
+                                        >
+                                            Simpan
+                                        </PrimaryButton>
+                                        <SecondaryButton
+                                            type="button"
+                                            onClick={handleCancelStatusUpdate}
+                                            className="flex-1 justify-center text-sm mr-2"
+                                        >
+                                            Batal
+                                        </SecondaryButton>
+                                    </div>
+                                </form>
+                            )}
+                        </td>
+                    </tr>
+
+                    <tr className="hover:bg-gray-50 border-b-2 border-gray-400">
+                        <td className="px-4 py-2">16 Februari 2026</td>
+                        <td className="px-4 py-2">Senin</td>
+                        <td className="px-4 py-2 ">
+                            <div className="flex gap-1 items-center">
+                                08:00
+                                <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
+                                    (+15m)
+                                </span>
+                            </div>
+                        </td>
+                        <td className="px-4 py-2">17:00</td>
+                        <td className="px-4 py-2 relative">
+                            <button
+                                onClick={() =>
+                                    handleToggleStatusForm(2, "sakit")
+                                }
+                                className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
+                            >
+                                {attendanceLabel("sakit")}
+                            </button>
+                            {showStatusForm && currentAttendanceId === 2 && (
+                                <form
+                                    onSubmit={handleUpdateStatus}
+                                    className="bg-white shadow-lg gap-2 rounded-lg absolute w-50"
+                                >
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="hadir"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
+                                        >
+                                            {attendanceLabel("hadir")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="izin"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
+                                        >
+                                            {attendanceLabel("izin")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="sakit"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
+                                        >
+                                            {attendanceLabel("sakit")}
+                                        </span>
+                                    </label>
+                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
+                                        <input
+                                            type="radio"
+                                            name="status kehadiran"
+                                            value="alpha"
+                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
+                                        />
+                                        <span
+                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
+                                        >
+                                            {attendanceLabel("alpha")}
+                                        </span>
+                                    </label>
+                                    <div className="flex gap-2 my-2 w-full">
+                                        <PrimaryButton
+                                            type="submit"
+                                            className="flex-1 justify-center text-sm ml-2"
+                                        >
+                                            Simpan
+                                        </PrimaryButton>
+                                        <SecondaryButton
+                                            type="button"
+                                            onClick={handleCancelStatusUpdate}
+                                            className="flex-1 justify-center text-sm mr-2"
+                                        >
+                                            Batal
+                                        </SecondaryButton>
+                                    </div>
+                                </form>
+                            )}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     );
 }

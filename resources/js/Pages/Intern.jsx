@@ -26,6 +26,13 @@ export default function Intern({ auth, interns, divisions }) {
     const [search, setSearch] = useState("");
     const [backToTop, setBackToTop] = useState(false);
 
+    // Tambahkan ini untuk melihat data
+    console.log("Semua interns:", interns);
+    console.log(
+        "ID interns:",
+        interns.map((i) => i.id),
+    );
+
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm({
             name: "",
@@ -316,7 +323,8 @@ export default function Intern({ auth, interns, divisions }) {
                         )}
                     </div>
 
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
+                    {/* Table */}
+                    {/* <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-gray-200">
                                 <thead className="bg-gray-50">
@@ -439,7 +447,7 @@ export default function Intern({ auth, interns, divisions }) {
                                 </tbody>
                             </table>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 {/* Back to Top Button */}
@@ -470,7 +478,7 @@ export default function Intern({ auth, interns, divisions }) {
                 show={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
                 maxWidth="70%"
-                maxHeight="70%"
+                maxHeight="full"
             >
                 {currentIntern && (
                     <InternDetail
@@ -610,28 +618,6 @@ export default function Intern({ auth, interns, divisions }) {
                                     placeholder="Pilih Divisi"
                                     error={errors.division_id}
                                 />
-                                {/* <select
-                            id="division_id"
-                            name="division_id"
-                            value={data.division_id}
-                            onChange={(e) =>
-                                setData("division_id", e.target.value)
-                            }
-                            className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm cursor-pointer"
-                        >
-                            <option value="" hidden selected>
-                                Pilih Divisi
-                            </option>
-                            {divisions.map((div) => (
-                                <option
-                                    key={div.id}
-                                    value={String(div.id)}
-                                    className="cursor-pointer"
-                                >
-                                    {div.nama_divisi}
-                                </option>
-                            ))}
-                        </select> */}
                                 <InputError
                                     message={errors.division_id}
                                     className="mt-2"
