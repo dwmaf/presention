@@ -12,7 +12,7 @@ class InternController extends Controller
 {
     public function index()
     {
-        $interns = Intern::with('division')->get();
+        $interns = Intern::with(['division', 'attendances'])->get();
         $divisions = Division::all();
 
         return Inertia::render('Intern', [
@@ -99,6 +99,82 @@ class InternController extends Controller
         $intern->update($validatedData);
 
         return redirect()->back()->with('success', 'Data magang updated successfully!');
+    }
+
+    public function updatePhoto(Request $request, Intern $intern)
+    {
+        $request->validate([
+            'foto' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+        ]);
+
+        if ($request->hasFile('foto')) {
+            // Hapus foto lama jika ada
+            if ($intern->foto && Storage::disk('public')->exists($intern->foto)) {
+                Storage::disk('public')->delete($intern->foto);
+            }
+
+            // Simpan foto baru
+            $path = $request->file('foto')->store('foto', 'public');
+            $intern->update(['foto' => $path]);
+
+            return redirect()->back()->with('success', 'Foto berhasil diperbarui.');
+        }
+
+        return redirect()->back()->with('error', 'Gagal mengunggah foto.');
+    }
+
+    public function exportAttendanceCsv(Intern $intern)
+    {
+        $filename = 'kehadiran_' . str_replace(' ', '_', strtolower($intern->name)) . '_' . now()->format('Ymd') . '.csv';
+
+        // Ambil semua data yang dibutuhkan terlebih dahulu (bukan di dalam callback)
+        $attendances = $intern->attendances()->orderBy('date', 'asc')->get();
+
+        // Pre-compute summary agar tidak ada DB query di dalam stream
+        $summary = [
+            'total_kehadiran' => $intern->total_kehadiran,
+            'total_izin'      => $intern->total_izin,
+            'total_sakit'     => $intern->total_sakit,
+            'total_alpha'     => $intern->total_alpha,
+            'total_jam'       => $intern->total_jam,
+            'avg_jam_masuk'   => $intern->avg_jam_masuk,
+            'avg_jam_pulang'  => $intern->avg_jam_pulang,
+        ];
+
+        // Bangun CSV di memory
+        $handle = fopen('php://memory', 'w+');
+
+        fputcsv($handle, ['Tanggal', 'Hari', 'Status', 'Jam Masuk', 'Jam Pulang', 'Terlambat (menit)']);
+
+        foreach ($attendances as $attendance) {
+            fputcsv($handle, [
+                $attendance->getRawOriginal('date') ?? '-',
+                $attendance->hari,
+                $attendance->status,
+                $attendance->check_in ?? '-',
+                $attendance->check_out ?? '-',
+                $attendance->terlambat ?? 0,
+            ]);
+        }
+
+        fputcsv($handle, []);
+        fputcsv($handle, ['--- RINGKASAN ---']);
+        fputcsv($handle, ['Total Hadir',          $summary['total_kehadiran'] . ' hari']);
+        fputcsv($handle, ['Total Izin',           $summary['total_izin'] . ' hari']);
+        fputcsv($handle, ['Total Sakit',          $summary['total_sakit'] . ' hari']);
+        fputcsv($handle, ['Total Alpha',          $summary['total_alpha'] . ' hari']);
+        fputcsv($handle, ['Total Jam',            $summary['total_jam'] . ' jam']);
+        fputcsv($handle, ['Rata-rata Jam Masuk',  $summary['avg_jam_masuk']]);
+        fputcsv($handle, ['Rata-rata Jam Pulang', $summary['avg_jam_pulang']]);
+
+        rewind($handle);
+        $csvContent = stream_get_contents($handle);
+        fclose($handle);
+
+        return response($csvContent, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
     }
 
     public function destroy(Intern $intern)

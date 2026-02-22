@@ -17,6 +17,7 @@ return new class extends Migration
             $table->date('date'); // Tanggal presensi
             $table->time('check_in')->nullable();
             $table->time('check_out')->nullable();
+            $table->enum('status', ['hadir', 'izin', 'sakit', 'alpha'])->default('hadir');
             $table->timestamps();
         });
     }

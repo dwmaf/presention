@@ -26,6 +26,15 @@ export default function Intern({ auth, interns, divisions }) {
     const [search, setSearch] = useState("");
     const [backToTop, setBackToTop] = useState(false);
 
+    // Di Intern.jsx, tambahkan ini
+    useEffect(() => {
+        if (currentIntern) {
+            // Cari data terbaru dari array interns yang sudah di-refresh Inertia
+            const updated = interns.find((i) => i.id === currentIntern.id);
+            if (updated) setCurrentIntern(updated);
+        }
+    }, [interns]); // Trigger setiap kali props `interns` berubah
+
     // Tambahkan ini untuk melihat data
     console.log("Semua interns:", interns);
     console.log(

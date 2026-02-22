@@ -11,7 +11,7 @@ import DownloadBtn from "./DownloadBtn";
 export default function InternDetail({ intern, divisions }) {
     if (!intern) return null;
 
-    const [upload, setUpload] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [showForm, setShowForm] = useState(false);
     const [showStatusForm, setShowStatusForm] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
@@ -195,7 +195,10 @@ export default function InternDetail({ intern, divisions }) {
             <div className="flex justify-between relative">
                 {/* Foto & Detail Singkat Karyawan */}
                 <div className="flex gap-4">
-                    <div className="w-40 h-40 relative group cursor-pointer">
+                    <div
+                        className="w-40 h-40 relative group cursor-pointer"
+                        onClick={handlePhotoClick}
+                    >
                         {intern.foto ? (
                             <>
                                 <img
@@ -205,13 +208,15 @@ export default function InternDetail({ intern, divisions }) {
                                 />
                                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
                                     <span className="text-white font-medium">
-                                        {upload ? "Mengupload..." : "Ubah Foto"}
+                                        {uploading
+                                            ? "Mengupload..."
+                                            : "Ubah Foto"}
                                     </span>
                                 </div>
                             </>
                         ) : (
                             <div className="w-48 h-64 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
-                                {upload ? "Mengupload..." : "Upload Foto"}
+                                {uploading ? "Mengupload..." : "Upload Foto"}
                             </div>
                         )}
                         <input
@@ -220,7 +225,7 @@ export default function InternDetail({ intern, divisions }) {
                             accept="image/jpeg,image/jpg,image/png"
                             className="hidden"
                             onChange={handlePhotoChange}
-                            disabled={upload}
+                            disabled={uploading}
                         />
                     </div>
                     <div className="flex flex-col gap-4">
@@ -578,7 +583,9 @@ export default function InternDetail({ intern, divisions }) {
             <div className="mt-8 flex justify-between items-center">
                 <p className="font-semibold text-lg">Riwayat Kehadiran</p>
 
-                <DownloadBtn />
+                <DownloadBtn
+                    onClick={`/interns/${intern.id}/export-attendance`}
+                />
             </div>
 
             <table className="w-full mt-2">
@@ -603,25 +610,17 @@ export default function InternDetail({ intern, divisions }) {
                 </thead>
                 <tbody>
                     {/* Tabel Dinamis - Row tabel otomatis bertambah sesuai dengan jadwal intern & isinya juga*/}
-                    {/* {intern.attendances && intern.attendances.length > 0 ? (
+                    {intern.attendances && intern.attendances.length > 0 ? (
                         intern.attendances?.map((attendance) => (
                             <tr
                                 key={attendance.id}
                                 className="hover:bg-gray-50 border-b-2 border-gray-400"
                             >
-                                <td className="px-4 py-2">
-                                    {new Date(
-                                        attendance.tanggal,
-                                    ).toLocaleDateString("id-ID", {
-                                        day: "2-digit",
-                                        month: "long",
-                                        year: "numeric",
-                                    })}
-                                </td>
+                                <td className="px-4 py-2">{attendance.date}</td>
                                 <td className="px-4 py-2">{attendance.hari}</td>
                                 <td className="px-4 py-2 ">
                                     <div className="flex gap-1 items-center">
-                                        {attendance.jam_masuk || "-"}
+                                        {attendance.check_in || "-"}
                                         {attendance.terlambat && (
                                             <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
                                                 (+{attendance.terlambat}m)
@@ -630,7 +629,7 @@ export default function InternDetail({ intern, divisions }) {
                                     </div>
                                 </td>
                                 <td className="px-4 py-2">
-                                    {attendance.jam_pulang}
+                                    {attendance.check_out}
                                 </td>
                                 <td className="px-4 py-2">
                                     <button
@@ -645,7 +644,8 @@ export default function InternDetail({ intern, divisions }) {
                                         {attendanceLabel(attendance.status)}
                                     </button>
                                     {showStatusForm &&
-                                        currentAttendanceId === attendance.id && (
+                                        currentAttendanceId ===
+                                            attendance.id && (
                                             <form
                                                 onSubmit={handleUpdateStatus}
                                                 className="bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50"
@@ -655,6 +655,15 @@ export default function InternDetail({ intern, divisions }) {
                                                         type="radio"
                                                         name="status kehadiran"
                                                         value="hadir"
+                                                        checked={
+                                                            selectedStatus ===
+                                                            "hadir"
+                                                        }
+                                                        onChange={(e) =>
+                                                            setSelectedStatus(
+                                                                e.target.value,
+                                                            )
+                                                        }
                                                         className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
                                                     />
                                                     <span
@@ -670,6 +679,15 @@ export default function InternDetail({ intern, divisions }) {
                                                         type="radio"
                                                         name="status kehadiran"
                                                         value="izin"
+                                                        checked={
+                                                            selectedStatus ===
+                                                            "izin"
+                                                        }
+                                                        onChange={(e) =>
+                                                            setSelectedStatus(
+                                                                e.target.value,
+                                                            )
+                                                        }
                                                         className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
                                                     />
                                                     <span
@@ -685,6 +703,15 @@ export default function InternDetail({ intern, divisions }) {
                                                         type="radio"
                                                         name="status kehadiran"
                                                         value="sakit"
+                                                        checked={
+                                                            selectedStatus ===
+                                                            "sakit"
+                                                        }
+                                                        onChange={(e) =>
+                                                            setSelectedStatus(
+                                                                e.target.value,
+                                                            )
+                                                        }
                                                         className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
                                                     />
                                                     <span
@@ -700,6 +727,15 @@ export default function InternDetail({ intern, divisions }) {
                                                         type="radio"
                                                         name="status kehadiran"
                                                         value="alpha"
+                                                        checked={
+                                                            selectedStatus ===
+                                                            "alpha"
+                                                        }
+                                                        onChange={(e) =>
+                                                            setSelectedStatus(
+                                                                e.target.value,
+                                                            )
+                                                        }
                                                         className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
                                                     />
                                                     <span
@@ -741,203 +777,7 @@ export default function InternDetail({ intern, divisions }) {
                                 Belum ada riwayat kehadiran
                             </td>
                         </tr>
-                    )} */}
-
-                    <tr className="hover:bg-gray-50 border-b-2 border-gray-400">
-                        <td className="px-4 py-2">16 Februari 2026</td>
-                        <td className="px-4 py-2">Senin</td>
-                        <td className="px-4 py-2 ">
-                            <div className="flex gap-1 items-center">
-                                08:00
-                                <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
-                                    (+15m)
-                                </span>
-                            </div>
-                        </td>
-                        <td className="px-4 py-2">17:00</td>
-                        <td className="px-4 py-2 relative">
-                            <button
-                                onClick={() =>
-                                    handleToggleStatusForm(1, "sakit")
-                                }
-                                className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
-                            >
-                                {attendanceLabel("sakit")}
-                            </button>
-                            {showStatusForm && currentAttendanceId === 1 && (
-                                <form
-                                    onSubmit={handleUpdateStatus}
-                                    className="bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50"
-                                >
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="hadir"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
-                                        >
-                                            {attendanceLabel("hadir")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="izin"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
-                                        >
-                                            {attendanceLabel("izin")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="sakit"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
-                                        >
-                                            {attendanceLabel("sakit")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="alpha"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
-                                        >
-                                            {attendanceLabel("alpha")}
-                                        </span>
-                                    </label>
-                                    <div className="flex gap-2 my-2 w-full">
-                                        <PrimaryButton
-                                            type="submit"
-                                            className="flex-1 justify-center text-sm ml-2"
-                                        >
-                                            Simpan
-                                        </PrimaryButton>
-                                        <SecondaryButton
-                                            type="button"
-                                            onClick={handleCancelStatusUpdate}
-                                            className="flex-1 justify-center text-sm mr-2"
-                                        >
-                                            Batal
-                                        </SecondaryButton>
-                                    </div>
-                                </form>
-                            )}
-                        </td>
-                    </tr>
-
-                    <tr className="hover:bg-gray-50 border-b-2 border-gray-400">
-                        <td className="px-4 py-2">16 Februari 2026</td>
-                        <td className="px-4 py-2">Senin</td>
-                        <td className="px-4 py-2 ">
-                            <div className="flex gap-1 items-center">
-                                08:00
-                                <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
-                                    (+15m)
-                                </span>
-                            </div>
-                        </td>
-                        <td className="px-4 py-2">17:00</td>
-                        <td className="px-4 py-2 relative">
-                            <button
-                                onClick={() =>
-                                    handleToggleStatusForm(2, "sakit")
-                                }
-                                className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
-                            >
-                                {attendanceLabel("sakit")}
-                            </button>
-                            {showStatusForm && currentAttendanceId === 2 && (
-                                <form
-                                    onSubmit={handleUpdateStatus}
-                                    className="bg-white shadow-lg gap-2 rounded-lg absolute w-50"
-                                >
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="hadir"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
-                                        >
-                                            {attendanceLabel("hadir")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="izin"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
-                                        >
-                                            {attendanceLabel("izin")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="sakit"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
-                                        >
-                                            {attendanceLabel("sakit")}
-                                        </span>
-                                    </label>
-                                    <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                        <input
-                                            type="radio"
-                                            name="status kehadiran"
-                                            value="alpha"
-                                            className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                        />
-                                        <span
-                                            className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
-                                        >
-                                            {attendanceLabel("alpha")}
-                                        </span>
-                                    </label>
-                                    <div className="flex gap-2 my-2 w-full">
-                                        <PrimaryButton
-                                            type="submit"
-                                            className="flex-1 justify-center text-sm ml-2"
-                                        >
-                                            Simpan
-                                        </PrimaryButton>
-                                        <SecondaryButton
-                                            type="button"
-                                            onClick={handleCancelStatusUpdate}
-                                            className="flex-1 justify-center text-sm mr-2"
-                                        >
-                                            Batal
-                                        </SecondaryButton>
-                                    </div>
-                                </form>
-                            )}
-                        </td>
-                    </tr>
+                    )}
                 </tbody>
             </table>
         </div>
