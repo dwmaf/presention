@@ -179,6 +179,11 @@ class InternController extends Controller
 
     public function destroy(Intern $intern)
     {
+        // Cegah penghapusan kalau sudah punya data kehadiran
+        if ($intern->attendances()->exists()) {
+            return redirect()->back()->with('error', 'Intern tidak bisa dihapus karena sudah memiliki data kehadiran.');
+        }
+
         if ($intern->foto && Storage::disk('public')->exists($intern->foto)) {
             Storage::disk('public')->delete($intern->foto);
         }
