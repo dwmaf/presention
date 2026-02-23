@@ -9,6 +9,7 @@ export default function Modal({
     children,
     show = false,
     maxWidth = "2xl",
+    maxHeight = "auto",
     closeable = true,
     onClose = () => {},
 }) {
@@ -24,14 +25,24 @@ export default function Modal({
         lg: "sm:max-w-lg",
         xl: "sm:max-w-xl",
         "2xl": "sm:max-w-2xl",
+        "70%": "w-[70%]",
+        fit: "w-fit",
     }[maxWidth];
+
+    const heightClass = {
+        "70%": "h-[70%]",
+        "2xl": "h-[2xl]",
+        auto: "h-auto",
+        fit: "h-fit",
+        full: "h-full",
+    }[maxHeight];
 
     return (
         <Transition show={show} leave="duration-200">
             <Dialog
                 as="div"
                 id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all sm:px-0"
+                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all"
                 onClose={close}
             >
                 <TransitionChild
@@ -54,7 +65,7 @@ export default function Modal({
                     leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
                 >
                     <DialogPanel
-                        className={`mb-6 transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto ${maxWidthClass}`}
+                        className={`transform overflow-hidden rounded-lg bg-white shadow-xl transition-all sm:mx-auto ${maxWidthClass} ${heightClass}`}
                     >
                         {children}
                     </DialogPanel>

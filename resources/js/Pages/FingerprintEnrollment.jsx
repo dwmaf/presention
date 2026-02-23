@@ -209,7 +209,7 @@ export default function FingerprintEnrollment({ auth, intern }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post(route("interns.fingerprint.store", intern.id), {
+        post(route("interns.fingerprint-enrollment.store", intern.id), {
             onSuccess: () => {
                 setStatus("Fingerprint saved!");
                 reset();

@@ -1,4 +1,14 @@
-export default function SearchBar() {
+import { useState } from "react";
+
+export default function SearchBar({ onSearch }) {
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const handleSearch = (e) => {
+        const value = e.target.value;
+        setSearchTerm(value);
+        if (onSearch) onSearch(value);
+    };
+
     return (
         <div className="flex items-center rounded-md py-3 px-6 gap-2 flex-1 shadow-sm focus-within:ring-2 bg-white">
             <svg
@@ -16,6 +26,8 @@ export default function SearchBar() {
                 className="flex-1 rounded-md border-none focus:outline-none focus:ring-0 p-0"
                 type="text"
                 placeholder="Cari karyawan"
+                value={searchTerm}
+                onChange={handleSearch}
             />
         </div>
     );

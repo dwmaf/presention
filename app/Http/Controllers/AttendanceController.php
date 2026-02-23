@@ -15,13 +15,26 @@ class AttendanceController extends Controller
         $today = Carbon::today()->toDateString();
 
         // Ambil semua intern beserta data presensi HARI INI
-        $interns = Intern::with(['division', 'attendance' => function($query) use ($today) {
+        $interns = Intern::with(['division', 'attendances' => function($query) use ($today) {
             $query->where('date', $today);
         }])->get();
 
         return Inertia::render('Attendance', [
             'interns' => $interns
         ]);
+    }
+
+    public function updateStatus(Request $request, Attendance $attendance)
+    {
+        $request->validate([
+            'status' => 'required|in:hadir,izin,sakit,alpha'
+        ]);
+
+        $attendance->update([
+            'status' => $request->status
+        ]);
+
+        return redirect()->back()->with('success', 'Status kehadiran berhasil diperbarui.');
     }
 
     public function store(Request $request)

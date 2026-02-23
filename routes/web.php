@@ -33,14 +33,19 @@ Route::middleware('auth')->group(function () {
     Route::resource('divisions', DivisionController::class);
     // untuk nampilin halaman daftar intern, nambah, edit, dan hapus
     Route::resource('interns', InternController::class);
+
+    // untuk nampilin halaman presensi bagi para intern
+    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+    Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+    Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
+    Route::put('/interns/{intern}/update-photo', [InternController::class, 'updatePhoto'])->name('interns.updatePhoto');
+    Route::get('/interns/{intern}/export-attendance', [InternController::class, 'exportAttendanceCsv'])->name('interns.exportAttendance');
+    // untuk buka halaman untuk nambah fingerprint
+    Route::get('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'index'])->name('interns.fingerprint-enrollment');
+    Route::post('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'store'])->name('interns.fingerprint-enrollment.store');
 });
 
 require __DIR__.'/auth.php';
-// untuk buka halaman untuk nambah fingerprint
-Route::get('/interns/{intern}/fingerprint', [FingerprintController::class, 'index'])->name('interns.fingerprint');
-Route::post('/interns/{intern}/fingerprint', [FingerprintController::class, 'store'])->name('interns.fingerprint.store');
-// untuk nampilin halaman presensi bagi para intern
-Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+
 // utk tes fingerprint
 Route::get('/test-fingerprint', [TesKomparasiSidikJariController::class, 'index'])->name('test.fingerprint');
