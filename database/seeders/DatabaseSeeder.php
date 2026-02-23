@@ -153,16 +153,6 @@ class DatabaseSeeder extends Seeder
                 'jumat' => true,
             ],
             [
-                'name' => 'Melisa Vikayana',
-                'division_id' => $divDataManage->id,
-                'foto' => 'foto/emp013.jpg',
-                'senin' => true,
-                'selasa' => true,
-                'rabu' => true,
-                'kamis' => true,
-                'jumat' => true,
-            ],
-            [
                 'name' => 'Muhammad Fayadh Hanif Musyafa',
                 'division_id' => $divDesign->id,
                 'foto' => 'foto/emp014.jpg',

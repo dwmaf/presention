@@ -16,7 +16,7 @@ export default function InternCard({ intern, onClick }) {
             {intern.foto ? (
                 <img
                     className="w-41 h-41 object-cover aspect-square rounded-t-lg object-top"
-                    src={`/storage/${intern.foto}`}
+                    src={`/${intern.foto}`}
                     alt={intern.name}
                 />
             ) : (

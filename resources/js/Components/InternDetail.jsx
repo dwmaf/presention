@@ -202,7 +202,7 @@ export default function InternDetail({ intern, divisions }) {
                         {intern.foto ? (
                             <>
                                 <img
-                                    src={`/storage/${intern.foto}`}
+                                    src={`/${intern.foto}`}
                                     alt={intern.name}
                                     className="w-full h-full object-cover object-top rounded-xl"
                                 />
