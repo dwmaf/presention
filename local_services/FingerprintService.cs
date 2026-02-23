@@ -55,7 +55,6 @@ namespace FingerprintService
         // Sync Objects
         private CaptureResult _captureResult;
         private AutoResetEvent _waitForCapture = new AutoResetEvent(false);
-        private object _readerLock = new object();
 
         public ServiceForm()
         {
@@ -113,25 +112,25 @@ namespace FingerprintService
         }
 
         // --- Reader Management ---
+        // CATATAN: InitReader dan CleanupReader HANYA boleh dipanggil dari UI Thread
+        // (via Invoke), sehingga tidak perlu lock di sini.
         private bool InitReader()
         {
-            lock (_readerLock)
-            {
-                try {
-                    CleanupReader(); // Clean old first
-                    
-                    ReaderCollection rc = ReaderCollection.GetReaders();
-                    if (rc.Count > 0)
-                    {
-                        _reader = rc[0];
-                        Log("Reader Detected: " + _reader.Description.Name);
-                        return true;
-                    }
-                } catch (Exception ex) {
-                    Log("InitReader Failed: " + ex.Message);
+            try {
+                CleanupReader(); // Bersihkan reader lama dulu
+                
+                ReaderCollection rc = ReaderCollection.GetReaders();
+                if (rc.Count > 0)
+                {
+                    _reader = rc[0];
+                    Log("Reader Detected: " + _reader.Description.Name);
+                    return true;
                 }
-                return false;
+                Log("Tidak ada Reader yang terdeteksi.");
+            } catch (Exception ex) {
+                Log("InitReader Gagal: " + ex.Message);
             }
+            return false;
         }
 
         private void CleanupReader()
@@ -143,6 +142,7 @@ namespace FingerprintService
                     _reader.Dispose(); 
                 } catch {}
                 _reader = null;
+                Log("Reader di-dispose.");
             }
         }
 
@@ -176,31 +176,27 @@ namespace FingerprintService
 
             Log("Incoming Request: " + path);
 
-            // EXECUTE LOGIC
-            // We lock globally to prevent multiple requests clashing on the reader
-            lock (_readerLock)
-            {
-                try {
-                    if (path == "/capture" || path == "/enroll")
-                    {
-                        respJson = PerformCapture();
-                    }
-                    else if (path == "/identify" || path == "/verify")
-                    {
-                        using (StreamReader r = new StreamReader(context.Request.InputStream))
-                        {
-                            respJson = PerformVerification(r.ReadToEnd());
-                        }
-                    }
-                    else
-                    {
-                        context.Response.StatusCode = 404;
-                        respJson = "{\"message\":\"Not Found\"}";
-                    }
-                } catch (Exception ex) {
-                    Log("Error Processing: " + ex.Message);
-                    respJson = "{\"success\":false, \"message\":\"" + ex.Message + "\"}";
+            // Routing - TANPA lock (lock di sini menyebabkan deadlock dengan Invoke)
+            try {
+                if (path == "/capture" || path == "/enroll")
+                {
+                    respJson = PerformCapture();
                 }
+                else if (path == "/identify" || path == "/verify")
+                {
+                    using (StreamReader r = new StreamReader(context.Request.InputStream))
+                    {
+                        respJson = PerformVerification(r.ReadToEnd());
+                    }
+                }
+                else
+                {
+                    context.Response.StatusCode = 404;
+                    respJson = "{\"message\":\"Not Found\"}";
+                }
+            } catch (Exception ex) {
+                Log("Error Processing: " + ex.Message);
+                respJson = "{\"success\":false, \"message\":\"" + ex.Message + "\"}";
             }
 
             // Send Response
@@ -261,10 +257,8 @@ namespace FingerprintService
             else
             {
                 Log("Capture Timeout (20s).");
-                // Stop Reader on Timeout
-                this.Invoke(new MethodInvoker(() => {
-                    if (_reader != null) _reader.CancelCapture();
-                }));
+                // Dispose Reader saat timeout agar bersih untuk request berikutnya
+                this.Invoke(new MethodInvoker(() => CleanupReader()));
                 return Serialize(new EnrollResponse { success = false, message = "Timeout waiting for finger" });
             }
         }
@@ -329,9 +323,8 @@ namespace FingerprintService
             else
             {
                 Log("Timeout.");
-                this.Invoke(new MethodInvoker(() => {
-                    if (_reader != null) _reader.CancelCapture();
-                }));
+                // Dispose Reader saat timeout agar bersih untuk request berikutnya
+                this.Invoke(new MethodInvoker(() => CleanupReader()));
                 return Serialize(new VerifyResponse { match = false, message = "Timeout" });
             }
         }
@@ -339,32 +332,30 @@ namespace FingerprintService
         // --- UI THREAD METHODS ---
         private bool StartCaptureOnUI()
         {
-            // Reset State
+            // SELALU init reader baru di sini (segar setiap request)
             _captureResult = null;
-            _waitForCapture.Reset(); // Set to unsignaled
+            _waitForCapture.Reset();
 
-            if (_reader == null) {
-                if (!InitReader()) return false;
-            }
+            // Pastikan reader sebelumnya sudah dibuang
+            CleanupReader();
+            
+            if (!InitReader()) return false;
 
             try {
-                // Ensure events are hooked
-                _reader.On_Captured -= OnReaderCaptured; // Prevent double hook
                 _reader.On_Captured += OnReaderCaptured;
                 
-                // Open and Start
-                // !! CRITICAL FIX: Make sure we don't open if already open, but usually DPUruNet handles it.
-                // However, DP_PRIORITY_COOPERATIVE might be safer if `EXCLUSIVE` is causing lockups.
-                // Let's stick to EXCLUSIVE but ensure we CancelCapture first if stuck.
-                
-                _reader.Open(Constants.CapturePriority.DP_PRIORITY_EXCLUSIVE);
+                Constants.ResultCode openRes = _reader.Open(Constants.CapturePriority.DP_PRIORITY_EXCLUSIVE);
+                if (openRes != Constants.ResultCode.DP_SUCCESS) {
+                    Log("Open Reader Gagal: " + openRes);
+                    CleanupReader();
+                    return false;
+                }
                 
                 _reader.CaptureAsync(Constants.Formats.Fid.ANSI, Constants.CaptureProcessing.DP_IMG_PROC_DEFAULT, _reader.Capabilities.Resolutions[0]);
-                Log("Reader is Live. Place finger now.");
+                Log("Reader hidup. Silakan tempelkan jari.");
                 return true;
             } catch (Exception ex) {
-                Log("StartCapture Failed: " + ex.Message);
-                // Try Force Re-init next time
+                Log("StartCapture Gagal: " + ex.Message);
                 CleanupReader();
                 return false;
             }
@@ -375,10 +366,13 @@ namespace FingerprintService
             // RUNS ON UI THREAD (Managed by SDK)
             Log("Event: OnCaptured Fired!");
             _captureResult = res;
-            _waitForCapture.Set(); // Signal the background thread!
-            
-            // Stop scanning immediately to prevent queue pileup
-            try { _reader.CancelCapture(); } catch {}
+
+            // KRITIS: Dispose reader segera setelah capture berhasil,
+            // agar state Reader bersih untuk request berikutnya
+            CleanupReader();
+
+            // Beri sinyal ke background thread bahwa capture selesai
+            _waitForCapture.Set();
         }
 
         // --- Helpers ---
