@@ -34,6 +34,8 @@ Route::middleware('auth')->group(function () {
 
     // untuk nampilin halaman daftar divisi yg ada, nambah, edit, dan hapus
     Route::resource('divisions', DivisionController::class);
+    Route::post('/divisions/{division}/assign-intern', [DivisionController::class, 'assignIntern'])->name('divisions.assignIntern');
+    Route::delete('/divisions/{division}/remove-intern/{intern}', [DivisionController::class, 'removeIntern'])->name('divisions.removeIntern');
     // untuk nampilin halaman daftar intern, nambah, edit, dan hapus
     Route::resource('interns', InternController::class);
 
