@@ -11,6 +11,8 @@ export default function InternCard({ intern, onClick, attendance }) {
     // Render badge status kehadiran jika prop `attendance` diberikan
     const renderAttendanceBadge = () => {
         if (attendance === undefined) return null;
+
+        // Kasus 1: Belum ada record sama sekali
         if (!attendance) {
             return (
                 <span className="bg-red-100 text-red-600 text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit">
@@ -18,6 +20,32 @@ export default function InternCard({ intern, onClick, attendance }) {
                 </span>
             );
         }
+
+        // Kasus 2: Status selain 'hadir' (Alpha dari generator, Izin, atau Sakit)
+        if (attendance.status !== "hadir") {
+            const statusLabels = {
+                alpha: {
+                    label: "Tidak Hadir",
+                    color: "bg-red-100 text-red-600",
+                },
+                izin: { label: "Izin", color: "bg-amber-100 text-amber-600" },
+                sakit: { label: "Sakit", color: "bg-blue-100 text-blue-600" },
+            };
+            const config = statusLabels[attendance.status] || {
+                label: attendance.status,
+                color: "bg-gray-100 text-gray-600",
+            };
+
+            return (
+                <span
+                    className={`${config.color} text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit capitalize`}
+                >
+                    {config.label}
+                </span>
+            );
+        }
+
+        // Kasus 3: Status 'hadir' (sudah scan/dipresensi admin)
         return (
             <div className="flex flex-wrap gap-1">
                 <span className="bg-green-100 text-green-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
@@ -72,19 +100,19 @@ export default function InternCard({ intern, onClick, attendance }) {
                         <div
                             className={`${fingerStyle} rounded-full flex items-center `}
                         >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="14px"
-                            height="14px"
-                            viewBox="0 0 14 14"
-                        >
-                            <path
-                                fill="currentColor"
-                                fillRule="evenodd"
-                                d="M1.265 4.185A6.022 6.022 0 0 1 9.512.547a.625.625 0 0 1-.522 1.135a4.772 4.772 0 0 0-6.534 2.883a.625.625 0 1 1-1.191-.38M11.95 2.593a.625.625 0 0 0-1.028.712c.534.77.847 1.705.847 2.714v1.962A4.77 4.77 0 0 1 7 12.75A.625.625 0 1 0 7 14a6.02 6.02 0 0 0 6.02-6.02V6.019a6 6 0 0 0-1.07-3.426M2.23 6.76a.625.625 0 1 0-1.25 0v1.22a6.02 6.02 0 0 0 3.303 5.374a.625.625 0 1 0 .565-1.115A4.77 4.77 0 0 1 2.23 7.981zm2.584-1.513a.625.625 0 1 0-1.179-.417a3.6 3.6 0 0 0-.203 1.19v1.96a3.568 3.568 0 0 0 5.947 2.66a.625.625 0 0 0-.834-.932A2.318 2.318 0 0 1 4.682 7.98V6.02c0-.272.047-.532.132-.772m1.458-2.721a3.568 3.568 0 0 1 4.296 3.493v1.47a.625.625 0 1 1-1.25 0V6.02a2.318 2.318 0 0 0-2.792-2.27a.625.625 0 1 1-.254-1.223M7.625 6.02a.625.625 0 1 0-1.25 0v1.962a.625.625 0 1 0 1.25 0z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="14px"
+                                height="14px"
+                                viewBox="0 0 14 14"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    fillRule="evenodd"
+                                    d="M1.265 4.185A6.022 6.022 0 0 1 9.512.547a.625.625 0 0 1-.522 1.135a4.772 4.772 0 0 0-6.534 2.883a.625.625 0 1 1-1.191-.38M11.95 2.593a.625.625 0 0 0-1.028.712c.534.77.847 1.705.847 2.714v1.962A4.77 4.77 0 0 1 7 12.75A.625.625 0 1 0 7 14a6.02 6.02 0 0 0 6.02-6.02V6.019a6 6 0 0 0-1.07-3.426M2.23 6.76a.625.625 0 1 0-1.25 0v1.22a6.02 6.02 0 0 0 3.303 5.374a.625.625 0 1 0 .565-1.115A4.77 4.77 0 0 1 2.23 7.981zm2.584-1.513a.625.625 0 1 0-1.179-.417a3.6 3.6 0 0 0-.203 1.19v1.96a3.568 3.568 0 0 0 5.947 2.66a.625.625 0 0 0-.834-.932A2.318 2.318 0 0 1 4.682 7.98V6.02c0-.272.047-.532.132-.772m1.458-2.721a3.568 3.568 0 0 1 4.296 3.493v1.47a.625.625 0 1 1-1.25 0V6.02a2.318 2.318 0 0 0-2.792-2.27a.625.625 0 1 1-.254-1.223M7.625 6.02a.625.625 0 1 0-1.25 0v1.962a.625.625 0 1 0 1.25 0z"
+                                    clipRule="evenodd"
+                                />
+                            </svg>
                         </div>
                     )}
                 </div>
