@@ -32,9 +32,15 @@ export default function Attendance({ interns = [], selectedDate, hariIni = '' })
         });
     };
 
-    const filteredInterns = interns.filter((intern) =>
-        intern.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredInterns = interns
+        .filter((intern) =>
+            intern.name.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => {
+            const aHadir = a?.attendances?.length > 0 ? 1 : 0;
+            const bHadir = b?.attendances?.length > 0 ? 1 : 0;
+            return aHadir - bHadir; // belum hadir (0) muncul duluan
+        });
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -98,9 +104,16 @@ export default function Attendance({ interns = [], selectedDate, hariIni = '' })
                 {/* ── Cards Grid ── */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                     {filteredInterns.length > 0 ? (
-                        filteredInterns.map((intern) => (
-                            <InternCard key={intern.id} intern={intern} />
-                        ))
+                        filteredInterns.map((intern) => {
+                            const att = intern?.attendances?.length > 0 ? intern.attendances[0] : null;
+                            return (
+                                <InternCard
+                                    key={intern.id}
+                                    intern={intern}
+                                    attendance={att}
+                                />
+                            );
+                        })
                     ) : (
                         <div className="col-span-full py-16 text-center">
                             {interns.length === 0 ? (

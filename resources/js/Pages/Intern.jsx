@@ -100,32 +100,6 @@ export default function Intern({ auth, interns, divisions }) {
         }
         setIsModalOpen(true);
 
-        // setIsModalOpen(true);
-        // setIsEditMode(!!intern);
-        // setCurrentIntern(intern);
-
-        // setData({
-        //     name: intern ? intern.name : "",
-        //     division_id: intern
-        //         ? String(intern.division_id ?? "")
-        //         : divisions.length > 0
-        //           ? String(divisions[0].id)
-        //           : "",
-
-        //     barcode: intern ? intern.barcode : "",
-        //     foto: null,
-
-        //     // Prefill jadwal + poin saat edit
-        //     senin: intern ? !!intern.senin : false,
-        //     selasa: intern ? !!intern.selasa : false,
-        //     rabu: intern ? !!intern.rabu : false,
-        //     kamis: intern ? !!intern.kamis : false,
-        //     jumat: intern ? !!intern.jumat : false,
-        //     poin: intern ? (intern.poin ?? 0) : 0,
-
-        //     _method: intern ? "PUT" : "POST",
-        // });
-
         clearErrors();
     };
 
@@ -331,132 +305,6 @@ export default function Intern({ auth, interns, divisions }) {
                             </div>
                         )}
                     </div>
-
-                    {/* Table */}
-                    {/* <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <div className="overflow-x-auto">
-                            <table className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Foto
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Nama
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Divisi
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Jadwal
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Poin
-                                        </th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Status Fingerprint
-                                        </th>
-                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Aksi
-                                        </th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                    {filteredInterns.map((intern) => (
-                                        <tr key={intern.id}>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {intern.foto ? (
-                                                    <img
-                                                        src={`/storage/${intern.foto}`}
-                                                        alt={intern.name}
-                                                        className="h-10 w-10 rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                                                        No Img
-                                                    </div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {intern.name}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {intern.division
-                                                    ? intern.division
-                                                          .nama_divisi
-                                                    : "-"}
-                                            </td>
-
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="text-sm text-gray-700">
-                                                    {renderJadwal(intern)}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-indigo-50 text-indigo-700">
-                                                    {intern.poin ?? 0}
-                                                </span>
-                                            </td>
-
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                {intern.fingerprint_data ? (
-                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        Ada
-                                                    </span>
-                                                ) : (
-                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                                        Belum Ada
-                                                    </span>
-                                                )}
-                                            </td>
-
-                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <Link
-                                                    href={route(
-                                                        "interns.fingerprint",
-                                                        intern.id,
-                                                    )}
-                                                    className="text-green-600 hover:text-green-900 mr-4"
-                                                >
-                                                    Atur Fingerprint
-                                                </Link>
-
-                                                <button
-                                                    onClick={() =>
-                                                        openModal(intern)
-                                                    }
-                                                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                                                >
-                                                    Edit
-                                                </button>
-
-                                                <button
-                                                    onClick={() =>
-                                                        confirmDeletion(intern)
-                                                    }
-                                                    className="text-red-600 hover:text-red-900"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-
-                                    {filteredInterns.length === 0 && (
-                                        <tr>
-                                            <td
-                                                colSpan="8"
-                                                className="px-6 py-4 text-center text-gray-500"
-                                            >
-                                                Tidak ada data Karyawan.
-                                            </td>
-                                        </tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div> */}
                 </div>
 
                 {/* Back to Top Button */}
@@ -758,26 +606,6 @@ export default function Intern({ auth, interns, divisions }) {
                                 )}
                             </div>
 
-                            {/* Poin */}
-                            {/* <div className="mt-4">
-                                <InputLabel htmlFor="poin" value="Poin" />
-                                <TextInput
-                                    id="poin"
-                                    type="number"
-                                    min="0"
-                                    name="poin"
-                                    value={data.poin}
-                                    onChange={(e) =>
-                                        setData("poin", Number(e.target.value))
-                                    }
-                                    className="mt-1 block w-full"
-                                    placeholder="0"
-                                />
-                                <InputError
-                                    message={errors.poin}
-                                    className="mt-2"
-                                />
-                            </div> */}
                         </div>
                     </div>
 
