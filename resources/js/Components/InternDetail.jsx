@@ -112,7 +112,7 @@ export default function InternDetail({ intern, divisions }) {
 
     // Arahkan ke page FingerPrint Enrollment
     const handleFingerEnrollment = () => {
-        router.visit(`/interns/${intern.id}/fingerprint-enrollment`);
+        router.visit(`/interns/${intern.id}/create-fingerprint`);
     };
 
     // Simpan perubahan form
