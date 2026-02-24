@@ -27,10 +27,22 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // 2. Buat Data Division
-        $divSoftwareDev = Division::create(['nama_divisi' => 'Software Development']);
-        $divSocMed = Division::create(['nama_divisi' => 'Social Media Specialist']);
-        $divDesign = Division::create(['nama_divisi' => 'Design and Video Editing']);
-        $divDataManage = Division::create(['nama_divisi' => 'Data Management']);
+        $divSoftwareDev = Division::create([
+            'nama_divisi' => 'Software Development',
+            'deskripsi'   => 'Mengembangkan dan memelihara sistem teknologi informasi serta infrastruktur digital dengan teknologi terkini.',
+        ]);
+        $divSocMed = Division::create([
+            'nama_divisi' => 'Social Media Specialist',
+            'deskripsi'   => 'Merancang strategi konten media sosial untuk meningkatkan brand awareness, engagement, dan pertumbuhan audiens secara digital.',
+        ]);
+        $divDesign = Division::create([
+            'nama_divisi' => 'Design and Video Editing',
+            'deskripsi'   => 'Merancang materi visual dan mengolah konten video secara kreatif untuk menyampaikan pesan secara menarik, konsisten, dan efektif di platform digital.',
+        ]);
+        $divDataManage = Division::create([
+            'nama_divisi' => 'Data Management',
+            'deskripsi'   => 'Mengelola, menganalisis, dan mengoptimalkan data secara terstruktur untuk memastikan informasi akurat dan mendukung pengambilan keputusan bisnis.',
+        ]);
 
         // 3. Buat Data Anak Magang dengan Jadwal
         $interns = [
