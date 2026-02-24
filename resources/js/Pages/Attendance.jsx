@@ -1,125 +1,119 @@
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useRef, useState } from 'react';
+// resources/js/Pages/Attendance.jsx
 
-export default function Attendance({ auth, interns }) {
-    const { flash } = usePage().props;
-    const inputRef = useRef(null);
-    const { data, setData, post, processing, reset } = useForm({
-        barcode: '',
+import { Head, router, usePage } from '@inertiajs/react';
+import { useState, useRef } from 'react';
+import InternCard from '@/Components/InternCard';
+import SearchBar from '@/Components/SearchBar';
+
+// Format tanggal ke format Indonesia:
+function formatTanggalIndonesia(dateStr) {
+    if (!dateStr) return '';
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('id-ID', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
     });
+}
 
-    // Auto focus ke input terus menerus agar siap di-scan
-    useEffect(() => {
-        if(inputRef.current) inputRef.current.focus();
-        
-        const interval = setInterval(() => {
-             if(inputRef.current) inputRef.current.focus();
-        }, 2000);
+export default function Attendance({ interns = [], selectedDate, hariIni = '' }) {
+    const { flash = {} } = usePage().props;
+    const [date, setDate] = useState(selectedDate || new Date().toISOString().split('T')[0]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const dateInputRef = useRef(null);
 
-        return () => clearInterval(interval);
-    }, []);
-
-    const handleScan = (e) => {
-        e.preventDefault();
-        post(route('attendance.store'), {
-            onSuccess: () => {
-                reset();
-                // Audio feedback bisa ditambahkan disini
-            },
-            preserveScroll: true,
+    const handleDateChange = (e) => {
+        const newDate = e.target.value;
+        setDate(newDate);
+        router.get(route('attendance.index'), { date: newDate }, {
+            preserveState: true,
+            replace: true,
         });
     };
 
+    const filteredInterns = interns.filter((intern) =>
+        intern.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
-        <div>
-            <Head title="Presensi Scanner" />
+        <div className="min-h-screen bg-gray-50">
+            <Head title="Absensi Harian" />
 
-            <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                    
-                    {/* Feedback Messages */}
-                    {flash.success && <div className="mb-4 p-4 bg-green-100 text-green-700 rounded text-center text-xl font-bold">{flash.success}</div>}
-                    {flash.error && <div className="mb-4 p-4 bg-red-100 text-red-700 rounded text-center text-xl font-bold">{flash.error}</div>}
-                    {flash.info && <div className="mb-4 p-4 bg-blue-100 text-blue-700 rounded text-center text-xl font-bold">{flash.info}</div>}
-
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 mb-6 text-center">
-                        <h3 className="text-lg font-medium text-gray-900 mb-4">📷 Scan Barcode Disini</h3>
-                        
-                        <form onSubmit={handleScan}>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={data.barcode}
-                                onChange={e => setData('barcode', e.target.value)}
-                                className="w-full max-w-lg p-4 text-center border-2 border-indigo-500 rounded-lg text-xl focus:ring-4 focus:ring-indigo-300"
-                                placeholder="Klik disini lalu scan barcode..."
-                                autoFocus
-                                autoComplete="off"
-                            />
-                        </form>
-                         <p className="text-sm text-gray-500 mt-2">Pastikan kursor kedip-kedip di dalam kotak input</p>
+            {/* ── Navbar ── */}
+            <div className="bg-white shadow-md">
+                <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-4 flex items-center justify-between">
+                    {/* Logo + Brand */}
+                    <div className="flex items-center gap-3">
+                        <img
+                            src="/foto/upa-pkk-logo.jpg.jpeg"
+                            alt="UPA PKK Logo"
+                            className="w-12 h-12 rounded-full object-cover shadow-md flex-shrink-0"
+                        />
+                        <div>
+                            <p className="text-gray-900 font-bold text-lg leading-tight">UPA PKK</p>
+                            <p className="text-gray-500 text-sm">Admin</p>
+                        </div>
                     </div>
+                    <h1 className="text-gray-900 text-3xl font-bold tracking-wide">Absensi Harian</h1>
+                </div>
+            </div>
 
-                    {/* Tabel Status */}
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-blue-600 text-white">
-                                <tr>
-                                    <th className="px-6 py-3 text-left">Foto</th>
-                                    <th className="px-6 py-3 text-left">Nama</th>
-                                    <th className="px-6 py-3 text-center">Status</th>
-                                    <th className="px-6 py-3 text-center">Masuk</th>
-                                    <th className="px-6 py-3 text-center">Pulang</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
-                                {interns.map((intern) => {
-                                    const att = intern.attendance;
-                                    let statusClass = "bg-red-100 text-red-800";
-                                    let statusText = "Tidak Hadir";
+            <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-8">
 
-                                    if (att) {
-                                        if (att.check_out) {
-                                            statusClass = "bg-blue-100 text-blue-800";
-                                            statusText = "Pulang";
-                                        } else {
-                                            statusClass = "bg-green-100 text-green-800";
-                                            statusText = "Hadir";
-                                        }
-                                    }
+                {/* Flash messages */}
+                {flash?.success && <div className="mb-5 p-4 bg-green-100 border border-green-400 text-green-700 rounded-xl text-center font-semibold animate-pulse">{flash.success}</div>}
+                {flash?.error   && <div className="mb-5 p-4 bg-red-100 border border-red-400 text-red-700 rounded-xl text-center font-semibold animate-pulse">{flash.error}</div>}
+                {flash?.info    && <div className="mb-5 p-4 bg-blue-100 border border-blue-400 text-blue-700 rounded-xl text-center font-semibold">{flash.info}</div>}
 
-                                    return (
-                                        <tr key={intern.id} className="hover:bg-gray-50">
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                 {intern.foto ? (
-                                                    <img src={`/storage/${intern.foto}`} alt={intern.name} className="h-12 w-12 rounded-full object-cover border" />
-                                                ) : (
-                                                    <div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center text-xs">No Foto</div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
-                                                {intern.name} <br/>
-                                                <span className="text-xs text-gray-500">{intern.barcode}</span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center">
-                                                <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}`}>
-                                                    {statusText}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-gray-700">
-                                                {att ? att.check_in : '-'}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-center text-lg font-bold text-gray-700">
-                                                {att && att.check_out ? att.check_out : '-'}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                {/* ── Search + Date ── */}
+                <div className="flex items-center gap-3 mb-8">
+                    {/* Search */}
+                    <SearchBar onSearch={setSearchTerm} />
+
+                    {/* Date Picker */}
+                    <div
+                        onClick={() => dateInputRef.current?.showPicker()}
+                        className="relative flex items-center gap-2 bg-blue-500 hover:bg-blue-600 rounded-xl px-4 py-3 shadow-sm cursor-pointer transition whitespace-nowrap select-none"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white flex-shrink-0" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14zM7 10h5v5H7z" />
+                        </svg>
+                        <span className="text-white text-sm font-medium">
+                            {formatTanggalIndonesia(date)}
+                        </span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-200" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                        </svg>
+                        <input
+                            ref={dateInputRef}
+                            type="date"
+                            value={date || ''}
+                            onChange={handleDateChange}
+                            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                        />
                     </div>
                 </div>
+
+                {/* ── Cards Grid ── */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+                    {filteredInterns.length > 0 ? (
+                        filteredInterns.map((intern) => (
+                            <InternCard key={intern.id} intern={intern} />
+                        ))
+                    ) : (
+                        <div className="col-span-full py-16 text-center">
+                            {interns.length === 0 ? (
+                                <p className="text-gray-400 text-lg font-medium">
+                                    Tidak ada intern terjadwal pada hari <span className="font-bold capitalize">{hariIni}</span>.
+                                </p>
+                            ) : (
+                                <p className="text-gray-400 text-lg font-medium">Intern tidak ditemukan.</p>
+                            )}
+                        </div>
+                    )}
+                </div>
+
             </div>
         </div>
     );
