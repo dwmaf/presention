@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Head } from "@inertiajs/react";
+import axios from "axios";
 
 export default function Kehadiran({
     fingerprintDatabase,
@@ -37,6 +38,7 @@ export default function Kehadiran({
             // Kita kirimkan array datar (tiap orang bisa punya sampai 2 elemen)
             const payload = { database: database_payload };
 
+            // Request ke aplikasi C#
             const response = await fetch("http://localhost:5000/identify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -58,29 +60,19 @@ export default function Kehadiran({
                     );
 
                     try {
-                        const token =
-                            document
-                                .querySelector('meta[name="csrf-token"]')
-                                ?.getAttribute("content") || "";
-
-                        const presensiRes = await fetch("/kehadiran", {
-                            method: "POST",
-                            headers: {
-                                "Content-Type": "application/json",
-                                "X-CSRF-TOKEN": token,
-                            },
-                            body: JSON.stringify({ intern_id: user.id }),
+                        const presensiRes = await axios.post("/kehadiran", {
+                            intern_id: user.id,
                         });
 
-                        const presensiData = await presensiRes.json();
+                        const presensiData = presensiRes.data;
 
-                        if (presensiRes.ok && presensiData.success) {
+                        if (presensiData.success) {
                             setMatchResult({ success: true, user: user });
                             setStatus(
                                 `[✅ ${presensiData.type === "check_in" ? "CHECK-IN" : "CHECK-OUT"} BERHASIL] Halo, ${user.name}! ${presensiData.message}`,
                             );
 
-                            // Langsung update state UI agar reaktif tidak perlu reload
+                            // Langsung update state UI agar reaktif
                             setLocalData((prev) =>
                                 prev.map((intern) => {
                                     if (intern.id === user.id) {
@@ -102,16 +94,34 @@ export default function Kehadiran({
                                 }),
                             );
                         } else {
-                            setMatchResult({ success: false, user: user }); // Tampilkan error mode
+                            // Backup jika axios tembus tapi success false (biasanya tidak mungkin di axios, tapi jaga-jaga)
+                            setMatchResult({ success: false, user: user });
                             setStatus(
                                 `[⚠️ DITOLAK] Halo, ${user.name}. ${presensiData.message}`,
                             );
                         }
                     } catch (err) {
                         console.error("Presensi API Error:", err);
-                        setMatchResult({ success: false });
+                        let errorMessage =
+                            "Gagal memproses presensi ke server.";
+
+                        // Axios melempar error pada HTTP 400/500, kita tangkap pesannya di sini:
+                        if (err.response && err.response.data) {
+                            if (err.response.data.message) {
+                                errorMessage = err.response.data.message;
+                            }
+                            // Tampilkan debug info di Chrome DevTools Console
+                            if (err.response.data.debug_info) {
+                                console.warn(
+                                    "=== 🕰️ ALASAN DITOLAK: CEK WAKTU SERVER ===",
+                                );
+                                console.table(err.response.data.debug_info);
+                            }
+                        }
+
+                        setMatchResult({ success: false, user: user });
                         setStatus(
-                            `[❌ ERROR] Gagal memproses presensi ke server.`,
+                            `[⚠️ DITOLAK] Halo, ${user.name}. ${errorMessage}`,
                         );
                     }
                 } else {
@@ -157,7 +167,7 @@ export default function Kehadiran({
                         className={`mb-6 p-4 rounded-md border text-lg ${
                             status.includes("BERHASIL")
                                 ? "bg-green-100 border-green-200 text-green-800 font-bold"
-                                : status.includes("❌")
+                                : status.includes("❌") || status.includes("⚠️")
                                   ? "bg-red-100 border-red-200 text-red-700 font-medium"
                                   : "bg-blue-50 border-blue-200 text-blue-800"
                         }`}
@@ -193,11 +203,14 @@ export default function Kehadiran({
                         {matchResult && !matchResult.success && (
                             <div className="p-6 bg-red-500 text-white rounded-lg shadow-xl">
                                 <h2 className="text-3xl font-bold mb-2">
-                                    ❌ TIDAK DIKENALI
+                                    {matchResult.user
+                                        ? "⚠️ PRESENSI DITOLAK"
+                                        : "❌ TIDAK DIKENALI"}
                                 </h2>
-                                <p className="text-xl">
-                                    Sidik jari tidak ditemukan di database hari
-                                    ini.
+                                <p className="text-xl font-medium">
+                                    {matchResult.user
+                                        ? status.replace("[⚠️ DITOLAK] ", "") // Gunakan pesan spesifik dari controller
+                                        : "Sidik jari tidak ditemukan di jadwal hari ini."}
                                 </p>
                             </div>
                         )}
@@ -217,42 +230,54 @@ export default function Kehadiran({
 
                     {localData.length === 0 ? (
                         <p className="text-gray-500 italic">
-                            Tidak ada anak magang yang dijadwalkan masuk hari
-                            ini (Atau tidak ada yang memiliki sidik jari
-                            terdaftar).
+                            Tidak ada jadwal anak magang yang masuk hari ini.
                         </p>
                     ) : (
                         <div className="grid gap-4">
                             {localData.map((intern) => (
                                 <div
                                     key={intern.id}
-                                    className="p-4 border border-gray-100 bg-gray-50 rounded-lg flex items-center justify-between shadow-sm"
+                                    className={`p-4 border rounded-lg flex items-center justify-between shadow-sm ${!intern.fmd && !intern.second_fmd ? "bg-red-50 border-red-200 opacity-90" : "bg-gray-50 border-gray-100"}`}
                                 >
                                     <div>
                                         <p className="font-bold text-gray-800 text-lg">
                                             {intern.name}
                                         </p>
-                                        <div className="flex gap-4 mt-1 text-sm font-mono">
-                                            <p
-                                                className={
-                                                    intern.check_in !== "-" &&
-                                                    intern.check_in
-                                                        ? "text-green-600 font-bold"
-                                                        : "text-gray-400"
-                                                }
-                                            >
-                                                IN: {intern.check_in || "-"}
-                                            </p>
-                                            <p
-                                                className={
-                                                    intern.check_out !== "-" &&
-                                                    intern.check_out
-                                                        ? "text-blue-600 font-bold"
-                                                        : "text-gray-400"
-                                                }
-                                            >
-                                                OUT: {intern.check_out || "-"}
-                                            </p>
+                                        <div className="flex gap-4 mt-1 text-sm font-mono items-center">
+                                            {!intern.fmd &&
+                                            !intern.second_fmd ? (
+                                                <span className="text-red-500 font-bold text-xs bg-red-100 px-2 py-0.5 rounded">
+                                                    ⚠️ Belum Daftar Sidik Jari
+                                                </span>
+                                            ) : (
+                                                <>
+                                                    <p
+                                                        className={
+                                                            intern.check_in !==
+                                                                "-" &&
+                                                            intern.check_in
+                                                                ? "text-green-600 font-bold"
+                                                                : "text-gray-400"
+                                                        }
+                                                    >
+                                                        IN:{" "}
+                                                        {intern.check_in || "-"}
+                                                    </p>
+                                                    <p
+                                                        className={
+                                                            intern.check_out !==
+                                                                "-" &&
+                                                            intern.check_out
+                                                                ? "text-blue-600 font-bold"
+                                                                : "text-gray-400"
+                                                        }
+                                                    >
+                                                        OUT:{" "}
+                                                        {intern.check_out ||
+                                                            "-"}
+                                                    </p>
+                                                </>
+                                            )}
                                         </div>
                                     </div>
                                     <div className="flex space-x-2">

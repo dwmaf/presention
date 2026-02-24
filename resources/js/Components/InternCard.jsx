@@ -1,4 +1,4 @@
-export default function InternCard({ intern, onClick }) {
+export default function InternCard({ intern, onClick, attendance }) {
     const poin = intern.poin ?? 0;
     const poinStyle =
         poin < 3 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
@@ -7,6 +7,34 @@ export default function InternCard({ intern, onClick }) {
     const fingerStyle = fingerprint
         ? "bg-green-100 text-green-700"
         : "bg-red-100 text-red-700";
+
+    // Render badge status kehadiran jika prop `attendance` diberikan
+    const renderAttendanceBadge = () => {
+        if (attendance === undefined) return null;
+        if (!attendance) {
+            return (
+                <span className="bg-red-100 text-red-600 text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit">
+                    Tidak Hadir
+                </span>
+            );
+        }
+        return (
+            <div className="flex flex-wrap gap-1">
+                <span className="bg-green-100 text-green-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                    Hadir
+                </span>
+                {attendance.terlambat ? (
+                    <span className="bg-amber-100 text-amber-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                        Terlambat {attendance.terlambat} mnt
+                    </span>
+                ) : (
+                    <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
+                        Tepat Waktu
+                    </span>
+                )}
+            </div>
+        );
+    };
 
     return (
         <div
@@ -26,18 +54,24 @@ export default function InternCard({ intern, onClick }) {
                 <p className="font-bold text-lg flex items-center flex-1">
                     {intern.name}
                 </p>
-                <p className="font-medium mb-2 text-sm">
-                    {intern.division ? intern.division.nama_divisi : "-"}
-                </p>
+                {/* Tampilkan badge kehadiran jika prop attendance ada, selain itu tampilkan divisi */}
+                {attendance !== undefined ? (
+                    <div className="mb-2">{renderAttendanceBadge()}</div>
+                ) : (
+                    <p className="font-medium mb-2 text-sm">
+                        {intern.division ? intern.division.nama_divisi : "-"}
+                    </p>
+                )}
                 <div className="flex gap-2">
                     <p
                         className={`${poinStyle} w-fit py-0.5 px-2 rounded-lg text-xs font-semibold`}
                     >
                         {poin} Poin
                     </p>
-                    <div
-                        className={`${fingerStyle} rounded-full flex items-center `}
-                    >
+                    {attendance === undefined && (
+                        <div
+                            className={`${fingerStyle} rounded-full flex items-center `}
+                        >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="14px"
@@ -51,7 +85,8 @@ export default function InternCard({ intern, onClick }) {
                                 clipRule="evenodd"
                             />
                         </svg>
-                    </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
