@@ -486,7 +486,7 @@ export default function Intern({ auth, interns, divisions }) {
             <Modal
                 show={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
-                maxWidth="70%"
+                maxWidth="80%"
                 maxHeight="full"
             >
                 {currentIntern && (
