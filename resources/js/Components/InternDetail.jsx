@@ -16,6 +16,8 @@ export default function InternDetail({ intern, divisions }) {
     const [showStatusForm, setShowStatusForm] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
     const [currentAttendanceId, setCurrentAttendanceId] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 7;
 
     const { data, setData, errors, reset } = useForm({
         name: intern?.name || "",
@@ -190,6 +192,17 @@ export default function InternDetail({ intern, divisions }) {
         setCurrentAttendanceId(null);
     };
 
+    // ✅ TAMBAHKAN logic untuk pagination
+    const attendances = intern.attendances || [];
+    const totalPages = Math.ceil(attendances.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentAttendances = attendances.slice(startIndex, endIndex);
+
+    const handlePageChange = (page) => {
+        setCurrentPage(page);
+    };
+
     return (
         <div className="px-8 py-6">
             <div className="flex justify-between relative">
@@ -291,7 +304,7 @@ export default function InternDetail({ intern, divisions }) {
                                 onClick={() => setShowForm(!showForm)}
                                 className="font-medium text-blue-700"
                             >
-                                Edit
+                                Edit Info
                             </button>
                         </div>
                     </div>
@@ -780,6 +793,52 @@ export default function InternDetail({ intern, divisions }) {
                     )}
                 </tbody>
             </table>
+
+            <hr />
+
+            {/* ✅ TAMBAHKAN Pagination Controls */}
+            {totalPages >= 0 && (
+                <div className="flex justify-between items-center mt-4">
+                    <p className="text-gray-500">
+                        Menampilkan {endIndex} dari {attendances.length} data
+                    </p>
+
+                    <div className="flex gap-2 items-center">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        >
+                            Previous
+                        </button>
+
+                        {[...Array(totalPages)].map((_, index) => {
+                            const page = index + 1;
+                            return (
+                                <button
+                                    key={page}
+                                    onClick={() => handlePageChange(page)}
+                                    className={`px-3 py-1 rounded-md ${
+                                        currentPage === page
+                                            ? "bg-blue-700 text-white"
+                                            : "border border-gray-300 hover:bg-gray-50"
+                                    }`}
+                                >
+                                    {page}
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
