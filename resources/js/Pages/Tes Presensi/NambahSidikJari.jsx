@@ -140,10 +140,11 @@ export default function NambahSidikJari({ auth, intern }) {
                                     width="18"
                                     height="18"
                                     viewBox="0 0 24 24"
+                                    style={{ transform: "rotate(-90deg)" }}
                                 >
                                     <path
                                         fill="none"
-                                        stroke="oklch(44.6% 0.03 256.802)"
+                                        stroke="oklch(48.8% 0.243 264.376)"
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
                                         stroke-width="2"
