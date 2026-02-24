@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\TesPresensi\SidikJariController;
 use App\Http\Controllers\TesPresensi\KehadiranController;
+use App\Http\Controllers\TesPresensi\FingerprintDevController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
 use App\Http\Controllers\AttendanceController;
@@ -55,6 +56,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
     Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
     Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
+
+    // Dev Tools
+    Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
+    Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
 });
 
 require __DIR__.'/auth.php';
