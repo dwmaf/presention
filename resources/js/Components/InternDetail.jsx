@@ -283,7 +283,7 @@ export default function InternDetail({ intern, divisions }) {
                             {/* Kalo di klik bakal ke Fingerprint Enrollment */}
                             <button
                                 onClick={handleFingerEnrollment}
-                                className={`${fingerStyle} rounded-full flex items-center `}
+                                className={`${fingerStyle} rounded-full flex items-center px-2`}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -298,6 +298,15 @@ export default function InternDetail({ intern, divisions }) {
                                         clipRule="evenodd"
                                     />
                                 </svg>
+                                {intern.fingerprint_data ? (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Terdaftar
+                                    </span>
+                                ) : (
+                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Belum Terdaftar
+                                    </span>
+                                )}
                             </button>
 
                             <button
@@ -623,8 +632,8 @@ export default function InternDetail({ intern, divisions }) {
                 </thead>
                 <tbody>
                     {/* Tabel Dinamis - Row tabel otomatis bertambah sesuai dengan jadwal intern & isinya juga*/}
-                    {intern.attendances && intern.attendances.length > 0 ? (
-                        intern.attendances?.map((attendance) => (
+                    {currentAttendances.length > 0 ? (
+                        currentAttendances?.map((attendance) => (
                             <tr
                                 key={attendance.id}
                                 className="hover:bg-gray-50 border-b-2 border-gray-400"
@@ -633,7 +642,9 @@ export default function InternDetail({ intern, divisions }) {
                                 <td className="px-4 py-2">{attendance.hari}</td>
                                 <td className="px-4 py-2 ">
                                     <div className="flex gap-1 items-center">
-                                        {attendance.check_in || "-"}
+                                        {attendance.check_in
+                                            ? attendance.check_in.slice(0, 5)
+                                            : "-"}
                                         {attendance.terlambat && (
                                             <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
                                                 (+{attendance.terlambat}m)
@@ -642,7 +653,9 @@ export default function InternDetail({ intern, divisions }) {
                                     </div>
                                 </td>
                                 <td className="px-4 py-2">
-                                    {attendance.check_out}
+                                    {attendance.check_out
+                                        ? attendance.check_out.slice(0, 5)
+                                        : "-"}
                                 </td>
                                 <td className="px-4 py-2">
                                     <button
@@ -656,12 +669,26 @@ export default function InternDetail({ intern, divisions }) {
                                     >
                                         {attendanceLabel(attendance.status)}
                                     </button>
+
+                                    {/* Ubah Status Kehadiran */}
                                     {showStatusForm &&
                                         currentAttendanceId ===
                                             attendance.id && (
                                             <form
                                                 onSubmit={handleUpdateStatus}
-                                                className="bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50"
+                                                className={`bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50 ${
+                                                    // ✅ Hitung posisi row dalam halaman saat ini (0-6)
+                                                    (() => {
+                                                        const indexInPage =
+                                                            currentAttendances.indexOf(
+                                                                attendance,
+                                                            );
+                                                        // Jika row ke-4 atau lebih (row 5, 6, 7), tampilkan form di atas
+                                                        return indexInPage >= 3
+                                                            ? "bottom-20 right-20"
+                                                            : "right-20";
+                                                    })()
+                                                }`}
                                             >
                                                 <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
                                                     <input
@@ -791,10 +818,22 @@ export default function InternDetail({ intern, divisions }) {
                             </td>
                         </tr>
                     )}
+                    {/* ✅ TAMBAHKAN empty rows untuk menjaga tinggi tabel tetap */}
+                    {currentAttendances.length > 0 &&
+                        currentAttendances.length < itemsPerPage &&
+                        [
+                            ...Array(itemsPerPage - currentAttendances.length),
+                        ].map((_, index) => (
+                            <tr key={`empty-${index}`} className="">
+                                <td className="px-4 py-2.5">&nbsp;</td>
+                                <td className="px-4 py-2.5">&nbsp;</td>
+                                <td className="px-4 py-2.5">&nbsp;</td>
+                                <td className="px-4 py-2.5">&nbsp;</td>
+                                <td className="px-4 py-2.5">&nbsp;</td>
+                            </tr>
+                        ))}
                 </tbody>
             </table>
-
-            <hr />
 
             {/* ✅ TAMBAHKAN Pagination Controls */}
             {totalPages >= 0 && (

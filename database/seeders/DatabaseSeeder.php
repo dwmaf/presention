@@ -39,18 +39,21 @@ class DatabaseSeeder extends Seeder
                 'division_id' => $divDataManage->id,
                 'foto' => 'foto/emp001.jpg',
                 'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Arif Khumeini', 
                 'division_id' => $divDesign->id,
                 'foto' => 'foto/emp002.jpg',
                 'senin' => true, 'selasa' => false, 'rabu' => true, 'kamis' => false, 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Berlian Auraly Kastyanos', 
                 'division_id' => $divDataManage->id,
                 'foto' => 'foto/emp003.jpg',
                 'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Dhimas Fauzan Al Asri',
@@ -61,6 +64,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Fandri Gea',
@@ -71,6 +75,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Hafizuddin',
@@ -81,6 +86,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Ihsan Azhar Rhamadan',
@@ -91,6 +97,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => false,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Kayla Maudy Ananda',
@@ -101,6 +108,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => false,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Lesmana Dwi Prayudha',
@@ -111,6 +119,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Lusia Odiliana Menge',
@@ -121,6 +130,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Maria Goreti',
@@ -131,6 +141,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Mecava Sheba Mitsymara',
@@ -141,6 +152,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Melisa Vikayana',
@@ -151,6 +163,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Muhammad Fayadh Hanif Musyafa',
@@ -161,6 +174,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Muhammad Za\'im Shidqi',
@@ -171,6 +185,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Nadila Maulidya',
@@ -181,6 +196,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Naisha Fitria',
@@ -191,6 +207,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => false,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Refa Suryana',
@@ -201,6 +218,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => false,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Resti Fitriani',
@@ -211,6 +229,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Muhammad Farhan Hanif',
@@ -221,6 +240,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => false,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Indra Juan Saputra',
@@ -231,6 +251,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Indira Mariska Dwi Aulia',
@@ -241,6 +262,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Alyssa Putri Setyawan',
@@ -251,6 +273,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => false,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Tasya Lindri Destami',
@@ -261,6 +284,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Yosi Ferdian Nugroho',
@@ -271,6 +295,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Putra Ibrahimovic',
@@ -281,6 +306,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Jimi Alviandi Mahendra',
@@ -291,6 +317,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => true,
+                'poin' => 5,
             ],
             [
                 'name' => 'Syariffullah',
@@ -301,6 +328,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Tarisa Nur Safitri',
@@ -311,6 +339,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Abimanyu Ridho Ramadhani',
@@ -321,6 +350,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => false,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Muhammad Nazwan Fadhilah',
@@ -331,6 +361,7 @@ class DatabaseSeeder extends Seeder
                 'rabu' => true,
                 'kamis' => true,
                 'jumat' => false,
+                'poin' => 5,
             ],
             [
                 'name' => 'Dawam Agung Fathoni', 
@@ -377,9 +408,9 @@ class DatabaseSeeder extends Seeder
                     // Jam masuk kebanyakan 07:30 - 08:45 (biar ada yang telat)
                     $hour = (rand(1, 5) == 1) ? 8 : 7; // 20% kemungkinan jam 8
                     $minute = ($hour == 8) ? rand(0, 45) : rand(30, 59);
-                    $checkIn = sprintf('%02d:%02d:00', $hour, $minute);
+                    $checkIn = sprintf('%02d:%02d', $hour, $minute);
                     // Jam pulang antara 16:30 - 16:59
-                    $checkOut = sprintf('%02d:%02d:00', 16, rand(30, 59));
+                    $checkOut = sprintf('%02d:%02d', 16, rand(30, 59));
                 }
 
                 Attendance::create([
