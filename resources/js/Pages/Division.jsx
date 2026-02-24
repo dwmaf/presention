@@ -3,7 +3,6 @@ import { Head, router, useForm, usePage } from '@inertiajs/react';
 import { useState, useMemo } from 'react';
 import InputError from '@/Components/InputError';
 import Modal from '@/Components/Modal';
-import SearchBar from '@/Components/SearchBar';
 
 // SVG puzzle untuk card divisi
 const PuzzleBig = () => (
@@ -273,7 +272,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                         )}
 
                         {/* Sub-header daftar anggota */}
-                        <div className="flex items-center justify-between mt-3 mb-2 shrink-0">
+                        <div className="relative flex items-center justify-between mt-3 mb-2 shrink-0">
                             <p className="text-sm font-semibold text-gray-700">Daftar Anggota</p>
                             <button
                                 onClick={() => { setShowAddMember(v => !v); setMemberSearch(''); }}
@@ -284,40 +283,50 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                 </svg>
                                 Tambah Anggota
                             </button>
-                        </div>
 
-                        {/* Panel search tambah anggota + Tabel anggota — scrollable */}
-                        <div className="relative rounded-lg border border-gray-100 overflow-y-auto flex-1 min-h-0 mb-4">
-
-                            {/* Overlay panel search — menimpa tabel */}
+                            {/* Dropdown panel search */}
                             {showAddMember && (
-                                <div className="absolute inset-0 z-20 bg-white rounded-lg flex flex-col">
-                                    <div className="border-b border-gray-100">
-                                        <SearchBar key={showAddMember} onSearch={setMemberSearch} />
+                                <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col overflow-hidden">
+                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none">
+                                            <path fill="oklch(55.1% 0.027 264.364)" d="M18 10c0-4.41-3.59-8-8-8s-8 3.59-8 8s3.59 8 8 8c1.85 0 3.54-.63 4.9-1.69l5.1 5.1L21.41 20l-5.1-5.1A8 8 0 0 0 18 10M4 10c0-3.31 2.69-6 6-6s6 2.69 6 6s-2.69 6-6 6s-6-2.69-6-6"/>
+                                        </svg>
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={memberSearch}
+                                            onChange={e => setMemberSearch(e.target.value)}
+                                            placeholder="Cari nama intern..."
+                                            className="flex-1 bg-transparent text-xs outline-none placeholder-gray-400"
+                                        />
                                     </div>
-                                    <ul className="flex-1 overflow-y-auto">
+                                    <ul className="max-h-40 overflow-y-auto">
                                         {memberSuggestions.length > 0 ? memberSuggestions.map(intern => (
                                             <li key={intern.id}>
                                                 <button
                                                     onClick={() => assignIntern(intern)}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 hover:bg-blue-50 transition text-left"
+                                                    className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 transition text-left"
                                                 >
                                                     {intern.foto ? (
-                                                        <img src={`/${intern.foto}`} alt={intern.name} className="w-8 h-8 rounded-full object-cover object-top shrink-0" />
+                                                        <img src={`/${intern.foto}`} alt={intern.name} className="w-6 h-6 rounded-full object-cover object-top shrink-0" />
                                                     ) : (
-                                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs shrink-0">?</div>
+                                                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs shrink-0">?</div>
                                                     )}
-                                                    <span className="text-sm text-gray-800">{intern.name}</span>
+                                                    <span className="text-xs text-gray-800">{intern.name}</span>
                                                 </button>
                                             </li>
                                         )) : (
-                                            <li className="px-3 py-4 text-center text-sm text-gray-400">
+                                            <li className="px-3 py-4 text-center text-xs text-gray-400">
                                                 {memberSearch ? 'Intern tidak ditemukan.' : 'Semua intern sudah menjadi anggota.'}
                                             </li>
                                         )}
                                     </ul>
                                 </div>
                             )}
+                        </div>
+
+                        {/* Panel search tambah anggota + Tabel anggota — scrollable */}
+                        <div className="relative rounded-lg border border-gray-100 overflow-y-auto flex-1 min-h-0 mb-4">
 
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 sticky top-0 z-10">
