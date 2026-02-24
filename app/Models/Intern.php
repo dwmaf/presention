@@ -13,6 +13,7 @@ class Intern extends Model
         'foto',
         'barcode',
         'fingerprint_data',
+        'second_fingerprint_data',
         'senin',
         'selasa',
         'rabu',

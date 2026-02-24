@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('division_id')->nullable();
             $table->string('barcode')->nullable(); // 6 digit
             $table->text('fingerprint_data')->nullable(); // This will store the Feature Set (base64)
+            $table->text('second_fingerprint_data')->nullable(); // second finger will store the Feature Set (base64)
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });

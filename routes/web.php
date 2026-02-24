@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FingerprintController;
+use App\Http\Controllers\TesPresensi\SidikJariController;
+use App\Http\Controllers\TesPresensi\KehadiranController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
 use App\Http\Controllers\AttendanceController;
@@ -43,6 +45,16 @@ Route::middleware('auth')->group(function () {
     // untuk buka halaman untuk nambah fingerprint
     Route::get('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'index'])->name('interns.fingerprint-enrollment');
     Route::post('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'store'])->name('interns.fingerprint-enrollment.store');
+
+    //---------------------------------|
+    // Tes                             |
+    //---------------------------------|
+    // untuk buka halaman untuk nambah fingerprint
+    Route::get('/interns/{intern}/create-fingerprint', [SidikJariController::class, 'index'])->name('interns.fingerprint.create');
+    Route::post('/interns/{intern}/store-fingerprint', [SidikJariController::class, 'store'])->name('interns.fingerprint.store');
+    Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
+    Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
+    Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
 });
 
 require __DIR__.'/auth.php';
