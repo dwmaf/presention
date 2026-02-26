@@ -62,6 +62,64 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function dashboard(Request $request)
+    {
+        $selectedDate = $request->input('date', Carbon::today()->toDateString());
+
+        $hariMap = [
+            'Monday'    => 'senin',
+            'Tuesday'   => 'selasa',
+            'Wednesday' => 'rabu',
+            'Thursday'  => 'kamis',
+            'Friday'    => 'jumat',
+        ];
+        $hariInggris = Carbon::parse($selectedDate)->format('l');
+        $kolomJadwal = $hariMap[$hariInggris] ?? null;
+
+        $hidden = [
+            'total_kehadiran', 'total_jam', 'total_izin', 'total_sakit',
+            'total_alpha', 'avg_jam_masuk', 'avg_jam_pulang', 'latest_attendance',
+            'fingerprint_data', 'second_fingerprint_data',
+        ];
+
+        // Semua intern aktif + attendance hari itu (untuk stat card)
+        $allInterns = Intern::with(['attendances' => function ($q) use ($selectedDate) {
+            $q->where('date', $selectedDate);
+        }])->where('is_active', true)->get();
+
+        $totalKaryawan = $allInterns->count();
+
+        // Intern terjadwal hari ini untuk grid + stat hadir/tidakHadir/terlambat
+        $query = Intern::with(['attendances' => function ($q) use ($selectedDate) {
+            $q->where('date', $selectedDate);
+        }])->where('is_active', true);
+
+        if ($kolomJadwal) {
+            $query->where($kolomJadwal, true);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        $scheduledInterns = $query->get();
+
+        $telahHadir = $scheduledInterns->filter(fn($i) => optional($i->attendances->first())->status === 'hadir')->count();
+        $tidakHadir = $scheduledInterns->filter(fn($i) => !$i->attendances->first() || $i->attendances->first()->status !== 'hadir')->count();
+        $terlambat  = $scheduledInterns->filter(fn($i) => optional($i->attendances->first())->terlambat > 0)->count();
+
+        $interns = $scheduledInterns->makeHidden($hidden);
+
+        return Inertia::render('Dashboard', [
+            'interns'       => $interns,
+            'selectedDate'  => $selectedDate,
+            'stats' => [
+                'totalKaryawan' => $totalKaryawan,
+                'telahHadir'    => $telahHadir,
+                'tidakHadir'    => $tidakHadir,
+                'terlambat'     => $terlambat,
+            ],
+        ]);
+    }
+
     public function updateStatus(Request $request, Attendance $attendance)
     {
         $request->validate([

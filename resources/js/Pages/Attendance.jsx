@@ -6,7 +6,7 @@ import axios from "axios";
 import InternCard from "@/Components/InternCard";
 import SearchBar from "@/Components/SearchBar";
 
-// Format tanggal ke format Indonesia:
+// Format tanggal ke format Indonesia
 function formatTanggalIndonesia(dateStr) {
     if (!dateStr) return "";
     const date = new Date(dateStr + "T00:00:00");
@@ -34,7 +34,7 @@ export default function Attendance({
     // Fingerprint State
     const [status, setStatus] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
-    const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', message: '' }
+    const [feedback, setFeedback] = useState(null); 
 
     const database_payload = [];
     fingerprintDatabase.forEach((u) => {
@@ -50,7 +50,7 @@ export default function Attendance({
         setFeedback(null);
 
         try {
-            // 1. Minta C# Service untuk Identifikasi
+            // 1. C# Service untuk Identifikasi
             const payload = { database: database_payload };
             const response = await fetch("http://localhost:5000/identify", {
                 method: "POST",
@@ -77,7 +77,7 @@ export default function Attendance({
                     });
                     setStatus(null);
 
-                    // Reload data intern di halaman agar update status (Hadir/Check-in dsb)
+                    // Reload data intern di halaman
                     router.reload({ only: ["interns"] });
                 } catch (err) {
                     let msg = "Gagal mencatat presensi.";
@@ -191,19 +191,14 @@ export default function Attendance({
                                     : "bg-indigo-600 hover:bg-indigo-700 text-white"
                             }`}
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-5 h-5"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M17.81 4.47c-.08 0-.16.02-.23.06a.75.75 0 0 0-.23 1.03a8.51 8.51 0 0 1 1.15 4.19c0 .35-.02.7-.07 1.05c-.03.21-.19.38-.4.41c-.21.03-.41-.09-.48-.29a7.01 7.01 0 0 0-.07-.9a8.42 8.42 0 0 0-.74-2.81a.747.747 0 0 0-1-.36a.75.75 0 0 0-.36 1c.54 1.14.83 2.39.85 3.67c.02 1.35-.19 2.68-.61 3.93c-.07.2-.27.32-.48.29c-.21-.03-.37-.2-.4-.41a8.43 8.43 0 0 1-.03-1.42c-.06-1.61-.41-3.21-1.05-4.7a.753.753 0 0 0-.96-.4a.75.75 0 0 0-.4.96c.55 1.28.85 2.65.9 4.04c.05 1.48-.12 2.95-.51 4.36c-.07.24-.31.39-.56.35c-.24-.04-.42-.25-.43-.5a8.43 8.43 0 0 1 .15-1.92c.16-1.55.07-3.13-.26-4.64a.75.75 0 0 0-.73-.59a.74.74 0 0 0-.73.6a10.02 10.02 0 0 0-.06 4.1c.17 1.71-.02 3.44-.55 5.07c-.08.24-.33.39-.58.34c-.25-.05-.42-.27-.41-.53c.09-1.29-.02-2.58-.33-3.83c-.26-1.07-.65-2.11-1.16-3.1c-.09-.18-.08-.39.04-.56c.12-.17.33-.25.53-.22c.21.03.38.19.41.4a8.42 8.42 0 0 1 .23 2.1c.06.94.19 1.88.39 2.8a.747.747 0 0 0 1.43-.37c-.36-1.4-.52-2.85-.48-4.3c.04-1.4.31-2.77.79-4.08a.753.753 0 0 0-.39-.97a.75.75 0 0 0-.97.39a11.53 11.53 0 0 0-.91 4.67a11.52 11.52 0 0 0 .19 2.5a.75.75 0 0 0 1.48-.2c-.05-.41-.09-.83-.11-1.25a9.92 9.92 0 0 1 .1-1.93c.27-1.7.77-3.34 1.49-4.89a.747.747 0 0 0-.33-1a.75.75 0 0 0-1 .33a12.98 12.98 0 0 0-1.28 4.22a12.94 12.94 0 0 0-.15 2.58c.01.25-.17.47-.41.52c-.25.05-.49-.1-.58-.34a11.37 11.37 0 0 1 .53-5.07a11.4 11.4 0 0 1 1.76-3.83c.12-.17.13-.39.02-.56s-.31-.27-.51-.25c-.2.02-.37.16-.43.35c-.88 2.37-1.32 4.88-1.28 7.42c.01.25-.17.47-.42.52c-.25.04-.49-.11-.57-.34a12.94 12.94 0 0 1 .19-8.49c.86-2.19 2.15-4.17 3.82-5.83a.75.75 0 0 0-.53-1.28a.75.75 0 0 0-.53 1.28c-1.83 1.83-3.26 4.02-4.21 6.43c-.88 2.22-1.31 4.59-1.28 6.96c.03.25-.14.47-.39.52c-.24.05-.49-.09-.58-.33c-.56-1.52-.82-3.13-.77-4.74a12.94 12.94 0 0 1 2.22-6.6a14.473 14.473 0 0 1 5.3-4.74a.753.753 0 0 0-.71-1.32c-2.12.87-4.04 2.19-5.63 3.86a14.39 14.39 0 0 0-3.33 11a.75.75 0 0 0 .75.68c.05 0 .1-.01.15-.02c.24-.05.42-.26.41-.51a11.46 11.46 0 0 1 .23-2.58a11.48 11.48 0 0 1 2.15-4.9c1.61-2.09 3.66-3.84 6.01-5.11a15.93 15.93 0 0 1 6.32-1.63a.75.75 0 0 0 .58-.89a.75.75 0 0 0-.74-.61z"
-                                />
+                            <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M0.75 6.437C0.854 4.337 1.165 3.027 2.097 2.097C3.027 1.165 4.337 0.854 6.437 0.75M19.75 6.437C19.646 4.337 19.335 3.027 18.403 2.097C17.473 1.165 16.163 0.854 14.063 0.75M14.063 19.75C16.163 19.646 17.473 19.335 18.403 18.403C19.335 17.473 19.646 16.163 19.75 14.063M6.437 19.75C4.337 19.646 3.027 19.335 2.097 18.403C1.165 17.473 0.854 16.163 0.75 14.063M14.75 13.75V9.25C14.75 8.05653 14.2759 6.91193 13.432 6.06802C12.5881 5.22411 11.4435 4.75 10.25 4.75C9.05653 4.75 7.91193 5.22411 7.06802 6.06802C6.22411 6.91193 5.75 8.05653 5.75 9.25V13.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M11.75 10.75V9.25C11.75 8.85218 11.592 8.47064 11.3107 8.18934C11.0294 7.90804 10.6478 7.75 10.25 7.75C9.85218 7.75 9.47064 7.90804 9.18934 8.18934C8.90804 8.47064 8.75 8.85218 8.75 9.25V14.75M11.75 13.75V15.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
+
                             {isScanning
                                 ? "Memindai..."
-                                : "Pukul Mesin Presensi"}
+                                : "Klik untuk Scan & Presensi"}
                         </button>
                     </div>
                 </div>
