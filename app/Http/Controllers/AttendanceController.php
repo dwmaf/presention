@@ -139,6 +139,7 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
+        
         // Panggil generator data absen harian (Trigger)
         $this->generateDailyAttendances();
 
@@ -156,25 +157,37 @@ class AttendanceController extends Controller
 
         // 1. Check-In (Belum ada record atau check_in null)
         if (!$attendance || !$attendance->check_in) {
+            $checkInTime = $now->format('H:i:s');
+            
+            // Logic Potong Poin jika terlambat (> 08:30)
+            $isLate = $now->format('H:i:s') > '08:30:00';
+            if ($isLate) {
+                $intern->decrement('poin');
+            }
+
             if (!$attendance) {
                 Attendance::create([
                     'intern_id' => $intern->id,
                     'date' => $today,
-                    'check_in' => $now->format('H:i:s'),
+                    'check_in' => $checkInTime,
                     'status' => 'hadir'
                 ]);
             } else {
                 $attendance->update([
-                    'check_in' => $now->format('H:i:s'),
+                    'check_in' => $checkInTime,
                     'status' => 'hadir'
                 ]);
             }
 
+            $msg = $isLate 
+                ? "Terlambat! Poin berkurang 1. Check In Berhasil pada " . $checkInTime 
+                : "Check In Berhasil pada " . $checkInTime;
+
             return response()->json([
                 'success' => true,
-                'message' => "Check In Berhasil pada " . $now->format('H:i:s'),
+                'message' => $msg,
                 'type' => 'check_in',
-                'time' => $now->format('H:i:s'),
+                'time' => $checkInTime,
                 'name' => $intern->name
             ]);
         }
