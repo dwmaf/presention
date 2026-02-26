@@ -64,7 +64,7 @@ class Intern extends Model
 
     public function attendances()
     {
-        return $this->hasMany(Attendance::class);
+        return $this->hasMany(Attendance::class)->orderBy('date', 'desc');
     }
 
     public function latestAttendance()
