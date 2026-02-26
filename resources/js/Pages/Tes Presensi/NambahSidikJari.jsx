@@ -1,55 +1,133 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 
 export default function NambahSidikJari({ auth, intern }) {
-    // State global halaman
-    const [activeScan, setActiveScan] = useState(null); // index 1-6
+    /**
+     * ✅ CHANGED TOTAL:
+     * - DARI 6 SLOT -> JADI 2 GRUP: primary & backup
+     * - TIAP GRUP SCAN 3X (seperti HP, geser area jari tiap scan)
+     * - SIMPAN SEKALI KIRIM 3 TEMPLATE (samples[])
+     * - RESET DB (hapus kolom di DB) agar tidak nimpa
+     */
 
-    // Slots configuration
-    const slots = [
-        { id: 1, label: "Sidik Jari Utama pertama", key: "fingerprint_data" },
-        { id: 2, label: "Sidik Jari Utama kedua", key: "second_fingerprint_data" },
-        { id: 3, label: "Sidik Jari Utama ketiga", key: "fingerprint_data_3" },
-        { id: 4, label: "Sidik Jari Cadangan pertama", key: "fingerprint_data_4" },
-        { id: 5, label: "Sidik Jari Cadangan kedua", key: "fingerprint_data_5" },
-        { id: 6, label: "Sidik Jari Cadangan ketiga", key: "fingerprint_data_6" },
-    ];
-
-    // Status & Image states for each slot
-    const [statuses, setStatuses] = useState(
-        slots.reduce((acc, slot) => {
-            acc[slot.id] = intern[slot.key]
-                ? "Sudah terdaftar."
-                : "Belum terdaftar.";
-            return acc;
-        }, {}),
+    const groups = useMemo(
+        () => [
+            {
+                id: "primary",
+                title: "Fingerprint Utama",
+                subtitle:
+                    "Scan 3x. Setiap scan geser sedikit posisi jari agar area terbaca merata (seperti daftar fingerprint di HP).",
+                dbKeys: [
+                    "fingerprint_data",
+                    "second_fingerprint_data",
+                    "fingerprint_data_3",
+                ],
+            },
+            {
+                id: "backup",
+                title: "Fingerprint Cadangan",
+                subtitle:
+                    "Scan 3x untuk cadangan (boleh jari berbeda). Reset DB dulu kalau ingin daftar ulang.",
+                dbKeys: [
+                    "fingerprint_data_4",
+                    "fingerprint_data_5",
+                    "fingerprint_data_6",
+                ],
+            },
+        ],
+        [],
     );
 
-    const [images, setImages] = useState(
-        slots.reduce((acc, slot) => {
-            acc[slot.id] = null;
-            return acc;
-        }, {}),
-    );
+    const groupHasDb = (g) => g.dbKeys.some((k) => !!intern?.[k]);
+    const groupDbCount = (g) =>
+        g.dbKeys.reduce((acc, k) => (intern?.[k] ? acc + 1 : acc), 0);
 
-    // Forms for each slot
-    const forms = slots.reduce((acc, slot) => {
-        // eslint-disable-next-line react-hooks/rules-of-hooks
-        acc[slot.id] = useForm({
-            slot: slot.id,
-            fingerprint_data: "",
-        });
-        return acc;
-    }, {});
+    const [activeGroup, setActiveGroup] = useState(null); // "primary" | "backup" | null
 
-    // Fungsi Scan Umum
-    const startCapture = async (slotId) => {
-        setActiveScan(slotId);
+    // State per group: step + samples + images + status
+    const [state, setState] = useState(() => {
+        const init = {};
+        for (const g of groups) {
+            const count = groupDbCount(g);
+            init[g.id] = {
+                step: 0,
+                samples: [],
+                images: [],
+                status:
+                    count > 0
+                        ? `Sudah tersimpan di database (${count}/3). Jika ingin daftar ulang, klik Reset DB.`
+                        : "Belum terdaftar. Mulai scan 3x.",
+            };
+        }
+        return init;
+    });
 
-        setStatuses((prev) => ({
+    // Form per group
+    const primaryForm = useForm({
+        group: "primary",
+        samples: [],
+    });
+    const backupForm = useForm({
+        group: "backup",
+        samples: [],
+    });
+
+    const forms = {
+        primary: primaryForm,
+        backup: backupForm,
+    };
+
+    const resetLocal = (groupId) => {
+        setState((prev) => ({
             ...prev,
-            [slotId]: "Menunggu sidik jari... Letakkan jari pada scanner.",
+            [groupId]: {
+                ...prev[groupId],
+                step: 0,
+                samples: [],
+                images: [],
+                status: "Local scan di-reset. Silakan scan 3x lagi.",
+            },
+        }));
+        forms[groupId].setData("samples", []);
+    };
+
+    const startNextCapture = async (groupId) => {
+        if (activeGroup) return;
+
+        // jika DB sudah ada, arahkan reset dulu (biar gak nimpa)
+        const g = groups.find((x) => x.id === groupId);
+        if (g && groupHasDb(g)) {
+            setState((prev) => ({
+                ...prev,
+                [groupId]: {
+                    ...prev[groupId],
+                    status: "Data sudah ada di DB. Klik Reset DB dulu agar tidak menimpa.",
+                },
+            }));
+            return;
+        }
+
+        const current = state[groupId];
+        if (current.samples.length >= 3) {
+            setState((prev) => ({
+                ...prev,
+                [groupId]: {
+                    ...prev[groupId],
+                    status: "Sudah 3/3. Klik Simpan atau Reset Local untuk ulang scan.",
+                },
+            }));
+            return;
+        }
+
+        setActiveGroup(groupId);
+
+        setState((prev) => ({
+            ...prev,
+            [groupId]: {
+                ...prev[groupId],
+                status: `Menunggu sidik jari... (Scan ${prev[groupId].samples.length + 1}/3). Tempelkan jari lalu geser sedikit area tiap scan.`,
+            },
         }));
 
         try {
@@ -61,54 +139,131 @@ export default function NambahSidikJari({ auth, intern }) {
             const result = await response.json();
 
             if (result.success) {
-                forms[slotId].setData("fingerprint_data", result.fmd);
-                if (result.image) {
-                    setImages((prev) => ({ ...prev, [slotId]: result.image }));
-                }
-                setStatuses((prev) => ({
-                    ...prev,
-                    [slotId]:
-                        "✓ Sidik jari berhasil ditangkap! Silakan klik Simpan.",
-                }));
+                setState((prev) => {
+                    const cur = prev[groupId];
+                    const nextSamples = [...cur.samples, result.fmd].slice(0, 3);
+                    const nextImages = result.image
+                        ? [...cur.images, result.image].slice(0, 3)
+                        : cur.images;
+
+                    const done = nextSamples.length === 3;
+
+                    return {
+                        ...prev,
+                        [groupId]: {
+                            ...cur,
+                            step: nextSamples.length,
+                            samples: nextSamples,
+                            images: nextImages,
+                            status: done
+                                ? "✓ Scan 3/3 selesai. Klik Simpan untuk menyimpan ke database."
+                                : `✓ Scan ${nextSamples.length}/3 berhasil. Lanjut scan berikutnya (ubah sedikit posisi jari).`,
+                        },
+                    };
+                });
             } else {
-                setStatuses((prev) => ({
+                setState((prev) => ({
                     ...prev,
-                    [slotId]: "Gagal: " + result.message,
+                    [groupId]: {
+                        ...prev[groupId],
+                        status: "Gagal: " + (result.message || "Unknown error"),
+                    },
                 }));
             }
         } catch (err) {
             console.error(err);
-            setStatuses((prev) => ({
+            setState((prev) => ({
                 ...prev,
-                [slotId]:
-                    "Error: Tidak dapat menghubungi aplikasi Service C# (Port 5000).",
+                [groupId]: {
+                    ...prev[groupId],
+                    status:
+                        "Error: Tidak dapat menghubungi Service C# (Port 5000). Pastikan FingerprintBridge.exe berjalan.",
+                },
             }));
         } finally {
-            setActiveScan(null);
+            setActiveGroup(null);
         }
     };
 
-    const stopCapture = (slotId) => {
-        setActiveScan(null);
-        setStatuses((prev) => ({
-            ...prev,
-            [slotId]: prev[slotId].includes("Menunggu")
-                ? "Scan dibatalkan."
-                : prev[slotId],
-        }));
-    };
-
-    const submitFingerprint = (e, slotId) => {
+    const submitGroup = (e, groupId) => {
         e.preventDefault();
-        forms[slotId].post(route("interns.fingerprint.storeSlot", intern.id), {
+
+        const samples = state[groupId].samples;
+        if (!samples || samples.length < 3) {
+            setState((prev) => ({
+                ...prev,
+                [groupId]: {
+                    ...prev[groupId],
+                    status: "Belum lengkap. Harus 3/3 scan dulu sebelum simpan.",
+                },
+            }));
+            return;
+        }
+
+        forms[groupId].setData("samples", samples);
+
+        forms[groupId].post(route("interns.fingerprint.storeGroup", intern.id), {
             onSuccess: () => {
-                setStatuses((prev) => ({
+                setState((prev) => ({
                     ...prev,
-                    [slotId]: `✓ Sidik Jari #${slotId} berhasil disimpan!`,
+                    [groupId]: {
+                        ...prev[groupId],
+                        status: "✓ Berhasil disimpan ke database! (Tidak menimpa data lama).",
+                    },
                 }));
-                forms[slotId].reset("fingerprint_data");
+                // opsional: reset local setelah simpan
+                // resetLocal(groupId);
+            },
+            onError: (errors) => {
+                // biasanya akan kena "fingerprint" kalau belum reset DB
+                const msg =
+                    errors?.fingerprint ||
+                    "Gagal menyimpan. Cek validasi / pastikan Reset DB jika sudah ada data.";
+                setState((prev) => ({
+                    ...prev,
+                    [groupId]: {
+                        ...prev[groupId],
+                        status: "Error: " + msg,
+                    },
+                }));
             },
         });
+    };
+
+    const resetDbGroup = (groupId) => {
+        // delete request, kirim group via data (Inertia)
+        forms[groupId].delete(
+            route("interns.fingerprint.resetGroup", intern.id),
+            {
+                data: { group: groupId },
+                onSuccess: () => {
+                    setState((prev) => ({
+                        ...prev,
+                        [groupId]: {
+                            ...prev[groupId],
+                            step: 0,
+                            samples: [],
+                            images: [],
+                            status:
+                                "DB sudah di-reset. Sekarang kamu bisa scan ulang 3x lalu simpan.",
+                        },
+                    }));
+                },
+                onError: (errors) => {
+                    const msg =
+                        errors?.group ||
+                        errors?.fingerprint ||
+                        "Gagal reset DB.";
+                    setState((prev) => ({
+                        ...prev,
+                        [groupId]: {
+                            ...prev[groupId],
+                            status: "Error: " + msg,
+                        },
+                    }));
+                },
+            },
+        );
     };
 
     return (
@@ -159,108 +314,202 @@ export default function NambahSidikJari({ auth, intern }) {
                         </Link>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {slots.map((slot) => (
-                            <div
-                                key={slot.id}
-                                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
-                            >
-                                <div className="p-5 border-b border-gray-50 bg-gray-50/50">
-                                    <h4 className="text-lg font-bold text-gray-700 flex items-center gap-2">
-                                        <span className="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-sm">
-                                            {slot.id}
-                                        </span>
-                                        {slot.label}
-                                    </h4>
-                                </div>
+                    {/* ✅ CHANGED: 2 card saja */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {groups.map((g) => {
+                            const st = state[g.id];
+                            const done = st.samples.length === 3;
+                            const hasDb = groupHasDb(g);
+                            const dbCount = groupDbCount(g);
 
-                                <div className="p-6 flex flex-col flex-1">
-                                    <div className="flex flex-col justify-center items-center gap-4 border-2 border-dashed rounded-xl border-gray-200 py-8 mb-6 bg-gray-50/30 min-h-[180px]">
-                                        {images[slot.id] ? (
-                                            <img
-                                                src={images[slot.id]}
-                                                alt={`Fingerprint ${slot.id}`}
-                                                className="h-32 w-auto border-2 border-white rounded-lg shadow-md"
-                                            />
-                                        ) : (
-                                            <div
-                                                className={`p-4 rounded-full ${intern[slot.key] ? "bg-green-50" : "bg-gray-100"}`}
-                                            >
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="64"
-                                                    height="64"
-                                                    viewBox="0 0 16 16"
-                                                    className={
-                                                        intern[slot.key]
-                                                            ? "text-green-500"
-                                                            : "text-gray-300"
-                                                    }
-                                                >
-                                                    <path
-                                                        fill="currentColor"
-                                                        d="M8 7a3 3 0 0 1 3 3c0 1.244.444 2.28 1.345 3.138a.5.5 0 0 1-.69.724C10.556 12.816 10 11.518 10 10a2 2 0 1 0-4 0c0 .593.215 1.414.572 2.218c.357.803.823 1.513 1.263 1.91a.5.5 0 1 1-.67.743c-.584-.528-1.12-1.377-1.506-2.247S5 10.787 5 10a3 3 0 0 1 3-3m.08 2.26a.5.5 0 0 1 .415.572c-.083.534.111 1.38.5 2.257c.382.865.9 1.642 1.34 2.04a.5.5 0 0 1-.67.742c-.584-.527-1.173-1.443-1.586-2.378c-.408-.923-.7-1.989-.571-2.815a.5.5 0 0 1 .571-.417M8 5c1.734 0 3.262.883 4.158 2.222a.5.5 0 0 1-.83.556A4 4 0 0 0 4 10c-.001 1.173.234 1.98.456 2.48c.111.25.22.426.296.536c.052.074.11.142.167.213a.5.5 0 0 1-.698.687a1.6 1.6 0 0 1-.287-.327a4 4 0 0 1-.392-.704C3.265 12.256 3 11.312 3 10a5 5 0 0 1 5-5M6.385 3.188a.5.5 0 0 1 .23.973q-.234.056-.462.129a6.004 6.004 0 0 0-3.993 7.096a.5.5 0 1 1-.973.23a7.004 7.004 0 0 1 5.197-8.428M12.464 9a.5.5 0 0 1 .509.491c.003.198.05.536.18.86c.131.326.322.577.57.702a.5.5 0 0 1-.447.894c-.55-.275-.87-.775-1.05-1.223a3.6 3.6 0 0 1-.253-1.215a.5.5 0 0 1 .49-.509M8.538 3.02c3.435.262 6.2 3.004 6.461 6.443a.5.5 0 0 1-.998.075c-.224-2.943-2.592-5.295-5.54-5.52a.501.501 0 0 1 .077-.997m-6.379.196a.5.5 0 1 1 .683.73a6 6 0 0 0-.76.85a.5.5 0 0 1-.805-.593q.393-.53.882-.987M8.001 1c1.784 0 3.437.511 4.772 1.38a.5.5 0 1 1-.546.839C11.058 2.457 9.595 2 8.002 2a7.9 7.9 0 0 0-3.292.704a.5.5 0 0 1-.417-.91A8.9 8.9 0 0 1 8.001 1"
-                                                    />
-                                                </svg>
-                                            </div>
-                                        )}
-                                        <p
-                                            className={`text-center px-4 text-sm font-medium ${statuses[slot.id].includes("Gagal") || statuses[slot.id].includes("Error") ? "text-red-500" : "text-gray-500"}`}
-                                        >
-                                            {statuses[slot.id]}
+                            return (
+                                <div
+                                    key={g.id}
+                                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col"
+                                >
+                                    <div className="p-5 border-b border-gray-50 bg-gray-50/50">
+                                        <h4 className="text-lg font-bold text-gray-800">
+                                            {g.title}
+                                        </h4>
+                                        <p className="text-sm text-gray-500 mt-1">
+                                            {g.subtitle}
                                         </p>
+
+                                        <div className="mt-3 flex items-center justify-between text-sm">
+                                            <div>
+                                                <span className="font-semibold text-gray-700">
+                                                    Progress Scan:
+                                                </span>{" "}
+                                                <span className="font-bold text-indigo-600">
+                                                    {st.samples.length}/3
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span className="font-semibold text-gray-700">
+                                                    DB:
+                                                </span>{" "}
+                                                <span
+                                                    className={`font-bold ${
+                                                        hasDb
+                                                            ? "text-emerald-600"
+                                                            : "text-gray-400"
+                                                    }`}
+                                                >
+                                                    {hasDb
+                                                        ? `${dbCount}/3 tersimpan`
+                                                        : "kosong"}
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <div className="mt-auto space-y-3">
-                                        {activeScan === slot.id ? (
-                                            <button
-                                                onClick={() =>
-                                                    stopCapture(slot.id)
-                                                }
-                                                className="w-full py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-bold shadow-sm transition-colors"
+                                    <div className="p-6 flex flex-col flex-1">
+                                        {/* Preview 3 capture */}
+                                        <div className="border-2 border-dashed rounded-xl border-gray-200 p-4 mb-6 bg-gray-50/30">
+                                            <div className="grid grid-cols-3 gap-3">
+                                                {[0, 1, 2].map((i) => (
+                                                    <div
+                                                        key={i}
+                                                        className={`rounded-lg overflow-hidden border ${
+                                                            st.images[i]
+                                                                ? "border-white shadow bg-white"
+                                                                : "border-gray-200 bg-white"
+                                                        }`}
+                                                    >
+                                                        {st.images[i] ? (
+                                                            <img
+                                                                src={st.images[i]}
+                                                                alt={`${g.title} scan ${i + 1}`}
+                                                                className="h-24 w-full object-contain"
+                                                            />
+                                                        ) : (
+                                                            <div className="h-24 flex items-center justify-center text-xs text-gray-400">
+                                                                Scan {i + 1}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            <p
+                                                className={`text-center mt-4 px-2 text-sm font-medium ${
+                                                    st.status.includes("Gagal") ||
+                                                    st.status.includes("Error")
+                                                        ? "text-red-500"
+                                                        : "text-gray-600"
+                                                }`}
                                             >
-                                                Batal Scan
-                                            </button>
-                                        ) : (
+                                                {st.status}
+                                            </p>
+                                        </div>
+
+                                        <div className="mt-auto space-y-3">
+                                            {/* Scan */}
                                             <button
                                                 onClick={() =>
-                                                    startCapture(slot.id)
+                                                    startNextCapture(g.id)
                                                 }
-                                                disabled={activeScan !== null}
+                                                disabled={
+                                                    activeGroup !== null ||
+                                                    hasDb ||
+                                                    done
+                                                }
                                                 className="w-full py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                Mulai Scan
+                                                {hasDb
+                                                    ? "Scan dikunci (DB sudah ada)"
+                                                    : done
+                                                      ? "Scan Selesai (3/3)"
+                                                      : activeGroup === g.id
+                                                        ? "Scanning..."
+                                                        : `Mulai Scan (${st.samples.length + 1}/3)`}
                                             </button>
-                                        )}
 
-                                        {forms[slot.id].data
-                                            .fingerprint_data && (
-                                            <form
-                                                onSubmit={(e) =>
-                                                    submitFingerprint(
-                                                        e,
-                                                        slot.id,
-                                                    )
-                                                }
+                                            {/* Reset local */}
+                                            <button
+                                                onClick={() => resetLocal(g.id)}
+                                                disabled={activeGroup !== null}
+                                                className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                <button
-                                                    type="submit"
-                                                    disabled={
-                                                        forms[slot.id]
-                                                            .processing
+                                                Reset Local Scan
+                                            </button>
+
+                                            {/* Save */}
+                                            {done && !hasDb && (
+                                                <form
+                                                    onSubmit={(e) =>
+                                                        submitGroup(e, g.id)
                                                     }
-                                                    className="w-full py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold shadow-sm transition-colors border-t border-emerald-500/20"
                                                 >
-                                                    {forms[slot.id].processing
-                                                        ? "Menyimpan..."
-                                                        : "Simpan Sidik Jari"}
-                                                </button>
-                                            </form>
-                                        )}
+                                                    <button
+                                                        type="submit"
+                                                        disabled={
+                                                            forms[g.id]
+                                                                .processing
+                                                        }
+                                                        className="w-full py-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-bold shadow-sm transition-colors"
+                                                    >
+                                                        {forms[g.id].processing
+                                                            ? "Menyimpan..."
+                                                            : "Simpan (3 Template)"}
+                                                    </button>
+                                                </form>
+                                            )}
+
+                                            {/* Reset DB */}
+                                            {hasDb && (
+                                                <div className="space-y-2">
+                                                    <button
+                                                        onClick={() =>
+                                                            resetDbGroup(g.id)
+                                                        }
+                                                        disabled={
+                                                            forms[g.id]
+                                                                .processing ||
+                                                            activeGroup !== null
+                                                        }
+                                                        className="w-full py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                    >
+                                                        {forms[g.id].processing
+                                                            ? "Mereset DB..."
+                                                            : "Reset DB (Hapus Template Lama)"}
+                                                    </button>
+                                                    <p className="text-xs text-red-600 text-center">
+                                                        Data sudah ada di DB.
+                                                        Sistem tidak menimpa.
+                                                        Reset DB dulu jika ingin
+                                                        daftar ulang.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
+                    </div>
+
+                    {/* Tips */}
+                    <div className="mt-10 bg-white border border-gray-100 rounded-xl p-6 text-sm text-gray-600">
+                        <h3 className="font-bold text-gray-800 mb-2">
+                            Tips biar capture tidak sering “bad quality”
+                        </h3>
+                        <ul className="list-disc pl-5 space-y-1">
+                            <li>
+                                Pastikan jari tidak terlalu kering / terlalu basah.
+                            </li>
+                            <li>
+                                Tempelkan dengan tekanan wajar (jangan terlalu
+                                keras).
+                            </li>
+                            <li>
+                                Saat scan 2 dan 3, geser sedikit posisi jari
+                                (kiri/kanan/atas/bawah) untuk menutup area.
+                            </li>
+                            <li>
+                                Jika sering error, coba bersihkan sensor.
+                            </li>
+                        </ul>
                     </div>
                 </div>
             </div>
