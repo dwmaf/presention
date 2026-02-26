@@ -47,12 +47,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                     Attendance
                                 </NavLink>
 
-                                <NavLink
+                                {/* <NavLink
                                     href={route('test.fingerprint')}
                                     active={route().current('test.fingerprint')}
                                 >
                                     Test Fingerprint
-                                </NavLink>
+                                </NavLink> */}
                             </div>
                         </div>
 
@@ -174,12 +174,12 @@ export default function AuthenticatedLayout({ header, children }) {
                             Attendance
                         </ResponsiveNavLink>
 
-                        <ResponsiveNavLink
+                        {/* <ResponsiveNavLink
                             href={route('test.fingerprint')}
                             active={route().current('test.fingerprint')}
                         >
                             Test Fingerprint
-                        </ResponsiveNavLink>
+                        </ResponsiveNavLink> */}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">

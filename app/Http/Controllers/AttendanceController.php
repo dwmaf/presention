@@ -56,9 +56,71 @@ class AttendanceController extends Controller
                     'id' => (string)$i->id,
                     'fmd' => $i->fingerprint_data,
                     'second_fmd' => $i->second_fingerprint_data,
+                    'fmd_3' => $i->fingerprint_data_3,
+                    'fmd_4' => $i->fingerprint_data_4,
+                    'fmd_5' => $i->fingerprint_data_5,
+                    'fmd_6' => $i->fingerprint_data_6,
                     'name' => $i->name
                 ];
             }) : []
+        ]);
+    }
+
+    public function dashboard(Request $request)
+    {
+        $selectedDate = $request->input('date', Carbon::today()->toDateString());
+
+        $hariMap = [
+            'Monday'    => 'senin',
+            'Tuesday'   => 'selasa',
+            'Wednesday' => 'rabu',
+            'Thursday'  => 'kamis',
+            'Friday'    => 'jumat',
+        ];
+        $hariInggris = Carbon::parse($selectedDate)->format('l');
+        $kolomJadwal = $hariMap[$hariInggris] ?? null;
+
+        $hidden = [
+            'total_kehadiran', 'total_jam', 'total_izin', 'total_sakit',
+            'total_alpha', 'avg_jam_masuk', 'avg_jam_pulang', 'latest_attendance',
+            'fingerprint_data', 'second_fingerprint_data',
+        ];
+
+        // Semua intern aktif + attendance hari itu (untuk stat card)
+        $allInterns = Intern::with(['attendances' => function ($q) use ($selectedDate) {
+            $q->where('date', $selectedDate);
+        }])->where('is_active', true)->get();
+
+        $totalKaryawan = $allInterns->count();
+
+        // Intern terjadwal hari ini untuk grid + stat hadir/tidakHadir/terlambat
+        $query = Intern::with(['attendances' => function ($q) use ($selectedDate) {
+            $q->where('date', $selectedDate);
+        }])->where('is_active', true);
+
+        if ($kolomJadwal) {
+            $query->where($kolomJadwal, true);
+        } else {
+            $query->whereRaw('1 = 0');
+        }
+
+        $scheduledInterns = $query->get();
+
+        $telahHadir = $scheduledInterns->filter(fn($i) => optional($i->attendances->first())->status === 'hadir')->count();
+        $tidakHadir = $scheduledInterns->filter(fn($i) => !$i->attendances->first() || $i->attendances->first()->status !== 'hadir')->count();
+        $terlambat  = $scheduledInterns->filter(fn($i) => optional($i->attendances->first())->terlambat > 0)->count();
+
+        $interns = $scheduledInterns->makeHidden($hidden);
+
+        return Inertia::render('Dashboard', [
+            'interns'       => $interns,
+            'selectedDate'  => $selectedDate,
+            'stats' => [
+                'totalKaryawan' => $totalKaryawan,
+                'telahHadir'    => $telahHadir,
+                'tidakHadir'    => $tidakHadir,
+                'terlambat'     => $terlambat,
+            ],
         ]);
     }
 
@@ -77,6 +139,7 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
+        
         // Panggil generator data absen harian (Trigger)
         $this->generateDailyAttendances();
 
@@ -94,25 +157,37 @@ class AttendanceController extends Controller
 
         // 1. Check-In (Belum ada record atau check_in null)
         if (!$attendance || !$attendance->check_in) {
+            $checkInTime = $now->format('H:i:s');
+            
+            // Logic Potong Poin jika terlambat (> 08:30)
+            $isLate = $now->format('H:i:s') > '08:30:00';
+            if ($isLate) {
+                $intern->decrement('poin');
+            }
+
             if (!$attendance) {
                 Attendance::create([
                     'intern_id' => $intern->id,
                     'date' => $today,
-                    'check_in' => $now->format('H:i:s'),
+                    'check_in' => $checkInTime,
                     'status' => 'hadir'
                 ]);
             } else {
                 $attendance->update([
-                    'check_in' => $now->format('H:i:s'),
+                    'check_in' => $checkInTime,
                     'status' => 'hadir'
                 ]);
             }
 
+            $msg = $isLate 
+                ? "Terlambat! Poin berkurang 1. Check In Berhasil pada " . $checkInTime 
+                : "Check In Berhasil pada " . $checkInTime;
+
             return response()->json([
                 'success' => true,
-                'message' => "Check In Berhasil pada " . $now->format('H:i:s'),
+                'message' => $msg,
                 'type' => 'check_in',
-                'time' => $now->format('H:i:s'),
+                'time' => $checkInTime,
                 'name' => $intern->name
             ]);
         }

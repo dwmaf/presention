@@ -22,9 +22,7 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     // route profil bawaan package breeze tidak/belum diperlukan
@@ -56,8 +54,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/interns/{intern}/create-fingerprint', [SidikJariController::class, 'index'])->name('interns.fingerprint.create');
     Route::post('/interns/{intern}/store-fingerprint', [SidikJariController::class, 'store'])->name('interns.fingerprint.store');
     Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
-    Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
-    Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
+    Route::post('/interns/{intern}/store-fingerprint-slot', [SidikJariController::class, 'storeSlot'])->name('interns.fingerprint.storeSlot');
+    // Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
+    // Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
 
     // Dev Tools
     Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
