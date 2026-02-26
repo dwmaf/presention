@@ -56,6 +56,10 @@ class AttendanceController extends Controller
                     'id' => (string)$i->id,
                     'fmd' => $i->fingerprint_data,
                     'second_fmd' => $i->second_fingerprint_data,
+                    'fmd_3' => $i->fingerprint_data_3,
+                    'fmd_4' => $i->fingerprint_data_4,
+                    'fmd_5' => $i->fingerprint_data_5,
+                    'fmd_6' => $i->fingerprint_data_6,
                     'name' => $i->name
                 ];
             }) : []

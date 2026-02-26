@@ -34,13 +34,17 @@ export default function Attendance({
     // Fingerprint State
     const [status, setStatus] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
-    const [feedback, setFeedback] = useState(null); 
+    const [feedback, setFeedback] = useState(null);
 
     const database_payload = [];
     fingerprintDatabase.forEach((u) => {
         if (u.fmd) database_payload.push({ id: u.id, fmd: u.fmd });
         if (u.second_fmd)
             database_payload.push({ id: u.id, fmd: u.second_fmd });
+        if (u.fmd_3) database_payload.push({ id: u.id, fmd: u.fmd_3 });
+        if (u.fmd_4) database_payload.push({ id: u.id, fmd: u.fmd_4 });
+        if (u.fmd_5) database_payload.push({ id: u.id, fmd: u.fmd_5 });
+        if (u.fmd_6) database_payload.push({ id: u.id, fmd: u.fmd_6 });
     });
 
     const startScanAndVerify = async () => {
@@ -191,9 +195,27 @@ export default function Attendance({
                                     : "bg-indigo-600 hover:bg-indigo-700 text-white"
                             }`}
                         >
-                            <svg width="21" height="21" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M0.75 6.437C0.854 4.337 1.165 3.027 2.097 2.097C3.027 1.165 4.337 0.854 6.437 0.75M19.75 6.437C19.646 4.337 19.335 3.027 18.403 2.097C17.473 1.165 16.163 0.854 14.063 0.75M14.063 19.75C16.163 19.646 17.473 19.335 18.403 18.403C19.335 17.473 19.646 16.163 19.75 14.063M6.437 19.75C4.337 19.646 3.027 19.335 2.097 18.403C1.165 17.473 0.854 16.163 0.75 14.063M14.75 13.75V9.25C14.75 8.05653 14.2759 6.91193 13.432 6.06802C12.5881 5.22411 11.4435 4.75 10.25 4.75C9.05653 4.75 7.91193 5.22411 7.06802 6.06802C6.22411 6.91193 5.75 8.05653 5.75 9.25V13.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                <path d="M11.75 10.75V9.25C11.75 8.85218 11.592 8.47064 11.3107 8.18934C11.0294 7.90804 10.6478 7.75 10.25 7.75C9.85218 7.75 9.47064 7.90804 9.18934 8.18934C8.90804 8.47064 8.75 8.85218 8.75 9.25V14.75M11.75 13.75V15.75" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <svg
+                                width="21"
+                                height="21"
+                                viewBox="0 0 21 21"
+                                fill="none"
+                                xmlns="http://www.w3.org/2000/svg"
+                            >
+                                <path
+                                    d="M0.75 6.437C0.854 4.337 1.165 3.027 2.097 2.097C3.027 1.165 4.337 0.854 6.437 0.75M19.75 6.437C19.646 4.337 19.335 3.027 18.403 2.097C17.473 1.165 16.163 0.854 14.063 0.75M14.063 19.75C16.163 19.646 17.473 19.335 18.403 18.403C19.335 17.473 19.646 16.163 19.75 14.063M6.437 19.75C4.337 19.646 3.027 19.335 2.097 18.403C1.165 17.473 0.854 16.163 0.75 14.063M14.75 13.75V9.25C14.75 8.05653 14.2759 6.91193 13.432 6.06802C12.5881 5.22411 11.4435 4.75 10.25 4.75C9.05653 4.75 7.91193 5.22411 7.06802 6.06802C6.22411 6.91193 5.75 8.05653 5.75 9.25V13.75"
+                                    stroke="white"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
+                                <path
+                                    d="M11.75 10.75V9.25C11.75 8.85218 11.592 8.47064 11.3107 8.18934C11.0294 7.90804 10.6478 7.75 10.25 7.75C9.85218 7.75 9.47064 7.90804 9.18934 8.18934C8.90804 8.47064 8.75 8.85218 8.75 9.25V14.75M11.75 13.75V15.75"
+                                    stroke="white"
+                                    stroke-width="1.5"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                />
                             </svg>
 
                             {isScanning

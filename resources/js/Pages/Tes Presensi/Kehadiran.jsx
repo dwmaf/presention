@@ -16,10 +16,14 @@ export default function Kehadiran({
 
     // Kumpulkan orang-orangnya, serta semua sidik jari (utama & cadangan) dalam array datar untuk C#
     const database_payload = [];
-    localData.forEach((u) => {
+    fingerprintDatabase.forEach((u) => {
         if (u.fmd) database_payload.push({ id: String(u.id), fmd: u.fmd });
         if (u.second_fmd)
             database_payload.push({ id: String(u.id), fmd: u.second_fmd });
+        if (u.fmd_3) database_payload.push({ id: String(u.id), fmd: u.fmd_3 });
+        if (u.fmd_4) database_payload.push({ id: String(u.id), fmd: u.fmd_4 });
+        if (u.fmd_5) database_payload.push({ id: String(u.id), fmd: u.fmd_5 });
+        if (u.fmd_6) database_payload.push({ id: String(u.id), fmd: u.fmd_6 });
     });
 
     const startScanAndVerify = async () => {

@@ -54,6 +54,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/interns/{intern}/create-fingerprint', [SidikJariController::class, 'index'])->name('interns.fingerprint.create');
     Route::post('/interns/{intern}/store-fingerprint', [SidikJariController::class, 'store'])->name('interns.fingerprint.store');
     Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
+    Route::post('/interns/{intern}/store-fingerprint-slot', [SidikJariController::class, 'storeSlot'])->name('interns.fingerprint.storeSlot');
     Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
     Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
 
