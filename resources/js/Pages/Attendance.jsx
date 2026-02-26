@@ -147,7 +147,7 @@ export default function Attendance({
                         <img
                             src="/foto/upa-pkk-logo.jpg.jpeg"
                             alt="UPA PKK Logo"
-                            className="w-12 h-12 rounded-full object-cover shadow-md flex-shrink-0"
+                            className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                         />
                         <div>
                             <p className="text-gray-900 font-bold text-lg leading-tight">
@@ -176,10 +176,6 @@ export default function Attendance({
                                 {feedback.message}
                             </div>
                         )}
-
-                        <h1 className="text-gray-900 text-3xl font-bold tracking-wide hidden md:block">
-                            Absensi Harian
-                        </h1>
 
                         {/* Tombol Scan Kecil */}
                         <button
@@ -210,6 +206,11 @@ export default function Attendance({
             </div>
 
             <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-8">
+                <div>
+                    <h1 className="text-2xl font-semibold hidden md:block">
+                        Absensi Harian
+                    </h1>
+                </div>
                 {/* ── Search + Date ── */}
                 <div className="flex items-center gap-3 mb-8">
                     {/* Search */}
