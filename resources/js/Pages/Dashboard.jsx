@@ -1,186 +1,239 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
-import { useState, useRef } from 'react';
-import InternCard from '@/Components/InternCard';
+import { useState } from 'react';
+import RangeDatePicker from '@/Components/RangeDatePicker';
 import SearchBar from '@/Components/SearchBar';
 
-function formatTanggalIndonesia(dateStr) {
-    if (!dateStr) return '';
-    const date = new Date(dateStr + 'T00:00:00');
-    return date.toLocaleDateString('id-ID', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-    });
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, bgColor, iconBg, icon }) {
-    return (
-        <div className={`flex items-center gap-4 rounded-2xl p-5 shadow-sm ${bgColor}`}>
-            <div className={`flex items-center justify-center w-12 h-12 rounded-xl ${iconBg} flex-shrink-0`}>
-                {icon}
-            </div>
-            <div>
-                <p className="text-3xl font-bold text-gray-800 leading-none">{value}</p>
-                <p className="text-sm text-gray-500 mt-1">{label}</p>
-            </div>
-        </div>
-    );
-}
-
-export default function Dashboard({
-    interns = [],
-    selectedDate,
-    stats = { totalKaryawan: 0, telahHadir: 0, tidakHadir: 0, terlambat: 0 },
-}) {
-    const [date, setDate] = useState(selectedDate || new Date().toISOString().split('T')[0]);
+export default function Dashboard({ interns = [], startDate, endDate }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const dateInputRef = useRef(null);
+    const [dateRange, setDateRange] = useState([
+        startDate ? new Date(startDate) : new Date(),
+        endDate ? new Date(endDate) : new Date(),
+    ]);
 
-    const handleDateChange = (e) => {
-        const newDate = e.target.value;
-        setDate(newDate);
-        router.get(route('dashboard'), { date: newDate }, { preserveState: true, replace: true });
+    const handleDateRangeChange = (newValue) => {
+        setDateRange(newValue);
+        
+        if (newValue[0] && newValue[1]) {
+            const formatDate = (date) => {
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+
+            router.get(
+                route('dashboard'),
+                {
+                    start_date: formatDate(newValue[0]),
+                    end_date: formatDate(newValue[1]),
+                },
+                {
+                    preserveState: true,
+                    replace: true,
+                }
+            );
+        }
+    };
+
+    const handleDownload = () => {
+        const formatDate = (date) => {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+        // Implementasi download CSV
+        const csvData = [
+            ['Nama', 'Divisi', 'Jumlah Hadir', 'Jumlah Izin', 'Jumlah Alpha', 'Total Jam'],
+            ...filteredInterns.map(intern => [
+                intern.name,
+                intern.division,
+                intern.jumlah_hadir,
+                intern.jumlah_izin,
+                intern.jumlah_alpha,
+                intern.total_jam + ' jam'
+            ])
+        ];
+
+        const csvContent = csvData.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        
+        link.setAttribute('href', url);
+        link.setAttribute('download', `data_absensi_${dateRange[0]?.format('DD-MM-YYYY')}_${dateRange[1]?.format('DD-MM-YYYY')}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     const filteredInterns = interns.filter((intern) =>
-        intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        intern.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-    const downloadUrl = `/interns/export-attendance-all?date=${date}`;
+    console.log('Filtered Interns:', filteredInterns);
 
     return (
         <AuthenticatedLayout>
-            <Head title="Absensi Harian" />
+            <Head title="Data Absensi" />
 
             <div className="p-6 md:p-8 space-y-6">
-
                 {/* ── Title ── */}
-                <h1 className="text-2xl font-bold text-gray-800">Absensi Harian</h1>
+                <h1 className="text-2xl font-bold text-gray-800">Data Absensi</h1>
 
-                {/* ── Date + Download row ── */}
-                <div className="flex items-center justify-between">
-                    {/* Date Picker — kiri */}
-                    <div
-                        onClick={() => dateInputRef.current?.showPicker()}
-                        className="relative flex items-center gap-2 border border-blue-300 hover:border-blue-400 bg-white rounded-xl px-4 py-2.5 shadow-sm cursor-pointer transition select-none"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-500 flex-shrink-0" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14zM7 10h5v5H7z"/>
-                        </svg>
-                        <span className="text-blue-600 text-sm font-semibold">
-                            {formatTanggalIndonesia(date)}
-                        </span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-blue-400" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M7 10l5 5 5-5z"/>
-                        </svg>
-                        <input
-                            ref={dateInputRef}
-                            type="date"
-                            value={date}
-                            onChange={handleDateChange}
-                            className="absolute opacity-0 w-0 h-0 pointer-events-none"
+                {/* ── Header dengan Range Date Picker & Download ── */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div className="w-full sm:w-auto">
+                        <RangeDatePicker
+                            value={dateRange}
+                            onChange={handleDateRangeChange}
+                            format="dd/MM/yyyy"
+                            maxDate={new Date()}
                         />
                     </div>
-
-                    {/* Download — kanan */}
-                    <a
-                        href={downloadUrl}
-                        className="flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-700 hover:bg-green-50 transition px-4 py-2.5 rounded-xl"
+                    
+                    <button
+                        onClick={handleDownload}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold transition shadow-md"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-6" viewBox="0 0 24 24">
-                            <path fill="currentColor" d="M20.68 7.014a3.85 3.85 0 0 0-.92-1.22l-3-2.72a4.15 4.15 0 0 0-2.39-1.07H8.21A5 5 0 0 0 3 6.864v10.3a5 5 0 0 0 3.31 4.53a4.7 4.7 0 0 0 1.92.3h7.56a5 5 0 0 0 5.21-4.86v-8.57a3.75 3.75 0 0 0-.32-1.55m-4.84 8.08l-2.66 2.67a1.7 1.7 0 0 1-.53.35q-.201.09-.42.11a.9.9 0 0 1-.4 0a1.3 1.3 0 0 1-.42-.11a1.7 1.7 0 0 1-.53-.35l-2.66-2.67a1 1 0 0 1 1.41-1.41l1.4 1.4v-4.61a1 1 0 1 1 2 0v4.61l1.4-1.4a1 1 0 0 1 1.41 1.41m.22-7.69a1.08 1.08 0 0 1-1.09-1.08v-2.65q.42.228.81.51l3 2.73q.25.211.42.49z"/>
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-5 h-5"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                        >
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
                         </svg>
                         Download
-                    </a>
+                    </button>
                 </div>
 
-                {/* ── Stats Cards ── */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <StatCard
-                        label="Total Karyawan"
-                        value={stats.totalKaryawan}
-                        bgColor="bg-[#DFF2FE]"
-                        icon={
-                            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="56" height="56" rx="12" fill="#74D4FF"/>
-                                <path d="M19.125 44C18.2656 44 17.5302 43.6967 16.9187 43.0901C16.3073 42.4836 16.001 41.7535 16 40.9V16.1C16 15.2475 16.3062 14.518 16.9187 13.9114C17.5312 13.3048 18.2667 13.001 19.125 13H37.875C38.7344 13 39.4703 13.3038 40.0828 13.9114C40.6953 14.519 41.001 15.2485 41 16.1V40.9C41 41.7525 40.6943 42.4825 40.0828 43.0901C39.4714 43.6977 38.7354 44.001 37.875 44H33.1875L31.625 40.9H25.375L23.8125 44H19.125ZM22.25 33.15H34.75V32.2975C34.75 30.9542 34.099 29.9854 32.7969 29.3912C31.4948 28.7971 30.0625 28.5 28.5 28.5C26.9375 28.5 25.5052 28.7971 24.2031 29.3912C22.901 29.9854 22.25 30.9542 22.25 32.2975V33.15ZM30.7078 26.0401C31.3193 25.4325 31.625 24.7025 31.625 23.85C31.625 22.9975 31.3193 22.268 30.7078 21.6614C30.0964 21.0548 29.3604 20.751 28.5 20.75C27.6396 20.749 26.9042 21.0528 26.2937 21.6614C25.6833 22.27 25.3771 22.9996 25.375 23.85C25.3729 24.7004 25.6792 25.4305 26.2937 26.0401C26.9083 26.6498 27.6437 26.9531 28.5 26.95C29.3562 26.9469 30.0922 26.6436 30.7078 26.0401Z" fill="#0069A8"/>
-                            </svg>
+                {/* ── Search Bar ── */}
+                <SearchBar onSearch={setSearchTerm} placeholder="Cari karyawan" />
 
-                        }
-                    />
-                    <StatCard
-                        label="Telah Hadir"
-                        value={stats.telahHadir}
-                        bgColor="bg-green-50"
-                        icon={
-                            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="56" height="56" rx="12" fill="#BBF451"/>
-                                <path d="M34.667 17.9999C34.667 19.768 33.9646 21.4637 32.7144 22.714C31.4641 23.9642 29.7684 24.6666 28.0003 24.6666C26.2322 24.6666 24.5365 23.9642 23.2863 22.714C22.036 21.4637 21.3337 19.768 21.3337 17.9999C21.3337 16.2318 22.036 14.5361 23.2863 13.2859C24.5365 12.0356 26.2322 11.3333 28.0003 11.3333C29.7684 11.3333 31.4641 12.0356 32.7144 13.2859C33.9646 14.5361 34.667 16.2318 34.667 17.9999ZM34.1303 30.5049C33.342 30.5133 32.607 30.5433 31.967 30.6283C30.8953 30.7733 29.722 31.1166 28.7537 32.0866C27.7837 33.0549 27.4403 34.2283 27.297 35.2999C27.167 36.2633 27.167 37.4399 27.167 38.6899V38.9766C27.167 40.2266 27.167 41.4033 27.297 42.3666C27.397 43.1183 27.597 43.9199 28.042 44.6666H28.0003C14.667 44.6666 14.667 41.3083 14.667 37.1666C14.667 33.0249 20.637 29.6666 28.0003 29.6666C30.2103 29.6666 32.2953 29.9683 34.1303 30.5049Z" fill="#497D00"/>
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M35.5003 44.6667C32.7503 44.6667 31.3753 44.6667 30.522 43.8117C29.667 42.9583 29.667 41.5833 29.667 38.8333C29.667 36.0833 29.667 34.7083 30.522 33.855C31.3753 33 32.7503 33 35.5003 33C38.2503 33 39.6253 33 40.4787 33.855C41.3337 34.7083 41.3337 36.0833 41.3337 38.8333C41.3337 41.5833 41.3337 42.9583 40.4787 43.8117C39.6253 44.6667 38.2503 44.6667 35.5003 44.6667ZM38.7803 37.5767C38.9627 37.3943 39.0651 37.147 39.0651 36.8892C39.0651 36.6313 38.9627 36.384 38.7803 36.2017C38.598 36.0193 38.3507 35.9169 38.0928 35.9169C37.835 35.9169 37.5877 36.0193 37.4053 36.2017L34.2053 39.4017L33.5953 38.7933C33.505 38.703 33.3979 38.6314 33.2799 38.5826C33.1619 38.5337 33.0355 38.5086 32.9078 38.5086C32.7801 38.5086 32.6537 38.5337 32.5358 38.5826C32.4178 38.6314 32.3106 38.703 32.2203 38.7933C32.13 38.8836 32.0584 38.9908 32.0096 39.1088C31.9607 39.2267 31.9356 39.3532 31.9356 39.4808C31.9356 39.6085 31.9607 39.7349 32.0096 39.8529C32.0584 39.9709 32.13 40.0781 32.2203 40.1683L33.517 41.465C33.6072 41.5554 33.7144 41.627 33.8324 41.6759C33.9503 41.7249 34.0768 41.75 34.2045 41.75C34.3322 41.75 34.4586 41.7249 34.5766 41.6759C34.6946 41.627 34.8017 41.5554 34.892 41.465L38.7803 37.5767Z" fill="#497D00"/>
-                            </svg>
-
-
-                        }
-                    />
-                    <StatCard
-                        label="Tidak Hadir"
-                        value={stats.tidakHadir}
-                        bgColor="bg-red-50"
-                        icon={
-                            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="56" height="56" rx="12" fill="#FFC9C9"/>
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M35.5003 44.6667C32.7503 44.6667 31.3753 44.6667 30.522 43.8117C29.667 42.9583 29.667 41.5833 29.667 38.8333C29.667 36.0833 29.667 34.7083 30.522 33.855C31.3753 33 32.7503 33 35.5003 33C38.2503 33 39.6253 33 40.4787 33.855C41.3337 34.7083 41.3337 36.0833 41.3337 38.8333C41.3337 41.5833 41.3337 42.9583 40.4787 43.8117C39.6253 44.6667 38.2503 44.6667 35.5003 44.6667ZM33.5953 35.5533C33.413 35.371 33.1657 35.2686 32.9078 35.2686C32.65 35.2686 32.4027 35.371 32.2203 35.5533C32.038 35.7357 31.9356 35.983 31.9356 36.2408C31.9356 36.4987 32.038 36.746 32.2203 36.9283L34.1253 38.8333L32.2203 40.7383C32.13 40.8286 32.0584 40.9358 32.0096 41.0538C31.9607 41.1717 31.9356 41.2982 31.9356 41.4258C31.9356 41.5535 31.9607 41.6799 32.0096 41.7979C32.0584 41.9159 32.13 42.0231 32.2203 42.1133C32.3106 42.2036 32.4178 42.2752 32.5358 42.3241C32.6537 42.373 32.7801 42.3981 32.9078 42.3981C33.0355 42.3981 33.1619 42.373 33.2799 42.3241C33.3979 42.2752 33.505 42.2036 33.5953 42.1133L35.5003 40.2083L37.4053 42.1133C37.4956 42.2036 37.6028 42.2752 37.7208 42.3241C37.8387 42.373 37.9651 42.3981 38.0928 42.3981C38.2205 42.3981 38.3469 42.373 38.4649 42.3241C38.5829 42.2752 38.69 42.2036 38.7803 42.1133C38.8706 42.0231 38.9422 41.9159 38.9911 41.7979C39.04 41.6799 39.0651 41.5535 39.0651 41.4258C39.0651 41.2982 39.04 41.1717 38.9911 41.0538C38.9422 40.9358 38.8706 40.8286 38.7803 40.7383L36.8753 38.8333L38.7803 36.9283C38.9627 36.746 39.0651 36.4987 39.0651 36.2408C39.0651 35.983 38.9627 35.7357 38.7803 35.5533C38.598 35.371 38.3507 35.2686 38.0928 35.2686C37.835 35.2686 37.5877 35.371 37.4053 35.5533L35.5003 37.4583L33.5953 35.5533Z" fill="#C10007"/>
-                                <path d="M28.0003 24.6666C29.7684 24.6666 31.4641 23.9642 32.7144 22.714C33.9646 21.4637 34.667 19.768 34.667 17.9999C34.667 16.2318 33.9646 14.5361 32.7144 13.2859C31.4641 12.0356 29.7684 11.3333 28.0003 11.3333C26.2322 11.3333 24.5365 12.0356 23.2863 13.2859C22.036 14.5361 21.3337 16.2318 21.3337 17.9999C21.3337 19.768 22.036 21.4637 23.2863 22.714C24.5365 23.9642 26.2322 24.6666 28.0003 24.6666ZM34.1303 30.5049C33.342 30.5133 32.607 30.5433 31.967 30.6283C30.8953 30.7733 29.722 31.1166 28.7537 32.0866C27.7837 33.0549 27.4403 34.2283 27.297 35.2999C27.167 36.2633 27.167 37.4399 27.167 38.6899V38.9766C27.167 40.2266 27.167 41.4033 27.297 42.3666C27.397 43.1183 27.597 43.9199 28.042 44.6666H28.0003C14.667 44.6666 14.667 41.3083 14.667 37.1666C14.667 33.0249 20.637 29.6666 28.0003 29.6666C30.2103 29.6666 32.2953 29.9683 34.1303 30.5049Z" fill="#C10007"/>
-                            </svg>
-
-
-                        }
-                    />
-                    <StatCard
-                        label="Terlambat"
-                        value={stats.terlambat}
-                        bgColor="bg-amber-50"
-                        icon={
-                            <svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <rect width="56" height="56" rx="12" fill="#FFDF20"/>
-                                <path d="M24.6667 14.25C23.0091 14.25 21.4194 14.9085 20.2472 16.0806C19.0751 17.2527 18.4167 18.8424 18.4167 20.5C18.4167 22.1576 19.0751 23.7473 20.2472 24.9194C21.4194 26.0915 23.0091 26.75 24.6667 26.75C26.3243 26.75 27.914 26.0915 29.0861 24.9194C30.2582 23.7473 30.9167 22.1576 30.9167 20.5C30.9167 18.8424 30.2582 17.2527 29.0861 16.0806C27.914 14.9085 26.3243 14.25 24.6667 14.25ZM18 30.0833C16.3424 30.0833 14.7527 30.7418 13.5806 31.9139C12.4085 33.086 11.75 34.6757 11.75 36.3333V38.3133C11.75 39.57 12.66 40.64 13.9 40.8417C17.5833 41.4433 21.305 41.735 25.0267 41.715C25.2867 41.7133 25.4433 41.425 25.3167 41.1983C24.341 39.4578 23.8302 37.4953 23.8333 35.5C23.8333 34.1883 24.05 32.9267 24.45 31.75C24.4673 31.698 24.4723 31.6427 24.4647 31.5884C24.457 31.5341 24.4369 31.4824 24.4059 31.4372C24.3749 31.392 24.3339 31.3546 24.286 31.3279C24.2382 31.3012 24.1847 31.2859 24.13 31.2833C23.0375 31.2342 21.9567 31.038 20.9167 30.7L19.4733 30.2267C19.1808 30.1328 18.8756 30.0845 18.5683 30.0833H18ZM36.75 33C36.75 32.6685 36.6183 32.3505 36.3839 32.1161C36.1495 31.8817 35.8315 31.75 35.5 31.75C35.1685 31.75 34.8505 31.8817 34.6161 32.1161C34.3817 32.3505 34.25 32.6685 34.25 33V35.955C34.25 36.355 34.4417 36.73 34.765 36.965L36.4317 38.1783C36.7 38.3733 37.0347 38.4536 37.3623 38.4017C37.6899 38.3499 37.9834 38.17 38.1783 37.9017C38.3733 37.6334 38.4536 37.2986 38.4017 36.971C38.3499 36.6435 38.17 36.3499 37.9017 36.155L36.75 35.3183V33Z" fill="#A65F00"/>
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M35.4997 44.6666C37.9308 44.6666 40.2624 43.7008 41.9815 41.9817C43.7006 40.2626 44.6663 37.9311 44.6663 35.4999C44.6663 33.0688 43.7006 30.7372 41.9815 29.0181C40.2624 27.299 37.9308 26.3333 35.4997 26.3333C33.0685 26.3333 30.7369 27.299 29.0179 29.0181C27.2988 30.7372 26.333 33.0688 26.333 35.4999C26.333 37.9311 27.2988 40.2626 29.0179 41.9817C30.7369 43.7008 33.0685 44.6666 35.4997 44.6666ZM35.4997 42.1666C37.2678 42.1666 38.9635 41.4642 40.2137 40.214C41.464 38.9637 42.1663 37.268 42.1663 35.4999C42.1663 33.7318 41.464 32.0361 40.2137 30.7859C38.9635 29.5356 37.2678 28.8333 35.4997 28.8333C33.7316 28.8333 32.0359 29.5356 30.7856 30.7859C29.5354 32.0361 28.833 33.7318 28.833 35.4999C28.833 37.268 29.5354 38.9637 30.7856 40.214C32.0359 41.4642 33.7316 42.1666 35.4997 42.1666Z" fill="#A65F00"/>
-                            </svg>
-
-                        }
-                    />
+                {/* ── Table ── */}
+                <div className="bg-white rounded-2xl shadow-md overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Profil
+                                    </th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Nama
+                                    </th>
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Jumlah Hadir
+                                    </th>
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Jumlah Izin
+                                    </th>
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Jumlah Alpha
+                                    </th>
+                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Total Jam
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {filteredInterns.length > 0 ? (
+                                    filteredInterns.map((intern) => (
+                                        <tr
+                                            key={intern.id}
+                                            className="hover:bg-gray-50 transition"
+                                        >
+                                            <td className="px-6 py-4">
+                                                <img
+                                                    src={`/${intern.foto}`}
+                                                    alt={intern.name}
+                                                    className="w-10 h-10 rounded-full object-cover"
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="text-sm font-medium text-gray-900">
+                                                    {intern.name}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    {intern.division}
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {intern.jumlah_hadir}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {intern.jumlah_izin}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {intern.jumlah_alpha}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-center">
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {intern.total_jam} jam
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td
+                                            colSpan="6"
+                                            className="px-6 py-12 text-center text-gray-400 text-sm"
+                                        >
+                                            {interns.length === 0
+                                                ? 'Tidak ada data absensi untuk rentang tanggal ini.'
+                                                : 'Karyawan tidak ditemukan.'}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                {/* ── Search ── */}
-                <SearchBar onSearch={setSearchTerm} />
-
-                {/* ── Cards Grid ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {filteredInterns.length > 0 ? (
-                        filteredInterns.map((intern) => {
-                            const att = intern?.attendances?.length > 0 ? intern.attendances[0] : null;
-                            return (
-                                <InternCard
-                                    key={intern.id}
-                                    intern={intern}
-                                    attendance={att}
-                                />
-                            );
-                        })
-                    ) : (
-                        <div className="col-span-full py-16 text-center">
-                            <p className="text-gray-400 text-lg font-medium">
-                                {interns.length === 0
-                                    ? 'Tidak ada intern terjadwal pada hari ini.'
-                                    : 'Intern tidak ditemukan.'}
-                            </p>
+                {/* ── Summary ── */}
+                {filteredInterns.length > 0 && (
+                    <div className="bg-white rounded-xl shadow-md p-6">
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center">
+                                <p className="text-gray-500 text-sm mb-1">Total Karyawan</p>
+                                <p className="text-2xl font-bold text-gray-900">
+                                    {filteredInterns.length}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-gray-500 text-sm mb-1">Total Hadir</p>
+                                <p className="text-2xl font-bold text-green-600">
+                                    {filteredInterns.reduce((sum, i) => sum + i.jumlah_hadir, 0)}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-gray-500 text-sm mb-1">Total Izin</p>
+                                <p className="text-2xl font-bold text-yellow-600">
+                                    {filteredInterns.reduce((sum, i) => sum + i.jumlah_izin, 0)}
+                                </p>
+                            </div>
+                            <div className="text-center">
+                                <p className="text-gray-500 text-sm mb-1">Total Alpha</p>
+                                <p className="text-2xl font-bold text-red-600">
+                                    {filteredInterns.reduce((sum, i) => sum + i.jumlah_alpha, 0)}
+                                </p>
+                            </div>
                         </div>
-                    )}
-                </div>
-
+                    </div>
+                )}
             </div>
         </AuthenticatedLayout>
     );
