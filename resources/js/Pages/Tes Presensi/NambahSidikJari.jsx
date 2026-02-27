@@ -141,7 +141,10 @@ export default function NambahSidikJari({ auth, intern }) {
             if (result.success) {
                 setState((prev) => {
                     const cur = prev[groupId];
-                    const nextSamples = [...cur.samples, result.fmd].slice(0, 3);
+                    const nextSamples = [...cur.samples, result.fmd].slice(
+                        0,
+                        3,
+                    );
                     const nextImages = result.image
                         ? [...cur.images, result.image].slice(0, 3)
                         : cur.images;
@@ -176,8 +179,7 @@ export default function NambahSidikJari({ auth, intern }) {
                 ...prev,
                 [groupId]: {
                     ...prev[groupId],
-                    status:
-                        "Error: Tidak dapat menghubungi Service C# (Port 5000). Pastikan FingerprintBridge.exe berjalan.",
+                    status: "Error: Tidak dapat menghubungi Service C# (Port 5000). Pastikan FingerprintBridge.exe berjalan.",
                 },
             }));
         } finally {
@@ -202,32 +204,35 @@ export default function NambahSidikJari({ auth, intern }) {
 
         forms[groupId].setData("samples", samples);
 
-        forms[groupId].post(route("interns.fingerprint.storeGroup", intern.id), {
-            onSuccess: () => {
-                setState((prev) => ({
-                    ...prev,
-                    [groupId]: {
-                        ...prev[groupId],
-                        status: "✓ Berhasil disimpan ke database! (Tidak menimpa data lama).",
-                    },
-                }));
-                // opsional: reset local setelah simpan
-                // resetLocal(groupId);
+        forms[groupId].post(
+            route("interns.fingerprint.storeGroup", intern.id),
+            {
+                onSuccess: () => {
+                    setState((prev) => ({
+                        ...prev,
+                        [groupId]: {
+                            ...prev[groupId],
+                            status: "✓ Berhasil disimpan ke database! (Tidak menimpa data lama).",
+                        },
+                    }));
+                    // opsional: reset local setelah simpan
+                    // resetLocal(groupId);
+                },
+                onError: (errors) => {
+                    // biasanya akan kena "fingerprint" kalau belum reset DB
+                    const msg =
+                        errors?.fingerprint ||
+                        "Gagal menyimpan. Cek validasi / pastikan Reset DB jika sudah ada data.";
+                    setState((prev) => ({
+                        ...prev,
+                        [groupId]: {
+                            ...prev[groupId],
+                            status: "Error: " + msg,
+                        },
+                    }));
+                },
             },
-            onError: (errors) => {
-                // biasanya akan kena "fingerprint" kalau belum reset DB
-                const msg =
-                    errors?.fingerprint ||
-                    "Gagal menyimpan. Cek validasi / pastikan Reset DB jika sudah ada data.";
-                setState((prev) => ({
-                    ...prev,
-                    [groupId]: {
-                        ...prev[groupId],
-                        status: "Error: " + msg,
-                    },
-                }));
-            },
-        });
+        );
     };
 
     const resetDbGroup = (groupId) => {
@@ -244,8 +249,7 @@ export default function NambahSidikJari({ auth, intern }) {
                             step: 0,
                             samples: [],
                             images: [],
-                            status:
-                                "DB sudah di-reset. Sekarang kamu bisa scan ulang 3x lalu simpan.",
+                            status: "DB sudah di-reset. Sekarang kamu bisa scan ulang 3x lalu simpan.",
                         },
                     }));
                 },
@@ -295,20 +299,23 @@ export default function NambahSidikJari({ auth, intern }) {
                         </div>
                         <Link
                             href={route("interns.index")}
-                            className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-25 transition ease-in-out duration-150"
+                            className="text-blue-700 font-semibold hover:underline flex gap-2 items-center"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                width="16"
-                                height="16"
+                                width="18"
+                                height="18"
                                 viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
+                                style={{ transform: "rotate(-90deg)" }}
                             >
-                                <path d="m15 18-6-6 6-6" />
+                                <path
+                                    fill="none"
+                                    stroke="oklch(48.8% 0.243 264.376)"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M12 5v14m6-8l-6-6m-6 6l6-6"
+                                />
                             </svg>
                             Kembali
                         </Link>
@@ -378,7 +385,9 @@ export default function NambahSidikJari({ auth, intern }) {
                                                     >
                                                         {st.images[i] ? (
                                                             <img
-                                                                src={st.images[i]}
+                                                                src={
+                                                                    st.images[i]
+                                                                }
                                                                 alt={`${g.title} scan ${i + 1}`}
                                                                 className="h-24 w-full object-contain"
                                                             />
@@ -393,7 +402,9 @@ export default function NambahSidikJari({ auth, intern }) {
 
                                             <p
                                                 className={`text-center mt-4 px-2 text-sm font-medium ${
-                                                    st.status.includes("Gagal") ||
+                                                    st.status.includes(
+                                                        "Gagal",
+                                                    ) ||
                                                     st.status.includes("Error")
                                                         ? "text-red-500"
                                                         : "text-gray-600"
@@ -496,7 +507,8 @@ export default function NambahSidikJari({ auth, intern }) {
                         </h3>
                         <ul className="list-disc pl-5 space-y-1">
                             <li>
-                                Pastikan jari tidak terlalu kering / terlalu basah.
+                                Pastikan jari tidak terlalu kering / terlalu
+                                basah.
                             </li>
                             <li>
                                 Tempelkan dengan tekanan wajar (jangan terlalu
@@ -506,9 +518,7 @@ export default function NambahSidikJari({ auth, intern }) {
                                 Saat scan 2 dan 3, geser sedikit posisi jari
                                 (kiri/kanan/atas/bawah) untuk menutup area.
                             </li>
-                            <li>
-                                Jika sering error, coba bersihkan sensor.
-                            </li>
+                            <li>Jika sering error, coba bersihkan sensor.</li>
                         </ul>
                     </div>
                 </div>
