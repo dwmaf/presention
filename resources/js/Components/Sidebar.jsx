@@ -2,7 +2,7 @@ import { Link } from "@inertiajs/react";
 
 function Sidebar() {
     return (
-        <div className="bg-white w-64 flex flex-col gap-4 pt-8 fixed top-0 left-0 bottom-0">
+        <div className="bg-white w-64 flex flex-col gap-4 pt-8 fixed top-0 left-0 bottom-0 z-50">
             <div className="flex gap-2 items-center px-8">
                 <img
                     src="foto/upa-pkk-logo.jpg.jpeg"
