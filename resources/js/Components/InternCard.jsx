@@ -79,7 +79,7 @@ export default function InternCard({ intern, onClick, attendance }) {
                 <div>No Img</div>
             )}
             <div className="px-4 flex flex-col justify-center flex-1 ">
-                <p className="font-bold text-lg flex items-center flex-1">
+                <p className="font-semibold text-lg flex items-center flex-1">
                     {intern.name}
                 </p>
                 {/* Tampilkan badge kehadiran jika prop attendance ada, selain itu tampilkan divisi */}
