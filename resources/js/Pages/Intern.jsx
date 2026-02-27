@@ -12,6 +12,7 @@ import DangerButton from "@/Components/DangerButton";
 import InternCard from "@/Components/InternCard";
 import InternDetail from "@/Components/InternDetail";
 import CustomSelect from "@/Components/CustomSelect";
+import Sidebar from "@/Components/Sidebar";
 import { Link } from "@inertiajs/react";
 
 export default function Intern({ auth, interns, divisions }) {
@@ -605,7 +606,6 @@ export default function Intern({ auth, interns, divisions }) {
                                     />
                                 )}
                             </div>
-
                         </div>
                     </div>
 

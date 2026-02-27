@@ -1,8 +1,9 @@
-import Dropdown from '@/Components/Dropdown';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import Dropdown from "@/Components/Dropdown";
+import NavLink from "@/Components/NavLink";
+import ResponsiveNavLink from "@/Components/ResponsiveNavLink";
+import { usePage } from "@inertiajs/react";
+import { useState } from "react";
+import Sidebar from "@/Components/Sidebar";
 
 export default function AuthenticatedLayout({ header, children }) {
     const user = usePage().props.auth.user;
@@ -11,12 +12,11 @@ export default function AuthenticatedLayout({ header, children }) {
         useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <nav className="border-b border-gray-100 bg-white">
+        <div className="min-h-screen bg-gray-100 flex justify-end">
+            {/* <nav className="border-b border-gray-100 bg-white">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 justify-between">
                         <div className="flex">
-                            {/* LOGO DIHILANGIN */}
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
                                 <NavLink
@@ -46,13 +46,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Attendance
                                 </NavLink>
-
-                                {/* <NavLink
-                                    href={route('test.fingerprint')}
-                                    active={route().current('test.fingerprint')}
-                                >
-                                    Test Fingerprint
-                                </NavLink> */}
                             </div>
                         </div>
 
@@ -173,13 +166,6 @@ export default function AuthenticatedLayout({ header, children }) {
                         >
                             Attendance
                         </ResponsiveNavLink>
-
-                        {/* <ResponsiveNavLink
-                            href={route('test.fingerprint')}
-                            active={route().current('test.fingerprint')}
-                        >
-                            Test Fingerprint
-                        </ResponsiveNavLink> */}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">
@@ -203,15 +189,17 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
                     </div>
                 </div>
-            </nav>
+            </nav> */}
 
-            {header && (
+            <Sidebar />
+
+            {/* {header && (
                 <header className="bg-white shadow">
                     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
                         {header}
                     </div>
                 </header>
-            )}
+            )} */}
 
             <main>{children}</main>
         </div>
