@@ -130,9 +130,22 @@ class AttendanceController extends Controller
             'status' => 'required|in:hadir,izin,sakit,alpha'
         ]);
 
+        $oldStatus = $attendance->status;
+        $newStatus = $request->status;
+
         $attendance->update([
-            'status' => $request->status
+            'status' => $newStatus
         ]);
+
+        // Jika berubah dari Alpha ke (Hadir/Izin/Sakit), kembalikan poinnya (+2)
+        if ($oldStatus === 'alpha' && in_array($newStatus, ['hadir', 'izin', 'sakit'])) {
+            $attendance->intern->increment('poin', 2);
+        }
+        
+        // Jika berubah DARI (Hadir/Izin/Sakit) KEMBALI ke Alpha, potong poin lagi (-2)
+        if ($newStatus === 'alpha' && in_array($oldStatus, ['hadir', 'izin', 'sakit'])) {
+            $attendance->intern->decrement('poin', 2);
+        }
 
         return redirect()->back()->with('success', 'Status kehadiran berhasil diperbarui.');
     }
@@ -159,10 +172,15 @@ class AttendanceController extends Controller
         if (!$attendance || !$attendance->check_in) {
             $checkInTime = $now->format('H:i:s');
             
-            // Logic Potong Poin jika terlambat (> 08:30)
+            // Logic Pengembalian Poin dari Alpha (-2)
+            // Tepat Waktu (<= 08:30) : +2 (Netto: 0)
+            // Terlambat (> 08:30)   : +1 (Netto: -1)
             $isLate = $now->format('H:i:s') > '08:30:00';
+            
             if ($isLate) {
-                $intern->decrement('poin');
+                $intern->increment('poin', 1);
+            } else {
+                $intern->increment('poin', 2);
             }
 
             if (!$attendance) {
@@ -180,8 +198,8 @@ class AttendanceController extends Controller
             }
 
             $msg = $isLate 
-                ? "Terlambat! Poin berkurang 1. Check In Berhasil pada " . $checkInTime 
-                : "Check In Berhasil pada " . $checkInTime;
+                ? "Terlambat! Poin berkurang 1 (Netto). Check In Berhasil pada " . $checkInTime 
+                : "Check In Berhasil pada " . $checkInTime . " (Poin Normal)";
 
             return response()->json([
                 'success' => true,
@@ -255,13 +273,20 @@ class AttendanceController extends Controller
 
         if ($internsTanpaPresensi->count() > 0) {
             $now = Carbon::now();
-            $data = $internsTanpaPresensi->map(fn($i) => [
-                'intern_id' => $i->id,
-                'date' => $today,
-                'status' => 'alpha',
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])->toArray();
+            $data = [];
+            
+            foreach ($internsTanpaPresensi as $i) {
+                // Potong 2 poin langsung saat record 'alpha' dibuat
+                $i->decrement('poin', 2);
+
+                $data[] = [
+                    'intern_id' => $i->id,
+                    'date' => $today,
+                    'status' => 'alpha',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
 
             Attendance::insert($data);
         }

@@ -34,6 +34,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('divisions', DivisionController::class);
     Route::post('/divisions/{division}/assign-intern', [DivisionController::class, 'assignIntern'])->name('divisions.assignIntern');
     Route::delete('/divisions/{division}/remove-intern/{intern}', [DivisionController::class, 'removeIntern'])->name('divisions.removeIntern');
+
     // untuk nampilin halaman daftar intern, nambah, edit, dan hapus
     Route::resource('interns', InternController::class);
 
@@ -43,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
     Route::put('/interns/{intern}/update-photo', [InternController::class, 'updatePhoto'])->name('interns.updatePhoto');
     Route::get('/interns/{intern}/export-attendance', [InternController::class, 'exportAttendanceCsv'])->name('interns.exportAttendance');
+
     // untuk buka halaman untuk nambah fingerprint
     Route::get('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'index'])->name('interns.fingerprint-enrollment');
     Route::post('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'store'])->name('interns.fingerprint-enrollment.store');
@@ -52,11 +54,20 @@ Route::middleware('auth')->group(function () {
     //---------------------------------|
     // untuk buka halaman untuk nambah fingerprint
     Route::get('/interns/{intern}/create-fingerprint', [SidikJariController::class, 'index'])->name('interns.fingerprint.create');
+
+    // legacy routes (masih ada kalau kamu butuh)
     Route::post('/interns/{intern}/store-fingerprint', [SidikJariController::class, 'store'])->name('interns.fingerprint.store');
     Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
     Route::post('/interns/{intern}/store-fingerprint-slot', [SidikJariController::class, 'storeSlot'])->name('interns.fingerprint.storeSlot');
-    // Route::get('/kehadiran', [KehadiranController::class, 'index'])->name('kehadiran.index');
-    // Route::post('/kehadiran', [KehadiranController::class, 'store'])->name('kehadiran.store');
+
+    /**
+     * ✅ CHANGED: ROUTE BARU (Group + Reset DB)
+     */
+    Route::post('/interns/{intern}/fingerprint/store-group', [SidikJariController::class, 'storeGroup'])
+        ->name('interns.fingerprint.storeGroup');
+
+    Route::delete('/interns/{intern}/fingerprint/reset-group', [SidikJariController::class, 'resetGroup'])
+        ->name('interns.fingerprint.resetGroup');
 
     // Dev Tools
     Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
