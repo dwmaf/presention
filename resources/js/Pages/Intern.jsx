@@ -242,7 +242,7 @@ export default function Intern({ auth, interns, divisions }) {
             <Head title="Karyawan" />
 
             <div className="py-12 relative">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div className="max-w-7xl mx-auto pr-16">
                     {flash.success && (
                         <div
                             className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
@@ -264,8 +264,10 @@ export default function Intern({ auth, interns, divisions }) {
                         </div>
                     )}
 
+                    <h1 className="text-2xl font-bold">Daftar Karyawan</h1>
+
                     {/* Search bar dan tambah karyawan */}
-                    <div className="flex justify-end mb-4 gap-4">
+                    <div className="flex justify-end my-12 gap-4">
                         <SearchBar onSearch={setSearch} />
                         <PrimaryButton
                             icon={

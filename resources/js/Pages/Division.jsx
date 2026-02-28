@@ -3,6 +3,7 @@ import { Head, router, useForm, usePage } from "@inertiajs/react";
 import { useState, useMemo } from "react";
 import InputError from "@/Components/InputError";
 import Modal from "@/Components/Modal";
+import SearchBar from "@/Components/SearchBar";
 
 // SVG puzzle untuk card divisi
 const PuzzleBig = () => (
@@ -156,7 +157,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
             <div className="flex">
                 <div className="py-10">
-                    <div className="max-w-7xl mx-auto lg:px-48">
+                    <div className="max-w-7xl mx-auto pr-16">
                         {/* Flash messages */}
                         {flash?.success && (
                             <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
@@ -383,7 +384,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                         )}
 
                         {/* Sub-header daftar anggota */}
-                        <div className="relative flex items-center justify-between mt-3 mb-2 shrink-0">
+                        <div className="relative flex items-center justify-between mt-3 mb-4 shrink-0">
                             <p className="text-sm font-semibold text-gray-700">
                                 Daftar Anggota
                             </p>
@@ -392,7 +393,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                     setShowAddMember((v) => !v);
                                     setMemberSearch("");
                                 }}
-                                className="flex items-center gap-1 text-xs font-semibold text-indigo-600 hover:underline"
+                                className="flex items-center text-xs font-semibold text-indigo-600 hover:underline"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -408,7 +409,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                             {/* Dropdown panel search */}
                             {showAddMember && (
                                 <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col overflow-hidden">
-                                    <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50">
+                                    <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="14"
@@ -429,7 +430,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                 setMemberSearch(e.target.value)
                                             }
                                             placeholder="Cari nama intern..."
-                                            className="flex-1 bg-transparent text-xs outline-none placeholder-gray-400"
+                                            className="flex-1 bg-transparent text-xs outline-none placeholder-gray-400 border-0 focus:ring-0"
                                         />
                                     </div>
                                     <ul className="max-h-40 overflow-y-auto">

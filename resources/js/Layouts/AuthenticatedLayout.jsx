@@ -201,7 +201,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 </header>
             )} */}
 
-            <main>{children}</main>
+            <main className="flex-1">{children}</main>
         </div>
     );
 }

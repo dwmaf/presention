@@ -23,7 +23,7 @@ export default function SearchBar({ onSearch }) {
                 />
             </svg>
             <input
-                className="flex-1 rounded-md border-none focus:outline-none focus:ring-0 p-0"
+                className="flex-1 border-none focus:outline-none focus:ring-0 p-0"
                 type="text"
                 placeholder="Cari karyawan"
                 value={searchTerm}

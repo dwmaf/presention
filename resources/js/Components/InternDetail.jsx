@@ -100,6 +100,7 @@ export default function InternDetail({ intern, divisions }) {
             onSuccess: () => {
                 setUploading(false);
                 alert("Foto berhasil diubah");
+                router.reload();
             },
             onError: (errors) => {
                 setUploading(false);
@@ -516,13 +517,13 @@ export default function InternDetail({ intern, divisions }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm">Total Kehadiran</p>
-                            <p className="font-bold text-lg">
+                            <p className="font-medium text-lg">
                                 {intern.total_kehadiran || 0} hari
                             </p>
                         </div>
                         <div>
                             <p className="text-sm">Total Jam</p>
-                            <p className="font-bold text-lg">
+                            <p className="font-medium text-lg">
                                 {intern.total_jam || 0} jam
                             </p>
                         </div>
@@ -531,7 +532,7 @@ export default function InternDetail({ intern, divisions }) {
                                 Jam Masuk{" "}
                                 <span className="text-xs">(rata-rata)</span>
                             </p>
-                            <p className="font-bold text-lg">
+                            <p className="font-medium text-lg">
                                 {intern.avg_jam_masuk || "-"}
                             </p>
                         </div>
@@ -540,7 +541,7 @@ export default function InternDetail({ intern, divisions }) {
                                 Jam Pulang{" "}
                                 <span className="text-xs">(rata-rata)</span>
                             </p>
-                            <p className="font-bold text-lg">
+                            <p className="font-medium text-lg">
                                 {intern.avg_jam_pulang || "-"}
                             </p>
                         </div>
@@ -818,20 +819,6 @@ export default function InternDetail({ intern, divisions }) {
                             </td>
                         </tr>
                     )}
-                    {/* ✅ TAMBAHKAN empty rows untuk menjaga tinggi tabel tetap */}
-                    {currentAttendances.length > 0 &&
-                        currentAttendances.length < itemsPerPage &&
-                        [
-                            ...Array(itemsPerPage - currentAttendances.length),
-                        ].map((_, index) => (
-                            <tr key={`empty-${index}`} className="">
-                                <td className="px-4 py-2.5">&nbsp;</td>
-                                <td className="px-4 py-2.5">&nbsp;</td>
-                                <td className="px-4 py-2.5">&nbsp;</td>
-                                <td className="px-4 py-2.5">&nbsp;</td>
-                                <td className="px-4 py-2.5">&nbsp;</td>
-                            </tr>
-                        ))}
                 </tbody>
             </table>
 

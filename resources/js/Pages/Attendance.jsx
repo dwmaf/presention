@@ -5,6 +5,8 @@ import { useState, useRef, useEffect } from "react";
 import axios from "axios";
 import InternCard from "@/Components/InternCard";
 import SearchBar from "@/Components/SearchBar";
+import { Link } from "@inertiajs/react";
+import CustomDatePicker from "@/Components/DatePicker";
 
 // Format tanggal ke format Indonesia
 function formatTanggalIndonesia(dateStr) {
@@ -36,6 +38,9 @@ export default function Attendance({
     const [status, setStatus] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
     const [feedback, setFeedback] = useState(null);
+
+    const datePickerRef = useRef(null);
+    const [open, setOpen] = useState(false);
 
     const database_payload = [];
     fingerprintDatabase.forEach((u) => {
@@ -173,7 +178,7 @@ export default function Attendance({
             {/* ── Navbar ── */}
             <div className="bg-white shadow-md">
                 <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <Link href="/" className="flex items-center gap-3">
                         <img
                             src="/foto/upa-pkk-logo.jpg.jpeg"
                             alt="UPA PKK Logo"
@@ -187,7 +192,7 @@ export default function Attendance({
                                 Attendance System
                             </p>
                         </div>
-                    </div>
+                    </Link>
 
                     {/* <div className="flex items-center gap-6">
                         {status && (
@@ -219,32 +224,25 @@ export default function Attendance({
                     <button
                         onClick={startScanAndVerify}
                         disabled={isScanning}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition shadow-lg transform active:scale-95 ${
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition transform active:scale-95 ${
                             isScanning
                                 ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                                : "bg-blue-400 hover:bg-blue-300 text-white"
                         }`}
                     >
                         <svg
-                            width="21"
-                            height="21"
-                            viewBox="0 0 21 21"
-                            fill="none"
                             xmlns="http://www.w3.org/2000/svg"
+                            width="25"
+                            height="25"
+                            viewBox="0 0 24 24"
                         >
                             <path
-                                d="M0.75 6.437C0.854 4.337 1.165 3.027 2.097 2.097C3.027 1.165 4.337 0.854 6.437 0.75M19.75 6.437C19.646 4.337 19.335 3.027 18.403 2.097C17.473 1.165 16.163 0.854 14.063 0.75M14.063 19.75C16.163 19.646 17.473 19.335 18.403 18.403C19.335 17.473 19.646 16.163 19.75 14.063M6.437 19.75C4.337 19.646 3.027 19.335 2.097 18.403C1.165 17.473 0.854 16.163 0.75 14.063M14.75 13.75V9.25C14.75 8.05653 14.2759 6.91193 13.432 6.06802C12.5881 5.22411 11.4435 4.75 10.25 4.75C9.05653 4.75 7.91193 5.22411 7.06802 6.06802C6.22411 6.91193 5.75 8.05653 5.75 9.25V13.75"
-                                stroke="white"
-                                stroke-width="1.5"
+                                fill="none"
+                                stroke="currentColor"
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                            />
-                            <path
-                                d="M11.75 10.75V9.25C11.75 8.85218 11.592 8.47064 11.3107 8.18934C11.0294 7.90804 10.6478 7.75 10.25 7.75C9.85218 7.75 9.47064 7.90804 9.18934 8.18934C8.90804 8.47064 8.75 8.85218 8.75 9.25V14.75M11.75 13.75V15.75"
-                                stroke="white"
-                                stroke-width="1.5"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 19v-8m-3 7v-7c0-1 .6-3 3-3s3 2 3 3v6m-9-3v-3c0-2 1.2-6 6-6s6 4 6 6m0 4v-1M6.001 17H6M7 3H5a2 2 0 0 0-2 2v2m0 10v2a2 2 0 0 0 2 2h2m10 0h2a2 2 0 0 0 2-2v-2m0-10V5a2 2 0 0 0-2-2h-2"
                             />
                         </svg>
 
@@ -365,7 +363,7 @@ export default function Attendance({
                                 feedback &&
                                 feedback.type === "success" && (
                                     <div className="">
-                                        <div className="w-40 aspect-square flex justify-center items-center ">
+                                        <div className="w-40 aspect-square flex justify)-center items-center ">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="60"
@@ -394,43 +392,63 @@ export default function Attendance({
                 )}
 
                 {/* ── Search + Date ── */}
-                <div className="flex items-center gap-3 mb-8">
-                    {/* Search */}
-                    <SearchBar onSearch={setSearchTerm} />
-
+                <div className="flex items-center mb-8">
                     {/* Date Picker */}
                     <div
-                        onClick={() => dateInputRef.current?.showPicker()}
-                        className="relative flex items-center gap-2 bg-blue-500 hover:bg-blue-600 rounded-xl px-4 py-3 shadow-sm cursor-pointer transition whitespace-nowrap select-none"
+                        className="relative flex items-center cursor-pointer"
+                        onClick={() => setOpen(true)}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="w-5 h-5 text-white flex-shrink-0"
+                            width="25"
+                            height="25"
                             viewBox="0 0 24 24"
                         >
                             <path
-                                fill="currentColor"
-                                d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14zM7 10h5v5H7z"
+                                fill="oklch(48.8% 0.243 264.376)"
+                                d="M2 19c0 1.7 1.3 3 3 3h14c1.7 0 3-1.3 3-3v-8H2zM19 4h-2V3c0-.6-.4-1-1-1s-1 .4-1 1v1H9V3c0-.6-.4-1-1-1s-1 .4-1 1v1H5C3.3 4 2 5.3 2 7v2h20V7c0-1.7-1.3-3-3-3"
                             />
                         </svg>
-                        <span className="text-white text-sm font-medium">
-                            {formatTanggalIndonesia(date)}
-                        </span>
+                        <CustomDatePicker
+                            ref={datePickerRef}
+                            value={new Date(date)}
+                            onChange={(d) => {
+                                if (!d) return;
+                                const newDate = Array.isArray(d) ? d[0] : d;
+                                const formatted = newDate
+                                    .toISOString()
+                                    .split("T")[0];
+                                setDate(formatted);
+                                router.get(
+                                    route("attendance.index"),
+                                    { date: formatted },
+                                    {
+                                        preserveState: true,
+                                        replace: true,
+                                    },
+                                );
+                            }}
+                            open={open}
+                            onClickOutside={() => setOpen(false)}
+                            dateFormat="dd MMM yyyy"
+                            className="bg-transparent border-none text-blue-700 text-md font-medium "
+                        />
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="w-4 h-4 text-blue-200"
+                            width="25"
+                            height="25"
                             viewBox="0 0 24 24"
+                            className="-rotate-90 mr-4"
                         >
-                            <path fill="currentColor" d="M7 10l5 5 5-5z" />
+                            <path
+                                fill="oklch(48.8% 0.243 264.376)"
+                                d="m13.15 16.15l-3.625-3.625q-.125-.125-.175-.25T9.3 12t.05-.275t.175-.25L13.15 7.85q.075-.075.163-.112T13.5 7.7q.2 0 .35.138T14 8.2v7.6q0 .225-.15.363t-.35.137q-.05 0-.35-.15"
+                            />
                         </svg>
-                        <input
-                            ref={dateInputRef}
-                            type="date"
-                            value={date || ""}
-                            onChange={handleDateChange}
-                            className="absolute opacity-0 w-0 h-0 pointer-events-none"
-                        />
                     </div>
+
+                    {/* Search */}
+                    <SearchBar onSearch={setSearchTerm} />
                 </div>
 
                 {/* ── Cards Grid ── */}
