@@ -37,12 +37,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
         }
     };
 
-    const formatDateForFileName = (date) => {
-            const day = String(date.getDate()).padStart(2, "0");
-            const month = String(date.getMonth() + 1).padStart(2, "0");
-            const year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        };
+    
     
     // const handleDownload = () => {
         
@@ -87,14 +82,19 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
     //     document.body.removeChild(link);
     //     URL.revokeObjectURL(url);
     // };
-    const handleDownload = () => {
+    const handleDownload = (e) => {
+        e.preventDefault();
+        if (!dateRange || !dateRange[0] || !dateRange[1]) {
+            alert("Silakan pilih rentang tanggal terlebih dahulu untuk mengunduh laporan.");
+            return;
+        }
     const startDate = dateRange[0].toISOString().split('T')[0];
     const endDate = dateRange[1].toISOString().split('T')[0];
     
-    return route('dashboard.export', {
-        start_date: startDate,
-        end_date: endDate,
-    });
+    window.location.href = route('dashboard.export', {
+            start_date: startDate,
+            end_date: endDate,
+        });
 };
 
     const filteredInterns = interns.filter((intern) =>
@@ -170,7 +170,9 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                         />
                     </div>
 
-                    <DownloadBtn onClick={handleDownload()}/>
+                    <a href='#' onClick={handleDownload}>
+                        <DownloadBtn />
+                    </a>
                 </div>
 
                 {/* ── Search Bar ── */}
