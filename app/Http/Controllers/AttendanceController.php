@@ -99,7 +99,9 @@ class AttendanceController extends Controller
                 'id' => $intern->id,
                 'name' => $intern->name,
                 'foto' => $intern->foto,
-                'division' => $intern->division->name ?? '-',
+                'division' => [
+                    'nama_divisi' => $intern->division->nama_divisi ?? '-',
+                ],
                 'jumlah_hadir' => $jumlahHadir,
                 'jumlah_izin' => $jumlahIzin,
                 'jumlah_alpha' => $jumlahAlpha,

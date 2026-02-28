@@ -56,7 +56,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
             ],
             ...filteredInterns.map((intern) => [
                 intern.name,
-                intern.division,
+                intern.division?.nama_divisi ?? "-",
                 intern.jumlah_hadir,
                 intern.jumlah_izin,
                 intern.jumlah_alpha,
@@ -209,7 +209,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                                                     {intern.name}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {intern.division}
+                                                    {intern.division?.nama_divisi ?? "-"}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">
