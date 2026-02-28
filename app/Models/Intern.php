@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon;
 
 class Intern extends Model
 {
@@ -82,13 +83,27 @@ class Intern extends Model
     public function getTotalJamAttribute()
     {
         // Menghitung selisih jam langsung dari database (dalam detik) lalu dikonversi ke jam
-        $seconds = $this->attendances()
+        // $seconds = $this->attendances()
+        //     ->where('status', 'hadir')
+        //     ->whereNotNull('check_in')
+        //     ->whereNotNull('check_out')
+        //     ->sum(\DB::raw('TIME_TO_SEC(TIMEDIFF(check_out, check_in))'));
+            
+        // return round($seconds / 3600, 2);
+
+        $attendances = $this->attendances()
             ->where('status', 'hadir')
             ->whereNotNull('check_in')
             ->whereNotNull('check_out')
-            ->sum(\DB::raw('TIME_TO_SEC(TIMEDIFF(check_out, check_in))'));
-            
-        return round($seconds / 3600, 2);
+            ->get();
+
+        $totalSeconds = $attendances->sum(function ($attendance) {
+            $in = Carbon::parse($attendance->check_in);
+            $out = Carbon::parse($attendance->check_out);
+            return $out->diffInSeconds($in);
+        });
+
+        return round($totalSeconds / 3600, 2);
     }
 
     public function getTotalIzinAttribute()
@@ -108,21 +123,48 @@ class Intern extends Model
 
     public function getAvgJamMasukAttribute()
     {
-        $avg = $this->attendances()
-            ->whereNotNull('check_in')
-            ->where('status', 'hadir')
-            ->avg(\DB::raw('TIME_TO_SEC(check_in)'));
+        // $avg = $this->attendances()
+        //     ->whereNotNull('check_in')
+        //     ->where('status', 'hadir')
+        //     ->avg(\DB::raw('TIME_TO_SEC(check_in)'));
         
-        return $avg ? gmdate("H:i", $avg) : '-';
+        // return $avg ? gmdate("H:i", $avg) : '-';
+        $attendances = $this->attendances()
+            ->where('status', 'hadir')
+            ->whereNotNull('check_in')
+            ->get();
+
+        if ($attendances->isEmpty()) return '-';
+
+        $totalSeconds = $attendances->sum(function ($attendance) {
+            // Ambil jam saja misal "08:00:00" -> convert ke detik dari awal hari
+            return Carbon::parse($attendance->check_in)->secondsSinceMidnight();
+        });
+
+        $avgContext = $totalSeconds / $attendances->count();
+        return gmdate("H:i", $avgContext);
     }
 
     public function getAvgJamPulangAttribute()
     {
-        $avg = $this->attendances()
-            ->whereNotNull('check_out')
-            ->where('status', 'hadir')
-            ->avg(\DB::raw('TIME_TO_SEC(check_out)'));
+        // $avg = $this->attendances()
+        //     ->whereNotNull('check_out')
+        //     ->where('status', 'hadir')
+        //     ->avg(\DB::raw('TIME_TO_SEC(check_out)'));
             
-        return $avg ? gmdate("H:i", $avg) : '-';
+        // return $avg ? gmdate("H:i", $avg) : '-';
+        $attendances = $this->attendances()
+            ->where('status', 'hadir')
+            ->whereNotNull('check_out')
+            ->get();
+
+        if ($attendances->isEmpty()) return '-';
+
+        $totalSeconds = $attendances->sum(function ($attendance) {
+            return Carbon::parse($attendance->check_out)->secondsSinceMidnight();
+        });
+
+        $avgContext = $totalSeconds / $attendances->count();
+        return gmdate("H:i", $avgContext);
     }
 }

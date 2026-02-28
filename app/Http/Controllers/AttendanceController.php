@@ -89,8 +89,8 @@ class AttendanceController extends Controller
             $totalJam = 0;
             foreach ($attendances->where('status', 'hadir') as $att) {
                 if ($att->check_in && $att->check_out) {
-                    $checkIn = Carbon::createFromFormat('H:i:s', $att->check_in);
-                    $checkOut = Carbon::createFromFormat('H:i:s', $att->check_out);
+                    $checkIn = Carbon::parse($att->check_in);
+                    $checkOut = Carbon::parse($att->check_out);
                     $totalJam += $checkOut->diffInHours($checkIn, true);
                 }
             }
@@ -135,8 +135,8 @@ class AttendanceController extends Controller
             $totalJam = 0;
             foreach ($attendances->where('status', 'hadir') as $att) {
                 if ($att->check_in && $att->check_out) {
-                    $checkIn = Carbon::createFromFormat('H:i:s', $att->check_in);
-                    $checkOut = Carbon::createFromFormat('H:i:s', $att->check_out);
+                    $checkIn = Carbon::parse($att->check_in);
+                    $checkOut = Carbon::parse($att->check_out);
                     $totalJam += $checkOut->diffInHours($checkIn, true);
                 }
             }
