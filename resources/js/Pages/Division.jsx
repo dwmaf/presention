@@ -1,6 +1,6 @@
 ﻿import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, router, useForm, usePage } from "@inertiajs/react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import InputError from "@/Components/InputError";
 import Modal from "@/Components/Modal";
 import SearchBar from "@/Components/SearchBar";
@@ -132,6 +132,19 @@ export default function Division({ auth, divisions, allInterns = [] }) {
         );
     };
 
+    // Efek ini akan jalan setiap kali props 'divisions' berubah (misal setelah add/remove member)
+    useEffect(() => {
+        if (detailDivision) {
+            // Cari data terbaru dari divisi yang sedang dibuka
+            const updatedDivision = divisions.find(d => d.id === detailDivision.id);
+            
+            // Jika ketemu, update state detailDivision agar UI modal langsung berubah
+            if (updatedDivision) {
+                setDetailDivision(updatedDivision);
+            }
+        }
+    }, [divisions, detailDivision]);
+    
     const memberSuggestions = useMemo(() => {
         if (!detailDivision) return [];
         const memberIds = new Set(
@@ -445,7 +458,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                     >
                                                         {intern.foto ? (
                                                             <img
-                                                                src={`/${intern.foto}`}
+                                                                src={`/storage/${intern.foto}`}
                                                                 alt={
                                                                     intern.name
                                                                 }
@@ -498,7 +511,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                 <td className="px-4 py-2">
                                                     {intern.foto ? (
                                                         <img
-                                                            src={`/${intern.foto}`}
+                                                            src={`/storage/${intern.foto}`}
                                                             alt={intern.name}
                                                             className="w-8 h-8 rounded-full object-cover object-top"
                                                         />
