@@ -37,50 +37,65 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
         }
     };
 
-    const handleDownload = () => {
-        const formatDate = (date) => {
+    const formatDateForFileName = (date) => {
             const day = String(date.getDate()).padStart(2, "0");
             const month = String(date.getMonth() + 1).padStart(2, "0");
             const year = date.getFullYear();
             return `${day}-${month}-${year}`;
         };
-        // Implementasi download CSV
-        const csvData = [
-            [
-                "Nama",
-                "Divisi",
-                "Jumlah Hadir",
-                "Jumlah Izin",
-                "Jumlah Alpha",
-                "Total Jam",
-            ],
-            ...filteredInterns.map((intern) => [
-                intern.name,
-                intern.division?.nama_divisi ?? "-",
-                intern.jumlah_hadir,
-                intern.jumlah_izin,
-                intern.jumlah_alpha,
-                intern.total_jam + " jam",
-            ]),
-        ];
+    
+    // const handleDownload = () => {
+        
+    //     // Implementasi download CSV
+    //     const csvData = [
+    //         [
+    //             "Nama",
+    //             "Divisi",
+    //             "Jumlah Hadir",
+    //             "Jumlah Izin",
+    //             "Jumlah Alpha",
+    //             "Total Jam",
+    //         ],
+    //         ...filteredInterns.map((intern) => [
+    //             intern.name,
+    //             intern.division?.nama_divisi ?? "-",
+    //             intern.jumlah_hadir,
+    //             intern.jumlah_izin,
+    //             intern.jumlah_alpha,
+    //             `${intern.total_jam} jam`,
+    //         ]),
+    //     ];
 
-        const csvContent = csvData.map((row) => row.join(",")).join("\n");
-        const blob = new Blob([csvContent], {
-            type: "text/csv;charset=utf-8;",
-        });
-        const link = document.createElement("a");
-        const url = URL.createObjectURL(blob);
+    //     const csvContent = csvData.map((row) => row.join(",")).join("\n");
+    //     const blob = new Blob([csvContent], {
+    //         type: "text/csv;charset=utf-8;",
+    //     });
+    //     const link = document.createElement("a");
+    //     const url = URL.createObjectURL(blob);
 
-        link.setAttribute("href", url);
-        link.setAttribute(
-            "download",
-            `data_absensi_${dateRange[0]?.format("DD-MM-YYYY")}_${dateRange[1]?.format("DD-MM-YYYY")}.csv`,
-        );
-        link.style.visibility = "hidden";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
+    //     const startFormatted = formatDateForFileName(dateRange[0]);
+    //     const endFormatted = formatDateForFileName(dateRange[1]);
+
+    //     link.setAttribute("href", url);
+    //     link.setAttribute(
+    //         "download",
+    //         `data_absensi_${startFormatted}_${endFormatted}.csv`,
+    //     );
+    //     link.style.visibility = "hidden";
+    //     document.body.appendChild(link);
+    //     link.click();
+    //     document.body.removeChild(link);
+    //     URL.revokeObjectURL(url);
+    // };
+    const handleDownload = () => {
+    const startDate = dateRange[0].toISOString().split('T')[0];
+    const endDate = dateRange[1].toISOString().split('T')[0];
+    
+    return route('dashboard.export', {
+        start_date: startDate,
+        end_date: endDate,
+    });
+};
 
     const filteredInterns = interns.filter((intern) =>
         intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -155,7 +170,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                         />
                     </div>
 
-                    <DownloadBtn />
+                    <DownloadBtn onClick={handleDownload()}/>
                 </div>
 
                 {/* ── Search Bar ── */}
@@ -199,7 +214,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                                         >
                                             <td className="px-6 py-4">
                                                 <img
-                                                    src={`/${intern.foto}`}
+                                                    src={`/storage/${intern.foto}`}
                                                     alt={intern.name}
                                                     className="w-10 h-10 rounded-full object-cover"
                                                 />

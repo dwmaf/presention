@@ -23,6 +23,7 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
 
 Route::middleware('auth')->group(function () {
     // route profil bawaan package breeze tidak/belum diperlukan

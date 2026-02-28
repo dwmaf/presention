@@ -29,11 +29,11 @@ class AttendanceController extends Controller
             'Thursday'  => 'kamis',
             'Friday'    => 'jumat',
         ];
-        $hariInggris = Carbon::parse($selectedDate)->format('l'); 
+        $hariInggris = Carbon::parse($selectedDate)->format('l');
         $kolomJadwal = $hariMap[$hariInggris] ?? null;
 
         // Query intern: filter berdasarkan jadwal hari masuk
-        $query = Intern::with(['division', 'attendances' => function($q) use ($selectedDate) {
+        $query = Intern::with(['division', 'attendances' => function ($q) use ($selectedDate) {
             $q->where('date', $selectedDate);
         }])->where('is_active', true);
 
@@ -51,7 +51,7 @@ class AttendanceController extends Controller
             'selectedDate' => $selectedDate,
             'hariIni'      => Carbon::parse($selectedDate)->locale('id')->isoFormat('dddd'),
             // Tambahkan fingerprint database untuk scanner (hanya untuk hari ini)
-            'fingerprintDatabase' => ($selectedDate === $today) ? $interns->map(function($i) {
+            'fingerprintDatabase' => ($selectedDate === $today) ? $interns->map(function ($i) {
                 return [
                     'id' => (string)$i->id,
                     'fmd' => $i->fingerprint_data,
@@ -73,18 +73,18 @@ class AttendanceController extends Controller
         $endDate = $request->input('end_date', Carbon::today()->toDateString());
 
         // Ambil semua intern aktif dengan attendance dalam range
-        $interns = Intern::with(['division', 'attendances' => function($q) use ($startDate, $endDate) {
+        $interns = Intern::with(['division', 'attendances' => function ($q) use ($startDate, $endDate) {
             $q->whereBetween('date', [$startDate, $endDate]);
         }])->where('is_active', true)->get();
 
         // Hitung statistik untuk setiap intern
-        $internStats = $interns->map(function($intern) {
+        $internStats = $interns->map(function ($intern) {
             $attendances = $intern->attendances;
-            
+
             $jumlahHadir = $attendances->where('status', 'hadir')->count();
             $jumlahIzin = $attendances->where('status', 'izin')->count() + $attendances->where('status', 'sakit')->count();
             $jumlahAlpha = $attendances->where('status', 'alpha')->count();
-            
+
             // Hitung total jam kerja
             $totalJam = 0;
             foreach ($attendances->where('status', 'hadir') as $att) {
@@ -94,7 +94,7 @@ class AttendanceController extends Controller
                     $totalJam += $checkOut->diffInHours($checkIn, true);
                 }
             }
-            
+
             return [
                 'id' => $intern->id,
                 'name' => $intern->name,
@@ -116,6 +116,67 @@ class AttendanceController extends Controller
         ]);
     }
 
+    public function exportDashboardCsv(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::today()->startOfWeek()->toDateString());
+        $endDate = $request->input('end_date', Carbon::today()->toDateString());
+
+        $interns = Intern::with(['division', 'attendances' => function ($q) use ($startDate, $endDate) {
+            $q->whereBetween('date', [$startDate, $endDate]);
+        }])->where('is_active', true)->get();
+
+        $internStats = $interns->map(function ($intern) {
+            $attendances = $intern->attendances;
+
+            $jumlahHadir = $attendances->where('status', 'hadir')->count();
+            $jumlahIzin = $attendances->where('status', 'izin')->count() + $attendances->where('status', 'sakit')->count();
+            $jumlahAlpha = $attendances->where('status', 'alpha')->count();
+
+            $totalJam = 0;
+            foreach ($attendances->where('status', 'hadir') as $att) {
+                if ($att->check_in && $att->check_out) {
+                    $checkIn = Carbon::createFromFormat('H:i:s', $att->check_in);
+                    $checkOut = Carbon::createFromFormat('H:i:s', $att->check_out);
+                    $totalJam += $checkOut->diffInHours($checkIn, true);
+                }
+            }
+
+            return [
+                'name' => $intern->name,
+                'division' => $intern->division->nama_divisi ?? '-',
+                'hadir' => $jumlahHadir,
+                'izin' => $jumlahIzin,
+                'alpha' => $jumlahAlpha,
+                'total_jam' => round($totalJam, 1),
+            ];
+        });
+
+        $filename = 'data_absensi_' . str_replace('-', '_', $startDate) . '_' . str_replace('-', '_', $endDate) . '.csv';
+
+        $handle = fopen('php://memory', 'w+');
+        fputcsv($handle, ['Nama', 'Divisi', 'Jumlah Hadir', 'Jumlah Izin', 'Jumlah Alpha', 'Total Jam']);
+
+        foreach ($internStats as $stat) {
+            fputcsv($handle, [
+                $stat['name'],
+                $stat['division'],
+                $stat['hadir'],
+                $stat['izin'],
+                $stat['alpha'],
+                $stat['total_jam'] . ' jam',
+            ]);
+        }
+
+        rewind($handle);
+        $csvContent = stream_get_contents($handle);
+        fclose($handle);
+
+        return response($csvContent, 200, [
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Content-Type' => 'text/csv;charset=utf-8',
+        ]);
+    }
+
     public function updateStatus(Request $request, Attendance $attendance)
     {
         $request->validate([
@@ -133,7 +194,7 @@ class AttendanceController extends Controller
         if ($oldStatus === 'alpha' && in_array($newStatus, ['hadir', 'izin', 'sakit'])) {
             $attendance->intern->increment('poin', 2);
         }
-        
+
         // Jika berubah DARI (Hadir/Izin/Sakit) KEMBALI ke Alpha, potong poin lagi (-2)
         if ($newStatus === 'alpha' && in_array($oldStatus, ['hadir', 'izin', 'sakit'])) {
             $attendance->intern->decrement('poin', 2);
@@ -144,7 +205,7 @@ class AttendanceController extends Controller
 
     public function store(Request $request)
     {
-        
+
         // Panggil generator data absen harian (Trigger)
         $this->generateDailyAttendances();
 
@@ -157,18 +218,18 @@ class AttendanceController extends Controller
         $now = Carbon::now();
 
         $attendance = Attendance::where('intern_id', $intern->id)
-                                ->where('date', $today)
-                                ->first();
+            ->where('date', $today)
+            ->first();
 
         // 1. Check-In (Belum ada record atau check_in null)
         if (!$attendance || !$attendance->check_in) {
             $checkInTime = $now->format('H:i:s');
-            
+
             // Logic Pengembalian Poin dari Alpha (-2)
             // Tepat Waktu (<= 08:30) : +2 (Netto: 0)
             // Terlambat (> 08:30)   : +1 (Netto: -1)
             $isLate = $now->format('H:i:s') > '08:30:00';
-            
+
             if ($isLate) {
                 $intern->increment('poin', 1);
             } else {
@@ -189,8 +250,8 @@ class AttendanceController extends Controller
                 ]);
             }
 
-            $msg = $isLate 
-                ? "Terlambat! Poin berkurang 1 (Netto). Check In Berhasil pada " . $checkInTime 
+            $msg = $isLate
+                ? "Terlambat! Poin berkurang 1 (Netto). Check In Berhasil pada " . $checkInTime
                 : "Check In Berhasil pada " . $checkInTime . " (Poin Normal)";
 
             return response()->json([
@@ -211,7 +272,7 @@ class AttendanceController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => "Belum 30 menit dari waktu Check In!",
-                ], 400); 
+                ], 400);
             }
 
             $attendance->update([
@@ -234,7 +295,7 @@ class AttendanceController extends Controller
                 'message' => "Anda sudah melakukan Check In dan Check Out hari ini.",
             ], 400);
         }
-        
+
         return response()->json([
             'success' => false,
             'message' => "Terjadi kesalahan pada data presensi.",
@@ -252,21 +313,21 @@ class AttendanceController extends Controller
             'friday'    => 'jumat',
         ];
         $kolom = $hariMap[$hariIniIndex] ?? null;
-        
+
         if (!$kolom) return;
 
         $today = Carbon::today()->toDateString();
 
         $internsTanpaPresensi = Intern::where($kolom, true)
             ->where('is_active', true)
-            ->whereDoesntHave('attendances', function($query) use ($today) {
+            ->whereDoesntHave('attendances', function ($query) use ($today) {
                 $query->where('date', $today);
             })->get();
 
         if ($internsTanpaPresensi->count() > 0) {
             $now = Carbon::now();
             $data = [];
-            
+
             foreach ($internsTanpaPresensi as $i) {
                 // Potong 2 poin langsung saat record 'alpha' dibuat
                 $i->decrement('poin', 2);
