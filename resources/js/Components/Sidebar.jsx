@@ -9,9 +9,11 @@ function Sidebar() {
                     alt="Logo UPA"
                     className="w-14 aspect-square object-cover rounded-full"
                 />
-                <div className="font-semibold">
-                    <p className="text-xl">UPA PKK</p>
-                    <p className="text-gray-500">Administrator</p>
+                <div>
+                    <p className="font-semibold text-xl">UPA PKK</p>
+                    <p className="font-medium text-sm text-gray-500">
+                        Administrator
+                    </p>
                 </div>
             </div>
             <nav className="h-full">
@@ -25,47 +27,17 @@ function Sidebar() {
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="20"
                                 height="20"
-                                viewBox="0 0 24 24"
+                                viewBox="0 0 28 28"
                             >
                                 <path
                                     fill="currentColor"
-                                    d="M7.75 2.5a.75.75 0 0 0-1.5 0v1.58c-1.44.115-2.384.397-3.078 1.092c-.695.694-.977 1.639-1.093 3.078h19.842c-.116-1.44-.398-2.384-1.093-3.078c-.694-.695-1.639-.977-3.078-1.093V2.5a.75.75 0 0 0-1.5 0v1.513C15.585 4 14.839 4 14 4h-4c-.839 0-1.585 0-2.25.013z"
-                                />
-                                <path
-                                    fill="currentColor"
-                                    fill-rule="evenodd"
-                                    d="M2 12c0-.839 0-1.585.013-2.25h19.974C22 10.415 22 11.161 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14zm15 2a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-4-5a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-6-3a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2"
-                                    clip-rule="evenodd"
+                                    d="M21.75 3A3.25 3.25 0 0 1 25 6.25v15.5A3.25 3.25 0 0 1 21.75 25H6.25A3.25 3.25 0 0 1 3 21.75V6.25A3.25 3.25 0 0 1 6.25 3zM19 12H9a1 1 0 0 0-.993.883L8 13v6a1 1 0 0 0 .883.993L9 20h10a1 1 0 0 0 .993-.883L20 19v-6a1 1 0 0 0-.883-.993zm-.5 1.5v5h-9v-5zM19 8H9l-.102.007a.75.75 0 0 0 0 1.486L9 9.5h10l.102-.007a.75.75 0 0 0 0-1.486z"
                                 />
                             </svg>
                             <p className="font-medium pt-1">Data Absensi</p>
                         </Link>
                     </li>
-                    <li>
-                        <Link
-                            href={route("attendance.index")}
-                            className="flex items-center px-4 py-4 gap-4 hover:bg-blue-100 text-gray-400 hover:text-blue-700 transition-colors rounded-md"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="20"
-                                height="20"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    fill="currentColor"
-                                    d="M7.75 2.5a.75.75 0 0 0-1.5 0v1.58c-1.44.115-2.384.397-3.078 1.092c-.695.694-.977 1.639-1.093 3.078h19.842c-.116-1.44-.398-2.384-1.093-3.078c-.694-.695-1.639-.977-3.078-1.093V2.5a.75.75 0 0 0-1.5 0v1.513C15.585 4 14.839 4 14 4h-4c-.839 0-1.585 0-2.25.013z"
-                                />
-                                <path
-                                    fill="currentColor"
-                                    fill-rule="evenodd"
-                                    d="M2 12c0-.839 0-1.585.013-2.25h19.974C22 10.415 22 11.161 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14zm15 2a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-4-5a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-6-3a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2"
-                                    clip-rule="evenodd"
-                                />
-                            </svg>
-                            <p className="font-medium pt-1">Absensi Harian</p>
-                        </Link>
-                    </li>
+
                     <li>
                         <Link
                             href={route("interns.index")}
@@ -104,6 +76,31 @@ function Sidebar() {
                                 />
                             </svg>
                             <p className="font-medium pt-1">Divisi</p>
+                        </Link>
+                    </li>
+                    <li>
+                        <Link
+                            href={route("attendance.index")}
+                            className="flex items-center px-4 py-4 gap-4 hover:bg-blue-100 text-gray-400 hover:text-blue-700 transition-colors rounded-md"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="20"
+                                height="20"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    fill="currentColor"
+                                    d="M7.75 2.5a.75.75 0 0 0-1.5 0v1.58c-1.44.115-2.384.397-3.078 1.092c-.695.694-.977 1.639-1.093 3.078h19.842c-.116-1.44-.398-2.384-1.093-3.078c-.694-.695-1.639-.977-3.078-1.093V2.5a.75.75 0 0 0-1.5 0v1.513C15.585 4 14.839 4 14 4h-4c-.839 0-1.585 0-2.25.013z"
+                                />
+                                <path
+                                    fill="currentColor"
+                                    fill-rule="evenodd"
+                                    d="M2 12c0-.839 0-1.585.013-2.25h19.974C22 10.415 22 11.161 22 12v2c0 3.771 0 5.657-1.172 6.828S17.771 22 14 22h-4c-3.771 0-5.657 0-6.828-1.172S2 17.771 2 14zm15 2a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2m-4-5a1 1 0 1 1-2 0a1 1 0 0 1 2 0m0 4a1 1 0 1 1-2 0a1 1 0 0 1 2 0m-6-3a1 1 0 1 0 0-2a1 1 0 0 0 0 2m0 4a1 1 0 1 0 0-2a1 1 0 0 0 0 2"
+                                    clip-rule="evenodd"
+                                />
+                            </svg>
+                            <p className="font-medium pt-1">Absensi Harian</p>
                         </Link>
                     </li>
 

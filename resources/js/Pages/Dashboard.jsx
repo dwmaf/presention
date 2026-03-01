@@ -37,10 +37,8 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
         }
     };
 
-    
-    
     // const handleDownload = () => {
-        
+
     //     // Implementasi download CSV
     //     const csvData = [
     //         [
@@ -85,17 +83,19 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
     const handleDownload = (e) => {
         e.preventDefault();
         if (!dateRange || !dateRange[0] || !dateRange[1]) {
-            alert("Silakan pilih rentang tanggal terlebih dahulu untuk mengunduh laporan.");
+            alert(
+                "Silakan pilih rentang tanggal terlebih dahulu untuk mengunduh laporan.",
+            );
             return;
         }
-    const startDate = dateRange[0].toISOString().split('T')[0];
-    const endDate = dateRange[1].toISOString().split('T')[0];
-    
-    window.location.href = route('dashboard.export', {
+        const startDate = dateRange[0].toISOString().split("T")[0];
+        const endDate = dateRange[1].toISOString().split("T")[0];
+
+        window.location.href = route("dashboard.export", {
             start_date: startDate,
             end_date: endDate,
         });
-};
+    };
 
     const filteredInterns = interns.filter((intern) =>
         intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -170,7 +170,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                         />
                     </div>
 
-                    <a href='#' onClick={handleDownload}>
+                    <a href="#" onClick={handleDownload}>
                         <DownloadBtn />
                     </a>
                 </div>
@@ -183,9 +183,9 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
 
                 {/* ── Table ── */}
                 <div className="bg-white rounded-md shadow-md overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-screen custom-scrollbar">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                                 <tr>
                                     <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase ">
                                         Profil
@@ -226,7 +226,8 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                                                     {intern.name}
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {intern.division?.nama_divisi ?? "-"}
+                                                    {intern.division
+                                                        ?.nama_divisi ?? "-"}
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center">

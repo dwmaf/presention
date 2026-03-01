@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from "react";
 import InputError from "@/Components/InputError";
 import Modal from "@/Components/Modal";
 import SearchBar from "@/Components/SearchBar";
+import { useToast } from "@/Components/ToastNotif";
 
 // SVG puzzle untuk card divisi
 const PuzzleBig = () => (
@@ -65,6 +66,8 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
     const deleteForm = useForm({});
 
+    const { addToast } = useToast();
+
     const openModal = (division = null) => {
         setIsModalOpen(true);
         setIsEditMode(!!division);
@@ -82,17 +85,6 @@ export default function Division({ auth, divisions, allInterns = [] }) {
         reset();
     };
 
-    const submit = (e) => {
-        e.preventDefault();
-        if (isEditMode) {
-            put(route("divisions.update", currentDivision.id), {
-                onSuccess: closeModal,
-            });
-        } else {
-            post(route("divisions.store"), { onSuccess: closeModal });
-        }
-    };
-
     const confirmDeletion = (division) => {
         setConfirmingDeletion(true);
         setDivisionToDelete(division);
@@ -103,9 +95,67 @@ export default function Division({ auth, divisions, allInterns = [] }) {
         setDivisionToDelete(null);
     };
 
+    // Efek ini akan jalan setiap kali props 'divisions' berubah (misal setelah add/remove member)
+    useEffect(() => {
+        if (detailDivision) {
+            // Cari data terbaru dari divisi yang sedang dibuka
+            const updatedDivision = divisions.find(
+                (d) => d.id === detailDivision.id,
+            );
+
+            // Jika ketemu, update state detailDivision agar UI modal langsung berubah
+            if (updatedDivision) {
+                setDetailDivision(updatedDivision);
+            }
+        }
+    }, [divisions, detailDivision]);
+
+    const memberSuggestions = useMemo(() => {
+        if (!detailDivision) return [];
+        const memberIds = new Set(
+            (detailDivision.interns ?? []).map((i) => i.id),
+        );
+        return allInterns.filter(
+            (i) =>
+                !memberIds.has(i.id) &&
+                i.name.toLowerCase().includes(memberSearch.toLowerCase()),
+        );
+    }, [allInterns, detailDivision, memberSearch]);
+
+    const submit = (e) => {
+        e.preventDefault();
+        if (isEditMode) {
+            put(route("divisions.update", currentDivision.id), {
+                onSuccess: () => {
+                    closeModal();
+                    addToast("Divisi berhasil diupdate!", "success");
+                },
+                onError: () => {
+                    addToast("Gagal mengupdate divisi.", "error");
+                },
+            });
+        } else {
+            post(route("divisions.store"), {
+                onSuccess: () => {
+                    closeModal();
+                    addToast("Divisi berhasil ditambahkan!", "success");
+                },
+                onError: () => {
+                    addToast("Gagal menambah divisi.", "error");
+                },
+            });
+        }
+    };
+
     const deleteDivision = () => {
         deleteForm.delete(route("divisions.destroy", divisionToDelete.id), {
-            onSuccess: closeDeletionModal,
+            onSuccess: () => {
+                closeDeletionModal();
+                addToast("Divisi berhasil dihapus!", "success");
+            },
+            onError: () => {
+                addToast("Gagal menghapus divisi.", "error");
+            },
         });
     };
 
@@ -118,6 +168,10 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                 onSuccess: () => {
                     setMemberSearch("");
                     setShowAddMember(false);
+                    addToast("Anggota berhasil ditambahkan!", "success");
+                },
+                onError: () => {
+                    addToast("Gagal menambah anggota.", "error");
                 },
             },
         );
@@ -128,34 +182,15 @@ export default function Division({ auth, divisions, allInterns = [] }) {
             route("divisions.removeIntern", [detailDivision.id, intern.id]),
             {
                 preserveScroll: true,
+                onSuccess: () => {
+                    addToast("Anggota berhasil dihapus!", "success");
+                },
+                onError: () => {
+                    addToast("Gagal menghapus anggota.", "error");
+                },
             },
         );
     };
-
-    // Efek ini akan jalan setiap kali props 'divisions' berubah (misal setelah add/remove member)
-    useEffect(() => {
-        if (detailDivision) {
-            // Cari data terbaru dari divisi yang sedang dibuka
-            const updatedDivision = divisions.find(d => d.id === detailDivision.id);
-            
-            // Jika ketemu, update state detailDivision agar UI modal langsung berubah
-            if (updatedDivision) {
-                setDetailDivision(updatedDivision);
-            }
-        }
-    }, [divisions, detailDivision]);
-    
-    const memberSuggestions = useMemo(() => {
-        if (!detailDivision) return [];
-        const memberIds = new Set(
-            (detailDivision.interns ?? []).map((i) => i.id),
-        );
-        return allInterns.filter(
-            (i) =>
-                !memberIds.has(i.id) &&
-                i.name.toLowerCase().includes(memberSearch.toLowerCase()),
-        );
-    }, [allInterns, detailDivision, memberSearch]);
 
     return (
         <AuthenticatedLayout
@@ -172,7 +207,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                 <div className="py-10">
                     <div className="max-w-7xl mx-auto pr-16">
                         {/* Flash messages */}
-                        {flash?.success && (
+                        {/* {flash?.success && (
                             <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
                                 {flash.success}
                             </div>
@@ -181,7 +216,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                             <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                                 {flash.error}
                             </div>
-                        )}
+                        )} */}
 
                         {/* Header baris */}
                         <div className="flex items-start justify-between mb-6">
@@ -446,7 +481,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                             className="flex-1 bg-transparent text-xs outline-none placeholder-gray-400 border-0 focus:ring-0"
                                         />
                                     </div>
-                                    <ul className="max-h-40 overflow-y-auto">
+                                    <ul className="max-h-40 overflow-y-auto custom-scrollbar">
                                         {memberSuggestions.length > 0 ? (
                                             memberSuggestions.map((intern) => (
                                                 <li key={intern.id}>
@@ -488,7 +523,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                         </div>
 
                         {/* Panel search tambah anggota + Tabel anggota — scrollable */}
-                        <div className="relative rounded-lg border border-gray-100 overflow-y-auto flex-1 min-h-0 mb-4">
+                        <div className="relative rounded-lg border border-gray-100 overflow-y-auto custom-scrollbar flex-1 min-h-0 mb-4">
                             <table className="w-full text-sm">
                                 <thead className="bg-gray-50 sticky top-0 z-10">
                                     <tr>

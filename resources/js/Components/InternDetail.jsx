@@ -7,6 +7,7 @@ import TextInput from "./TextInput";
 import InputError from "./InputError";
 import CustomSelect from "./CustomSelect";
 import DownloadBtn from "./DownloadBtn";
+import { useToast } from "@/Components/ToastNotif";
 
 export default function InternDetail({ intern, divisions }) {
     if (!intern) return null;
@@ -29,6 +30,8 @@ export default function InternDetail({ intern, divisions }) {
         jumat: intern?.jumat || false,
         poin: intern?.poin ?? 5,
     });
+
+    const { addToast } = useToast();
 
     const poin = intern.poin ?? 0;
     const poinStyle =
@@ -81,12 +84,12 @@ export default function InternDetail({ intern, divisions }) {
 
         const validTypes = ["image/jpeg", "image/jpg", "image/png"];
         if (!validTypes.includes(file.type)) {
-            alert("Format file harus JPG, JPEG, atau PNG");
+            addToast("Format file harus JPG, JPEG, atau PNG", "error");
             return;
         }
 
         if (file.size > 2048000) {
-            alert("Ukuran file maksimal 2MB");
+            addToast("Ukuran file maksimal 2MB", "error");
             return;
         }
 
@@ -99,13 +102,14 @@ export default function InternDetail({ intern, divisions }) {
         router.post(`/interns/${intern.id}/update-photo`, formData, {
             onSuccess: () => {
                 setUploading(false);
-                alert("Foto berhasil diubah");
+                addToast("Foto berhasil diubah!", "success");
                 router.reload();
             },
             onError: (errors) => {
                 setUploading(false);
-                alert(
+                addToast(
                     "Gagal mengubah foto: " + Object.values(errors).join(", "),
+                    "error",
                 );
             },
         });
@@ -175,11 +179,13 @@ export default function InternDetail({ intern, divisions }) {
                     setShowStatusForm(false);
                     setSelectedStatus("");
                     setCurrentAttendanceId(null);
+                    addToast("Status kehadiran berhasil diubah!", "success");
                 },
                 onError: (errors) => {
-                    alert(
+                    addToast(
                         "Gagal mengubah status: " +
                             Object.values(errors).join(", "),
+                        "error",
                     );
                 },
             },

@@ -14,3 +14,26 @@ body {
     -ms-overflow-style: none; /* IE and Edge */
     scrollbar-width: none; /* Firefox */
 }
+
+/* Custom scrollbar untuk elemen dengan class custom-scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    height: 8px; /* horizontal */
+    width: 8px; /* vertical */
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #2563eb;
+}
+
+/* Untuk Firefox */
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #3b82f6 #f1f5f9;
+}

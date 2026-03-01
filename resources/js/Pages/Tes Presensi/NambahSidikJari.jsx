@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Head, useForm, Link } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+import { useToast } from "@/Components/ToastNotif";
 
 export default function NambahSidikJari({ auth, intern }) {
     /**
@@ -27,8 +28,12 @@ export default function NambahSidikJari({ auth, intern }) {
             {
                 id: "backup",
                 title: "Fingerprint Cadangan",
-                subtitle:
-                    "Scan 3x untuk cadangan (boleh jari berbeda). Reset DB dulu kalau ingin daftar ulang.",
+                subtitle: (
+                    <>
+                        Scan 3x untuk cadangan (boleh jari berbeda). Jika ingin
+                        mendaftar ulang, klik <b>Reset Scan</b> terlebih dahulu.
+                    </>
+                ),
                 dbKeys: [
                     "fingerprint_data_4",
                     "fingerprint_data_5",
@@ -55,13 +60,20 @@ export default function NambahSidikJari({ auth, intern }) {
                 samples: [],
                 images: [],
                 status:
-                    count > 0
-                        ? `Sudah tersimpan di database (${count}/3). Jika ingin daftar ulang, klik Reset DB.`
-                        : "Belum terdaftar. Mulai scan 3x.",
+                    count > 0 ? (
+                        <>
+                            Sudah tersimpan di database ({count}/3). Jika ingin
+                            daftar ulang, klik <b>Reset Scan</b>.
+                        </>
+                    ) : (
+                        "Belum terdaftar. Mulai scan 3x."
+                    ),
             };
         }
         return init;
     });
+
+    const { addToast } = useToast();
 
     // Form per group
     const primaryForm = useForm({
@@ -102,7 +114,12 @@ export default function NambahSidikJari({ auth, intern }) {
                 ...prev,
                 [groupId]: {
                     ...prev[groupId],
-                    status: "Data sudah ada di DB. Klik Reset DB dulu agar tidak menimpa.",
+                    status: (
+                        <>
+                            Sudah tersimpan di database. Jika ingin daftar
+                            ulang, klik <b>Reset Scan</b>.
+                        </>
+                    ),
                 },
             }));
             return;
@@ -114,7 +131,12 @@ export default function NambahSidikJari({ auth, intern }) {
                 ...prev,
                 [groupId]: {
                     ...prev[groupId],
-                    status: "Sudah 3/3. Klik Simpan atau Reset Local untuk ulang scan.",
+                    status: (
+                        <>
+                            Sudah 3/3. Klik Simpan atau Reset Scan untuk ulang
+                            scan.
+                        </>
+                    ),
                 },
             }));
             return;
@@ -199,6 +221,7 @@ export default function NambahSidikJari({ auth, intern }) {
                     status: "Belum lengkap. Harus 3/3 scan dulu sebelum simpan.",
                 },
             }));
+            addToast("Scan belum lengkap. Harus 3/3 sebelum simpan.", "error");
             return;
         }
 
@@ -215,6 +238,7 @@ export default function NambahSidikJari({ auth, intern }) {
                             status: "✓ Berhasil disimpan ke database! (Tidak menimpa data lama).",
                         },
                     }));
+                    addToast("Berhasil menyimpan sidik jari!", "success");
                     // opsional: reset local setelah simpan
                     // resetLocal(groupId);
                 },
@@ -222,7 +246,7 @@ export default function NambahSidikJari({ auth, intern }) {
                     // biasanya akan kena "fingerprint" kalau belum reset DB
                     const msg =
                         errors?.fingerprint ||
-                        "Gagal menyimpan. Cek validasi / pastikan Reset DB jika sudah ada data.";
+                        "Gagal menyimpan. Cek validasi / pastikan Reset Scan jika sudah ada data.";
                     setState((prev) => ({
                         ...prev,
                         [groupId]: {
@@ -230,6 +254,7 @@ export default function NambahSidikJari({ auth, intern }) {
                             status: "Error: " + msg,
                         },
                     }));
+                    addToast("Gagal menyimpan sidik jari: " + msg, "error");
                 },
             },
         );
@@ -252,12 +277,13 @@ export default function NambahSidikJari({ auth, intern }) {
                             status: "DB sudah di-reset. Sekarang kamu bisa scan ulang 3x lalu simpan.",
                         },
                     }));
+                    addToast("Berhasil reset database sidik jari!", "success");
                 },
                 onError: (errors) => {
                     const msg =
                         errors?.group ||
                         errors?.fingerprint ||
-                        "Gagal reset DB.";
+                        "Gagal reset Database.";
                     setState((prev) => ({
                         ...prev,
                         [groupId]: {
@@ -265,6 +291,7 @@ export default function NambahSidikJari({ auth, intern }) {
                             status: "Error: " + msg,
                         },
                     }));
+                    addToast("Gagal reset database: " + msg, "error");
                 },
             },
         );
@@ -353,7 +380,7 @@ export default function NambahSidikJari({ auth, intern }) {
                                             </div>
                                             <div>
                                                 <span className="font-semibold text-gray-700">
-                                                    DB:
+                                                    Data Tersimpan :
                                                 </span>{" "}
                                                 <span
                                                     className={`font-bold ${
@@ -436,13 +463,13 @@ export default function NambahSidikJari({ auth, intern }) {
                                                         : `Mulai Scan (${st.samples.length + 1}/3)`}
                                             </button>
 
-                                            {/* Reset local */}
+                                            {/* Reset local scan */}
                                             <button
                                                 onClick={() => resetLocal(g.id)}
                                                 disabled={activeGroup !== null}
-                                                className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                className="w-full py-2.5 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 font-semibold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                             >
-                                                Reset Local Scan
+                                                Reset Scan
                                             </button>
 
                                             {/* Save */}
@@ -482,14 +509,20 @@ export default function NambahSidikJari({ auth, intern }) {
                                                         className="w-full py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 font-bold shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                                     >
                                                         {forms[g.id].processing
-                                                            ? "Mereset DB..."
-                                                            : "Reset DB (Hapus Template Lama)"}
+                                                            ? "Mereset Database..."
+                                                            : "Reset Scan (Hapus Template Lama)"}
                                                     </button>
                                                     <p className="text-xs text-red-600 text-center">
-                                                        Data sudah ada di DB.
-                                                        Sistem tidak menimpa.
-                                                        Reset DB dulu jika ingin
-                                                        daftar ulang.
+                                                        Data sidik jari sudah
+                                                        tersimpan di database.
+                                                        <br />
+                                                        Sistem tidak akan
+                                                        menimpa data lama.
+                                                        <br />
+                                                        Silakan klik{" "}
+                                                        <b>Reset Scan</b> jika
+                                                        ingin mendaftar ulang
+                                                        sidik jari.
                                                     </p>
                                                 </div>
                                             )}

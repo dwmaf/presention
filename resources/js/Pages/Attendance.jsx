@@ -56,7 +56,7 @@ export default function Attendance({
     const startScanAndVerify = async () => {
         if (isScanning) return;
         setIsScanning(true);
-        setStatus("Sedang memindai jari...");
+        setStatus("Memindai jari...");
         setFeedback(null);
         setModalOpen(true);
 
@@ -91,7 +91,7 @@ export default function Attendance({
                     const data = presensiRes.data;
                     setFeedback({
                         type: "success",
-                        message: `✅ ${data.name}: ${data.message}`,
+                        message: `✅ ${data.name} masuk pada ${data.time}`,
                     });
                     setStatus(null);
 
@@ -259,6 +259,7 @@ export default function Attendance({
                             {/* <h2 className="text-lg font-bold mb-4">
                                 Scan Sidik Jari
                             </h2> */}
+
                             {/* Pesan scanning */}
                             {isScanning && (
                                 <div className="text-blue-600 flex flex-col gap-8 items-center animate-pulse mb-2">
@@ -315,10 +316,11 @@ export default function Attendance({
                                         </svg>
                                     </div>
                                     <p className="font-semibold">
-                                        Sedang memindai jari...
+                                        Memindai jari...
                                     </p>
                                 </div>
                             )}
+
                             {/* Pesan hasil */}
                             {!isScanning &&
                                 feedback &&
@@ -347,23 +349,13 @@ export default function Attendance({
                                             Gagal Tersambung
                                         </p>
                                     </div>
-
-                                    // <div
-                                    //     className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm ${
-                                    //         feedback.type === "success"
-                                    //             ? "bg-green-50 border-green-200 text-green-700"
-                                    //             : "text-red-700"
-                                    //     }`}
-                                    // >
-
-                                    // </div>
                                 )}
 
                             {!isScanning &&
                                 feedback &&
                                 feedback.type === "success" && (
                                     <div className="">
-                                        <div className="w-40 aspect-square flex justify)-center items-center ">
+                                        <div className="w-40 aspect-square flex justify-center items-center ">
                                             <svg
                                                 xmlns="http://www.w3.org/2000/svg"
                                                 width="60"
@@ -383,7 +375,10 @@ export default function Attendance({
                                             </svg>
                                         </div>
                                         <p className="text-green-700 text-center font-semibold">
-                                            Berhasil
+                                            {feedback?.type === "success" &&
+                                            feedback?.message
+                                                ? feedback.message
+                                                : "Berhasil Absen!"}
                                         </p>
                                     </div>
                                 )}
