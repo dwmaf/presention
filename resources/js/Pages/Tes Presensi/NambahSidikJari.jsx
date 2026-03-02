@@ -383,11 +383,10 @@ export default function NambahSidikJari({ auth, intern }) {
                                                     Data Tersimpan :
                                                 </span>{" "}
                                                 <span
-                                                    className={`font-bold ${
-                                                        hasDb
+                                                    className={`font-bold ${hasDb
                                                             ? "text-emerald-600"
                                                             : "text-gray-400"
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {hasDb
                                                         ? `${dbCount}/3 tersimpan`
@@ -404,11 +403,10 @@ export default function NambahSidikJari({ auth, intern }) {
                                                 {[0, 1, 2].map((i) => (
                                                     <div
                                                         key={i}
-                                                        className={`rounded-lg overflow-hidden border ${
-                                                            st.images[i]
+                                                        className={`rounded-lg overflow-hidden border ${st.images[i]
                                                                 ? "border-white shadow bg-white"
                                                                 : "border-gray-200 bg-white"
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {st.images[i] ? (
                                                             <img
@@ -429,13 +427,14 @@ export default function NambahSidikJari({ auth, intern }) {
 
                                             <p
                                                 className={`text-center mt-4 px-2 text-sm font-medium ${
-                                                    st.status.includes(
-                                                        "Gagal",
-                                                    ) ||
-                                                    st.status.includes("Error")
+                                                    // FIX: Cek dulu apakah status berupa string sebelum panggil includes
+                                                    typeof st.status === 'string' && (
+                                                        st.status.includes("Gagal") ||
+                                                        st.status.includes("Error")
+                                                    )
                                                         ? "text-red-500"
                                                         : "text-gray-600"
-                                                }`}
+                                                    }`}
                                             >
                                                 {st.status}
                                             </p>
@@ -457,10 +456,10 @@ export default function NambahSidikJari({ auth, intern }) {
                                                 {hasDb
                                                     ? "Scan dikunci (DB sudah ada)"
                                                     : done
-                                                      ? "Scan Selesai (3/3)"
-                                                      : activeGroup === g.id
-                                                        ? "Scanning..."
-                                                        : `Mulai Scan (${st.samples.length + 1}/3)`}
+                                                        ? "Scan Selesai (3/3)"
+                                                        : activeGroup === g.id
+                                                            ? "Scanning..."
+                                                            : `Mulai Scan (${st.samples.length + 1}/3)`}
                                             </button>
 
                                             {/* Reset local scan */}
