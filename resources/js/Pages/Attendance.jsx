@@ -75,7 +75,7 @@ export default function Attendance({
 
             if (result.match) {
                 const userId = result.user_id;
-                setStatus(`✔️ Terdeteksi! Menghubungi server...`);
+                setStatus(`Terdeteksi! Menghubungi server...`);
 
                 // setFeedback({
                 //     type: "success",
@@ -104,7 +104,11 @@ export default function Attendance({
 
                     let msg = "Gagal mencatat presensi.";
                     // Ambil pesan error spesifik
-                    if (err.response && err.response.data && err.response.data.message) {
+                    if (
+                        err.response &&
+                        err.response.data &&
+                        err.response.data.message
+                    ) {
                         msg = err.response.data.message;
                     }
                     setFeedback({ type: "error", message: `⚠️ ${msg}` });
@@ -114,7 +118,7 @@ export default function Attendance({
             } else {
                 setFeedback({
                     type: "error",
-                    message: "❌ Sidik jari tidak dikenali.",
+                    message: "Sidik jari tidak dikenali.",
                 });
                 setStatus(null);
                 setIsScanning(false);
@@ -123,11 +127,15 @@ export default function Attendance({
             console.error("Error Koneksi:", err);
             setFeedback({
                 type: "error",
-                message: "🔌 Gagal terhubung ke Fingerprint Service.",
+                message: (
+                    <p className="text-center">
+                        Gagal terhubung ke <br /> Fingerprint Service.
+                    </p>
+                ),
             });
             setStatus(null);
             setIsScanning(false);
-        } 
+        }
         // finally {
         //     setIsScanning(false);
         //     setStatus(null);
@@ -264,8 +272,6 @@ export default function Attendance({
                     </button>
                 </div>
 
-                
-
                 {/* ── Search + Date ── */}
                 <div className="flex items-center mb-8">
                     {/* Date Picker */}
@@ -362,138 +368,143 @@ export default function Attendance({
                 </div>
             </div>
             {/* Modal muncul saat scanning ATAU ada feedback */}
-                {modalOpen && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                        <div className="bg-white rounded-xl shadow-lg p-8 max-w-md relative">
-                            {/* <h2 className="text-lg font-bold mb-4">
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-xl shadow-lg p-8 max-w-md relative">
+                        {/* <h2 className="text-lg font-bold mb-4">
                                 Scan Sidik Jari
                             </h2> */}
 
-                            {/* Pesan scanning */}
-                            {isScanning && (
-                                <div className="text-blue-600 flex flex-col gap-8 items-center animate-pulse mb-2">
+                        {/* Pesan scanning */}
+                        {isScanning && (
+                            <div className="text-blue-600 flex flex-col gap-8 items-center animate-pulse mb-2">
+                                <div className="w-40 aspect-square flex justify-center items-center ">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="60"
+                                        height="60"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <g>
+                                            <path
+                                                fill="oklch(54.6% 0.245 262.881)"
+                                                d="M7 3H17V7.2L12 12L7 7.2V3Z"
+                                            >
+                                                <animate
+                                                    id="SVGFjnOndxt"
+                                                    fill="freeze"
+                                                    attributeName="opacity"
+                                                    begin="0;SVGn6mLadge.end"
+                                                    dur="2s"
+                                                    from="1"
+                                                    to="0"
+                                                />
+                                            </path>
+                                            <path
+                                                fill="oklch(54.6% 0.245 262.881)"
+                                                d="M17 21H7V16.8L12 12L17 16.8V21Z"
+                                            >
+                                                <animate
+                                                    fill="freeze"
+                                                    attributeName="opacity"
+                                                    begin="0;SVGn6mLadge.end"
+                                                    dur="2s"
+                                                    from="0"
+                                                    to="1"
+                                                />
+                                            </path>
+                                            <path
+                                                fill="oklch(54.6% 0.245 262.881)"
+                                                d="M6 2V8H6.01L6 8.01L10 12L6 16L6.01 16.01H6V22H18V16.01H17.99L18 16L14 12L18 8.01L17.99 8H18V2H6ZM16 16.5V20H8V16.5L12 12.5L16 16.5ZM12 11.5L8 7.5V4H16V7.5L12 11.5Z"
+                                            />
+                                            <animateTransform
+                                                id="SVGn6mLadge"
+                                                attributeName="transform"
+                                                attributeType="XML"
+                                                begin="SVGFjnOndxt.end"
+                                                dur="0.5s"
+                                                from="0 12 12"
+                                                to="180 12 12"
+                                                type="rotate"
+                                            />
+                                        </g>
+                                    </svg>
+                                </div>
+                                <p className="font-semibold">
+                                    Memindai jari...
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Pesan hasil */}
+                        {!isScanning &&
+                            feedback &&
+                            feedback.type === "error" && (
+                                <div className="flex flex-col items-center">
                                     <div className="w-40 aspect-square flex justify-center items-center ">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
-                                            width="60"
-                                            height="60"
+                                            width="70"
+                                            height="70"
                                             viewBox="0 0 24 24"
                                         >
-                                            <g>
-                                                <path
-                                                    fill="oklch(54.6% 0.245 262.881)"
-                                                    d="M7 3H17V7.2L12 12L7 7.2V3Z"
-                                                >
-                                                    <animate
-                                                        id="SVGFjnOndxt"
-                                                        fill="freeze"
-                                                        attributeName="opacity"
-                                                        begin="0;SVGn6mLadge.end"
-                                                        dur="2s"
-                                                        from="1"
-                                                        to="0"
-                                                    />
-                                                </path>
-                                                <path
-                                                    fill="oklch(54.6% 0.245 262.881)"
-                                                    d="M17 21H7V16.8L12 12L17 16.8V21Z"
-                                                >
-                                                    <animate
-                                                        fill="freeze"
-                                                        attributeName="opacity"
-                                                        begin="0;SVGn6mLadge.end"
-                                                        dur="2s"
-                                                        from="0"
-                                                        to="1"
-                                                    />
-                                                </path>
-                                                <path
-                                                    fill="oklch(54.6% 0.245 262.881)"
-                                                    d="M6 2V8H6.01L6 8.01L10 12L6 16L6.01 16.01H6V22H18V16.01H17.99L18 16L14 12L18 8.01L17.99 8H18V2H6ZM16 16.5V20H8V16.5L12 12.5L16 16.5ZM12 11.5L8 7.5V4H16V7.5L12 11.5Z"
-                                                />
-                                                <animateTransform
-                                                    id="SVGn6mLadge"
-                                                    attributeName="transform"
-                                                    attributeType="XML"
-                                                    begin="SVGFjnOndxt.end"
-                                                    dur="0.5s"
-                                                    from="0 12 12"
-                                                    to="180 12 12"
-                                                    type="rotate"
-                                                />
+                                            <g
+                                                fill="none"
+                                                stroke="oklch(57.7% 0.245 27.325)"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="1.5"
+                                            >
+                                                <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 14v-1.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
+                                                <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3m-4.421 7.364l2.122-2.121m0 0l2.121-2.122m-2.121 2.122L17.12 18.12m2.122 2.122l2.121 2.121" />
                                             </g>
                                         </svg>
                                     </div>
-                                    <p className="font-semibold">
-                                        Memindai jari...
+                                    <p className="text-red-700 font-semibold">
+                                        {feedback.message}
                                     </p>
                                 </div>
                             )}
 
-                            {/* Pesan hasil */}
-                            {!isScanning &&
-                                feedback &&
-                                feedback.type === "error" && (
-                                    <div className="">
-                                        <div className="w-40 aspect-square flex justify-center items-center ">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="70"
-                                                height="70"
-                                                viewBox="0 0 24 24"
+                        {!isScanning &&
+                            feedback &&
+                            feedback.type === "success" && (
+                                <div className="flex flex-col items-center justify-center">
+                                    <div className="w-40 aspect-square flex justify-center items-center ">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="80"
+                                            height="80"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <g
+                                                fill="none"
+                                                stroke="oklch(52.7% 0.154 150.069)"
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="1.5"
                                             >
-                                                <g
-                                                    fill="none"
-                                                    stroke="oklch(57.7% 0.245 27.325)"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="1.5"
-                                                >
-                                                    <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 14v-1.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
-                                                    <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3m-4.421 7.364l2.122-2.121m0 0l2.121-2.122m-2.121 2.122L17.12 18.12m2.122 2.122l2.121 2.121" />
-                                                </g>
-                                            </svg>
-                                        </div>
-                                        <p className="text-red-700 font-semibold">
-                                            {feedback.message}
-                                        </p>
+                                                <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 16v-3.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
+                                                <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3M15.5 20.5l2 2l5-5" />
+                                            </g>
+                                        </svg>
                                     </div>
-                                )}
-
-                            {!isScanning &&
-                                feedback &&
-                                feedback.type === "success" && (
-                                    <div className="">
-                                        <div className="w-40 aspect-square flex justify-center items-center ">
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="60"
-                                                height="60"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <g
-                                                    fill="none"
-                                                    stroke="oklch(52.7% 0.154 150.069)"
-                                                    stroke-linecap="round"
-                                                    stroke-linejoin="round"
-                                                    stroke-width="1.5"
-                                                >
-                                                    <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 16v-3.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
-                                                    <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3M15.5 20.5l2 2l5-5" />
-                                                </g>
-                                            </svg>
-                                        </div>
-                                        <p className="text-green-700 text-center font-semibold">
-                                            {feedback?.type === "success" &&
-                                            feedback?.message
-                                                ? feedback.message
-                                                : "Berhasil Absen!"}
-                                        </p>
-                                    </div>
-                                )}
-                        </div>
+                                    <p className="text-green-700 text-center font-semibold">
+                                        {feedback?.type === "success" &&
+                                        feedback?.message ? (
+                                            feedback.message
+                                        ) : (
+                                            <>
+                                                Kamu berhasil absen <br /> pada
+                                                jam sekian!
+                                            </>
+                                        )}
+                                    </p>
+                                </div>
+                            )}
                     </div>
-                )}
+                </div>
+            )}
         </div>
     );
 }

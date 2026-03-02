@@ -258,7 +258,7 @@ class AttendanceController extends Controller
 
         // 1. Check-In (Belum ada record atau check_in null)
         if (!$attendance || !$attendance->check_in) {
-            $checkInTime = $now->format('H:i:s');
+            $checkInTime = $now->format('H:i');
 
             // Logic Pengembalian Poin dari Alpha (-2)
             // Tepat Waktu (<= 08:30) : +2 (Netto: 0)
@@ -286,7 +286,7 @@ class AttendanceController extends Controller
             }
 
             $msg = $isLate
-                ? "Halo " . $intern->name . ", Terlambat! Poin berkurang 1 (Netto). Check In Berhasil pada " . $checkInTime
+                ? "Halo " . $intern->name . ", Terlambat! Poin berkurang 1. Check In Berhasil pada " . $checkInTime
                 : "Halo " . $intern->name . ", Check In Berhasil pada " . $checkInTime . " (Poin Normal)";
 
             return response()->json([
@@ -311,14 +311,14 @@ class AttendanceController extends Controller
             }
 
             $attendance->update([
-                'check_out' => $now->format('H:i:s')
+                'check_out' => $now->format('H:i')
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => "Check Out Berhasil pada " . $now->format('H:i:s'),
+                'message' => "Check Out Berhasil pada " . $now->format('H:i'),
                 'type' => 'check_out',
-                'time' => $now->format('H:i:s'),
+                'time' => $now->format('H:i'),
                 'name' => $intern->name
             ]);
         }

@@ -54,7 +54,7 @@ export default function InternCard({ intern, onClick, attendance }) {
                 </span>
                 {attendance.terlambat ? (
                     <span className="bg-amber-100 text-amber-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                        Terlambat {attendance.terlambat} mnt
+                        Telat {attendance.terlambat}m
                     </span>
                 ) : (
                     <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
