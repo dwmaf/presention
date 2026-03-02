@@ -225,8 +225,11 @@ export default function NambahSidikJari({ auth, intern }) {
             return;
         }
 
-        forms[groupId].setData("samples", samples);
-
+        // forms[groupId].setData("samples", samples);
+        forms[groupId].transform((data) => ({
+            ...data,
+            samples: samples // PAKSA nilai samples dari state lokal
+        }));
         forms[groupId].post(
             route("interns.fingerprint.storeGroup", intern.id),
             {
