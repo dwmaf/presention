@@ -24,7 +24,9 @@ Route::get('/', function () {
 
 Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
 Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
-
+// untuk nampilin halaman presensi bagi para intern
+Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
 Route::middleware('auth')->group(function () {
     // route profil bawaan package breeze tidak/belum diperlukan
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -40,9 +42,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('interns', InternController::class);
     // reset poin tiap intern
     Route::post('/interns/reset-points', [InternController::class, 'resetPoints'])->name('interns.resetPoints');
-    // untuk nampilin halaman presensi bagi para intern
-    Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
-    Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
+    
     Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
     Route::put('/interns/{intern}/update-photo', [InternController::class, 'updatePhoto'])->name('interns.updatePhoto');
     Route::get('/interns/{intern}/export-attendance', [InternController::class, 'exportAttendanceCsv'])->name('interns.exportAttendance');
