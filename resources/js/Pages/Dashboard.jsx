@@ -160,7 +160,7 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                 )} */}
 
                 {/* ── Header dengan Range Date Picker & Download ── */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-20">
                     <div className="w-full sm:w-auto">
                         <RangeDatePicker
                             value={dateRange}
