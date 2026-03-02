@@ -1,5 +1,6 @@
 export default function InternCard({ intern, onClick, attendance }) {
     const poin = intern.poin ?? 0;
+    console.log(poin);
     const poinStyle =
         poin < 3 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
 

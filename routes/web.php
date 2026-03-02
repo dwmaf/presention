@@ -38,7 +38,8 @@ Route::middleware('auth')->group(function () {
 
     // untuk nampilin halaman daftar intern, nambah, edit, dan hapus
     Route::resource('interns', InternController::class);
-
+    // reset poin tiap intern
+    Route::post('/interns/reset-points', [InternController::class, 'resetPoints'])->name('interns.resetPoints');
     // untuk nampilin halaman presensi bagi para intern
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
     Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
@@ -71,8 +72,8 @@ Route::middleware('auth')->group(function () {
         ->name('interns.fingerprint.resetGroup');
 
     // Dev Tools
-    Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
-    Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
+    // Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
+    // Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
 });
 
 require __DIR__.'/auth.php';

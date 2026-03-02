@@ -23,10 +23,11 @@ export default function Intern({ auth, interns, divisions }) {
     const [currentIntern, setCurrentIntern] = useState(null);
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
     const [internToDelete, setInternToDelete] = useState(null);
+    const [confirmingResetPoints, setConfirmingResetPoints] = useState(false);
     const [photoPreview, setPhotoPreview] = useState(null);
     const [search, setSearch] = useState("");
     const [backToTop, setBackToTop] = useState(false);
-
+    const { post: postReset } = useForm(); 
     // Di Intern.jsx, tambahkan ini
     useEffect(() => {
         if (currentIntern) {
@@ -230,6 +231,28 @@ export default function Intern({ auth, interns, divisions }) {
         });
     };
 
+    // Cek apakah hari ini tanggal 1
+    const today = new Date();
+    const isFirstDate = today.getDate() === 1;
+    // buka modal konfirmasi reset poin
+    const confirmResetPoints = () => {
+        setConfirmingResetPoints(true);
+    };
+    // tutup modal konfirmasi reset poin
+    const closeResetPointsModal = () => {
+        setConfirmingResetPoints(false);
+    };
+    // hit endpoint post untuk reset poin
+    const resetPoints = () => {
+        postReset(route("interns.resetPoints"), {
+            onSuccess: () => {
+                closeResetPointsModal();
+                // Opsional: tambahkan notifikasi toast jika ada
+            },
+            preserveScroll: true,
+        });
+    };
+
     return (
         <AuthenticatedLayout
             user={auth.user}
@@ -265,6 +288,28 @@ export default function Intern({ auth, interns, divisions }) {
                     )}
 
                     <h1 className="text-2xl font-bold">Daftar Karyawan</h1>
+                    {/* Tombol Reset & Notifikasi */}
+                    <div className="flex items-center gap-4 mt-4 sm:mt-0">
+                        {isFirstDate && (
+                            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 animate-pulse">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                    <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                                </svg>
+                                Sudah tanggal 1, silahkan reset poin.
+                            </div>
+                        )}
+
+                        <button
+                            onClick={confirmResetPoints}
+                            className="inline-flex items-center px-4 py-2 bg-orange-500 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-orange-600 active:bg-orange-700 focus:outline-none focus:border-orange-700 focus:ring focus:ring-orange-200 transition"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                <path d="M3 3v5h5" />
+                            </svg>
+                            Reset Poin
+                        </button>
+                    </div>
 
                     {/* Search bar dan tambah karyawan */}
                     <div className="flex justify-end my-12 gap-4">
@@ -596,17 +641,17 @@ export default function Intern({ auth, interns, divisions }) {
                                     errors.rabu ||
                                     errors.kamis ||
                                     errors.jumat) && (
-                                    <InputError
-                                        message={
-                                            errors.senin ||
-                                            errors.selasa ||
-                                            errors.rabu ||
-                                            errors.kamis ||
-                                            errors.jumat
-                                        }
-                                        className="mt-2"
-                                    />
-                                )}
+                                        <InputError
+                                            message={
+                                                errors.senin ||
+                                                errors.selasa ||
+                                                errors.rabu ||
+                                                errors.kamis ||
+                                                errors.jumat
+                                            }
+                                            className="mt-2"
+                                        />
+                                    )}
                             </div>
                         </div>
                     </div>
@@ -641,6 +686,36 @@ export default function Intern({ auth, interns, divisions }) {
                         >
                             Hapus
                         </DangerButton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* MODAL KONFIRMASI RESET POIN */}
+            <Modal show={confirmingResetPoints} onClose={closeResetPointsModal}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        Konfirmasi Reset Poin
+                    </h2>
+                    
+                    <p className="mt-4 text-sm text-gray-600">
+                        {isFirstDate 
+                            ? "Apakah anda yakin ingin mereset poin semua karyawan menjadi 5?" 
+                            : "Peringatan: Hari ini BUKAN tanggal 1. Apakah anda yakin ingin mereset poin semua karyawan saat ini walaupun bukan tanggal 1?"}
+                    </p>
+
+                    <div className="mt-6 flex justify-end">
+                        <SecondaryButton onClick={closeResetPointsModal}>
+                            Batal
+                        </SecondaryButton>
+                        <PrimaryButton 
+                            className="ml-3 bg-orange-600 hover:bg-orange-700 focus:bg-orange-700 active:bg-orange-800"
+                            onClick={resetPoints}
+                        >
+                            Reset Semua Poin
+                        </PrimaryButton>
                     </div>
                 </div>
             </Modal>

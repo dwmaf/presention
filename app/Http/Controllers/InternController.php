@@ -192,4 +192,12 @@ class InternController extends Controller
 
         return redirect()->back()->with('success', 'Data magang deleted successfully!');
     }
+
+    public function resetPoints()
+    {
+        // Update semua data intern, set poin jadi 5
+        Intern::query()->update(['poin' => 5]);
+
+        return redirect()->back()->with('success', 'Poin semua karyawan berhasil direset ke 5.');
+    }
 }
