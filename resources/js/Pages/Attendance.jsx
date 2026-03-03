@@ -441,7 +441,7 @@ export default function Attendance({
                             feedback &&
                             feedback.type === "error" && (
                                 <div className="flex flex-col items-center">
-                                    <div className="w-40 aspect-square flex justify-center items-center items-center">
+                                    <div className="w-40 aspect-square flex justify-center items-center">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="70"
