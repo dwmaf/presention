@@ -461,7 +461,8 @@ export default function Attendance({
                                         </svg>
                                     </div>
                                     <p className="text-red-700 font-semibold">
-                                        {feedback.message}
+                                        dangerouslySetInnerHTML=
+                                        {{ __html: feedback.message }}
                                     </p>
                                 </div>
                             )}
