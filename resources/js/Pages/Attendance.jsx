@@ -111,7 +111,7 @@ export default function Attendance({
                     ) {
                         msg = err.response.data.message;
                     }
-                    setFeedback({ type: "error", message: `⚠️ ${msg}` });
+                    setFeedback({ type: "error", message: `${msg}` });
                     setStatus(null);
                     setIsScanning(false);
                 }
@@ -441,7 +441,7 @@ export default function Attendance({
                             feedback &&
                             feedback.type === "error" && (
                                 <div className="flex flex-col items-center">
-                                    <div className="w-40 aspect-square flex justify-center items-center ">
+                                    <div className="w-40 aspect-square flex justify-center items-center text-center">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="70"

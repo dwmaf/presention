@@ -327,7 +327,7 @@ class AttendanceController extends Controller
         if ($attendance->check_in && $attendance->check_out) {
             return response()->json([
                 'success' => false,
-                'message' => "Anda sudah melakukan Check In dan Check Out hari ini.",
+                'message' => "Anda sudah melakukan Check In<br> dan Check Out hari ini.",
             ], 400);
         }
 
