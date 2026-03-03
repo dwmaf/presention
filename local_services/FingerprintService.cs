@@ -433,6 +433,9 @@ namespace FingerprintService
                     if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
                         continue;
 
+                    if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
+                        continue;
+
                     // Import db FMD
                     var importRes = Importer.ImportFmd(
                         Convert.FromBase64String(u.fmd),

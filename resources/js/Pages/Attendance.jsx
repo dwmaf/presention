@@ -460,7 +460,7 @@ export default function Attendance({
                                             </g>
                                         </svg>
                                     </div>
-                                    <p className="text-red-700 font-semibold max-w-[30ch]">
+                                    <p className="text-red-700 font-semibold max-w-[25ch] text-center">
                                         {feedback.message}
                                     </p>
                                 </div>

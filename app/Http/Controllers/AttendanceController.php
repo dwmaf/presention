@@ -286,8 +286,8 @@ class AttendanceController extends Controller
             }
 
             $msg = $isLate
-                ? "Halo " . $intern->name . ", Terlambat! Poin berkurang 1. Check In Berhasil pada " . $checkInTime
-                : "Halo " . $intern->name . ", Check In Berhasil pada " . $checkInTime . " (Poin Normal)";
+                ? $intern->name . ", Terlambat! Poin -1. Hadir pada " . $checkInTime
+                : $intern->name . " Hadir pada " . $checkInTime;
 
             return response()->json([
                 'success' => true,
@@ -306,7 +306,7 @@ class AttendanceController extends Controller
             if ($selisihMenit < 30) {
                 return response()->json([
                     'success' => false,
-                    'message' => "Halo ". $intern->name ."Belum 30 menit dari waktu Check In!",
+                    'message' => $intern->name . " Belum 30 menit dari waktu kamu hadir!",
                 ], 400);
             }
 
@@ -316,7 +316,7 @@ class AttendanceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Check Out Berhasil pada " . $now->format('H:i'),
+                'message' => $intern->name . " pada " . $now->format('H:i'),
                 'type' => 'check_out',
                 'time' => $now->format('H:i'),
                 'name' => $intern->name
@@ -327,7 +327,7 @@ class AttendanceController extends Controller
         if ($attendance->check_in && $attendance->check_out) {
             return response()->json([
                 'success' => false,
-                'message' => "Anda sudah melakukan Check In dan Check Out hari ini.",
+                'message' => "Kamu sudah melakukan Check In dan Check Out hari ini.",
             ], 400);
         }
 
