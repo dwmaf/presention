@@ -17,6 +17,9 @@ export default function InternDetail({ intern, divisions }) {
     const [showStatusForm, setShowStatusForm] = useState(false);
     const [selectedStatus, setSelectedStatus] = useState("");
     const [currentAttendanceId, setCurrentAttendanceId] = useState(null);
+    const [showCheckOutForm, setShowCheckOutForm] = useState(false);
+    const [editingCheckOutId, setEditingCheckOutId] = useState(null);
+    const [checkOutValue, setCheckOutValue] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
 
@@ -197,6 +200,80 @@ export default function InternDetail({ intern, divisions }) {
         setShowStatusForm(false);
         setSelectedStatus("");
         setCurrentAttendanceId(null);
+    };
+
+    // ✅ HANDLER untuk edit Jam Pulang
+    const handleToggleCheckOutForm = (attendanceId, currentCheckOut) => {
+        if (showCheckOutForm && editingCheckOutId === attendanceId) {
+            setShowCheckOutForm(false);
+            setEditingCheckOutId(null);
+            setCheckOutValue("");
+        } else {
+            setShowCheckOutForm(true);
+            setEditingCheckOutId(attendanceId);
+            setCheckOutValue(currentCheckOut ? currentCheckOut.slice(0, 5) : "");
+        }
+    };
+
+    // ✅ HANDLER untuk update Jam Pulang
+    const handleUpdateCheckOut = (e) => {
+        e.preventDefault();
+
+        router.put(
+            `/attendances/${editingCheckOutId}/check-out`,
+            {
+                check_out: checkOutValue || null,
+            },
+            {
+                onSuccess: () => {
+                    setShowCheckOutForm(false);
+                    setEditingCheckOutId(null);
+                    setCheckOutValue("");
+                    addToast("Jam pulang berhasil diubah!", "success");
+                },
+                onError: (errors) => {
+                    addToast(
+                        "Gagal mengubah jam pulang: " +
+                            Object.values(errors).join(", "),
+                        "error",
+                    );
+                },
+            },
+        );
+    };
+
+    // ✅ HANDLER untuk cancel edit Jam Pulang
+    const handleCancelCheckOutUpdate = () => {
+        setShowCheckOutForm(false);
+        setEditingCheckOutId(null);
+        setCheckOutValue("");
+    };
+
+    // ✅ HANDLER untuk hapus Jam Pulang
+    const handleDeleteCheckOut = () => {
+        if (confirm("Yakin ingin menghapus jam pulang?")) {
+            router.put(
+                `/attendances/${editingCheckOutId}/check-out`,
+                {
+                    check_out: null,
+                },
+                {
+                    onSuccess: () => {
+                        setShowCheckOutForm(false);
+                        setEditingCheckOutId(null);
+                        setCheckOutValue("");
+                        addToast("Jam pulang berhasil dihapus!", "success");
+                    },
+                    onError: (errors) => {
+                        addToast(
+                            "Gagal menghapus jam pulang: " +
+                                Object.values(errors).join(", "),
+                            "error",
+                        );
+                    },
+                },
+            );
+        }
     };
 
     // ✅ TAMBAHKAN logic untuk pagination
@@ -659,10 +736,79 @@ export default function InternDetail({ intern, divisions }) {
                                         )}
                                     </div>
                                 </td>
-                                <td className="px-4 py-2">
-                                    {attendance.check_out
-                                        ? attendance.check_out.slice(0, 5)
-                                        : "-"}
+                                <td className="px-4 py-2 relative">
+                                    <button
+                                        onClick={() =>
+                                            handleToggleCheckOutForm(
+                                                attendance.id,
+                                                attendance.check_out,
+                                            )
+                                        }
+                                        className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
+                                    >
+                                        {attendance.check_out
+                                            ? attendance.check_out.slice(0, 5)
+                                            : "-"}
+                                    </button>
+
+                                    {/* Form Edit Jam Pulang */}
+                                    {showCheckOutForm &&
+                                        editingCheckOutId === attendance.id && (
+                                            <form
+                                                onSubmit={handleUpdateCheckOut}
+                                                className={`bg-white shadow-lg rounded-lg absolute z-50 p-4 w-64 ${
+                                                    (() => {
+                                                        const indexInPage =
+                                                            currentAttendances.indexOf(
+                                                                attendance,
+                                                            );
+                                                        return indexInPage >= 3
+                                                            ? "bottom-20 right-0"
+                                                            : "top-10 right-0";
+                                                    })()
+                                                }`}
+                                            >
+                                                <p className="font-semibold text-sm mb-2">
+                                                    Edit Jam Pulang
+                                                </p>
+                                                <input
+                                                    type="time"
+                                                    value={checkOutValue}
+                                                    onChange={(e) =>
+                                                        setCheckOutValue(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                />
+                                                <div className="flex gap-2 mt-3">
+                                                    <PrimaryButton
+                                                        type="submit"
+                                                        className="flex-1 justify-center text-xs"
+                                                    >
+                                                        Simpan
+                                                    </PrimaryButton>
+                                                    <button
+                                                        type="button"
+                                                        onClick={
+                                                            handleDeleteCheckOut
+                                                        }
+                                                        className="flex-1 justify-center text-xs bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-md transition duration-150 ease-in-out"
+                                                    >
+                                                        Hapus
+                                                    </button>
+                                                </div>
+                                                <SecondaryButton
+                                                    type="button"
+                                                    onClick={
+                                                        handleCancelCheckOutUpdate
+                                                    }
+                                                    className="w-full justify-center text-xs mt-2"
+                                                >
+                                                    Batal
+                                                </SecondaryButton>
+                                            </form>
+                                        )}
                                 </td>
                                 <td className="px-4 py-2">
                                     <button

@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/interns/reset-points', [InternController::class, 'resetPoints'])->name('interns.resetPoints');
     
     Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
+    Route::put('/attendances/{attendance}/check-out', [AttendanceController::class, 'updateCheckOut'])->name('attendances.updateCheckOut');
     Route::put('/interns/{intern}/update-photo', [InternController::class, 'updatePhoto'])->name('interns.updatePhoto');
     Route::get('/interns/{intern}/export-attendance', [InternController::class, 'exportAttendanceCsv'])->name('interns.exportAttendance');
 

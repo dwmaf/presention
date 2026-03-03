@@ -205,6 +205,19 @@ class AttendanceController extends Controller
         return redirect()->back()->with('success', 'Status kehadiran berhasil diperbarui.');
     }
 
+    public function updateCheckOut(Request $request, Attendance $attendance)
+    {
+        $request->validate([
+            'check_out' => 'nullable|date_format:H:i'
+        ]);
+
+        $attendance->update([
+            'check_out' => $request->check_out
+        ]);
+
+        return redirect()->back()->with('success', 'Jam pulang berhasil diperbarui.');
+    }
+
     public function store(Request $request)
     {
         // === LOGIKA AUTO RESET POIN (Lazy Trigger) ===
