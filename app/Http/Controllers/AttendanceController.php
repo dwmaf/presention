@@ -316,7 +316,7 @@ class AttendanceController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => $intern->name . " pada " . $now->format('H:i'),
+                'message' => $intern->name . " pulang jam " . $now->format('H:i'),
                 'type' => 'check_out',
                 'time' => $now->format('H:i'),
                 'name' => $intern->name

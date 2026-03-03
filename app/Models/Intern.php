@@ -100,7 +100,7 @@ class Intern extends Model
         $totalSeconds = $attendances->sum(function ($attendance) {
             $in = Carbon::parse($attendance->check_in);
             $out = Carbon::parse($attendance->check_out);
-            return $out->diffInSeconds($in);
+            return abs($out->diffInSeconds($in));
         });
 
         return round($totalSeconds / 3600, 2);
