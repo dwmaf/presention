@@ -460,7 +460,13 @@ export default function Attendance({
                                             </g>
                                         </svg>
                                     </div>
-                                    <p dangerouslySetInnerHTML={{ __html: feedback.message }} className="text-red-700 font-semibold" />
+                                    <p
+                                        dangerouslySetInnerHTML={{
+                                            __html: feedback.message,
+                                        }}
+                                        className="text-red-700 font-semibold"
+                                    />
+                                </div>
                             )}
 
                         {!isScanning &&
