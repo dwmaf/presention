@@ -459,7 +459,10 @@ namespace FingerprintService
                         bestId = u.id;
                     }
                 }
-                catch { }
+                catch(Exception ex)
+                {
+                    Log("Import ERROR ID: " + u.id + " | " + ex.message);
+                }
             }
 
             Log("Best Score: " + bestScore);
