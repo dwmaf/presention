@@ -22,6 +22,52 @@ export default function InternDetail({ intern, divisions }) {
     const [checkOutValue, setCheckOutValue] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 7;
+    const [showToleransiModal, setShowToleransiModal] = useState(false);
+    const [toleransiDays, setToleransiDays] = useState({
+        senin: intern?.toleransi_senin || false,
+        selasa: intern?.toleransi_selasa || false,
+        rabu: intern?.toleransi_rabu || false,
+        kamis: intern?.toleransi_kamis || false,
+        jumat: intern?.toleransi_jumat || false,
+    });
+
+    // Buka modal
+    const handleOpenToleransiModal = () => {
+        setToleransiDays({
+            senin: intern?.toleransi_senin || false,
+            selasa: intern?.toleransi_selasa || false,
+            rabu: intern?.toleransi_rabu || false,
+            kamis: intern?.toleransi_kamis || false,
+            jumat: intern?.toleransi_jumat || false,
+        });
+        setShowToleransiModal(true);
+    };
+
+    // Toggle hari
+    const handleToleransiDayChange = (day) => {
+        setToleransiDays((prev) => ({
+            ...prev,
+            [day]: !prev[day],
+        }));
+    };
+
+    // Simpan ke backend (atau sesuaikan sesuai kebutuhan)
+    const handleSaveToleransiDays = () => {
+        router.put(`/interns/${intern.id}/update-toleransi`, toleransiDays, {
+            onSuccess: () => {
+                setShowToleransiModal(false);
+                addToast("Toleransi keterlambatan berhasil diubah!", "success");
+                router.reload();
+            },
+            onError: (errors) => {
+                addToast(
+                    "Gagal mengubah toleransi: " +
+                        Object.values(errors).join(", "),
+                    "error",
+                );
+            },
+        });
+    };
 
     const { data, setData, errors, reset } = useForm({
         name: intern?.name || "",
@@ -211,7 +257,9 @@ export default function InternDetail({ intern, divisions }) {
         } else {
             setShowCheckOutForm(true);
             setEditingCheckOutId(attendanceId);
-            setCheckOutValue(currentCheckOut ? currentCheckOut.slice(0, 5) : "");
+            setCheckOutValue(
+                currentCheckOut ? currentCheckOut.slice(0, 5) : "",
+            );
         }
     };
 
@@ -337,7 +385,7 @@ export default function InternDetail({ intern, divisions }) {
                         </div>
 
                         {/* Jadwal */}
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                             <p className="text-sm flex gap-1 items-center font-medium text-gray-500">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -355,7 +403,147 @@ export default function InternDetail({ intern, divisions }) {
                                 </svg>
                                 {renderJadwal()}
                             </p>
+                            <button
+                                className="flex gap-1 items-center"
+                                onClick={handleOpenToleransiModal}
+                                type="button"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 640 640"
+                                >
+                                    <path
+                                        fill="oklch(55.1% 0.027 264.364)"
+                                        d="M256 72c66.3 0 120 53.7 120 120s-53.7 120-120 120s-120-53.7-120-120S189.7 72 256 72m-29.7 296h59.4c3.9 0 7.9.1 11.8.4c-16.2 28.2-25.5 60.8-25.5 95.6c0 41.8 13.4 80.5 36 112H77.7C61.3 576 48 562.7 48 546.3C48 447.8 127.8 368 226.3 368m93.7 96c0-79.5 64.5-144 144-144s144 64.5 144 144s-64.5 144-144 144s-144-64.5-144-144m144-80c-8.8 0-16 7.2-16 16v64c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16s-7.2-16-16-16h-32v-48c0-8.8-7.2-16-16-16"
+                                    />
+                                </svg>
+                                <p className="text-sm">Toleransi Terlambat</p>
+                            </button>
                         </div>
+
+                        {/* Modal Toleransi Keterlambatan */}
+                        {showToleransiModal && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                                <div className="bg-white rounded-lg shadow-lg p-6 w-[40%] max-w-[60%]">
+                                    <h2 className="font-semibold text-lg mb-4">
+                                        Pilih Hari Toleransi Terlambat
+                                    </h2>
+
+                                    <p className="text-xs mb-4">
+                                        Pilih hari di mana toleransi
+                                        keterlambatan diperbolehkan. Seperti ada
+                                        jadwal kuliah pagi atau keperluan lain.
+                                    </p>
+
+                                    {/* <div className="grid grid-cols-3 gap-2 mb-4">
+                                        {[
+                                            "senin",
+                                            "selasa",
+                                            "rabu",
+                                            "kamis",
+                                            "jumat",
+                                        ].map((day) => (
+                                            <label
+                                                key={day}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={toleransiDays[day]}
+                                                    onChange={() =>
+                                                        handleToleransiDayChange(
+                                                            day,
+                                                        )
+                                                    }
+                                                    className="rounded-sm cursor-pointer"
+                                                />
+                                                <span className="capitalize">
+                                                    {day}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div> */}
+
+                                    <div className="grid grid-cols-3 gap-2 mb-4">
+                                        {/* Checkbox Setiap Hari */}
+                                        <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    toleransiDays.senin &&
+                                                    toleransiDays.selasa &&
+                                                    toleransiDays.rabu &&
+                                                    toleransiDays.kamis &&
+                                                    toleransiDays.jumat
+                                                }
+                                                onChange={(e) => {
+                                                    const checked =
+                                                        e.target.checked;
+                                                    setToleransiDays({
+                                                        senin: checked,
+                                                        selasa: checked,
+                                                        rabu: checked,
+                                                        kamis: checked,
+                                                        jumat: checked,
+                                                    });
+                                                }}
+                                                className="rounded-sm cursor-pointer focus:ring-transparent"
+                                            />
+                                            <span className="text-sm text-gray-700">
+                                                Setiap Hari
+                                            </span>
+                                        </label>
+
+                                        {/* Checkbox per hari */}
+                                        {[
+                                            "senin",
+                                            "selasa",
+                                            "rabu",
+                                            "kamis",
+                                            "jumat",
+                                        ].map((day) => (
+                                            <label
+                                                key={day}
+                                                className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer"
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={toleransiDays[day]}
+                                                    onChange={() =>
+                                                        handleToleransiDayChange(
+                                                            day,
+                                                        )
+                                                    }
+                                                    className="rounded-sm cursor-pointer focus:ring-transparent"
+                                                />
+                                                <span className="text-sm text-gray-700 capitalize">
+                                                    {day}
+                                                </span>
+                                            </label>
+                                        ))}
+                                    </div>
+
+                                    <div className="flex gap-2 justify-end">
+                                        <SecondaryButton
+                                            onClick={() =>
+                                                setShowToleransiModal(false)
+                                            }
+                                            className="justify-center flex-1"
+                                        >
+                                            Batal
+                                        </SecondaryButton>
+                                        <PrimaryButton
+                                            onClick={handleSaveToleransiDays}
+                                            className="justify-center flex-1"
+                                        >
+                                            Simpan
+                                        </PrimaryButton>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
                         {/* Poin & Status Fingerprint */}
                         <div className="flex gap-2">
@@ -407,7 +595,7 @@ export default function InternDetail({ intern, divisions }) {
                 {showForm && (
                     <form
                         action=""
-                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12"
+                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12 z-50"
                         onSubmit={handleSubmit}
                     >
                         <p className="font-medium text-lg mb-2">
@@ -756,17 +944,15 @@ export default function InternDetail({ intern, divisions }) {
                                         editingCheckOutId === attendance.id && (
                                             <form
                                                 onSubmit={handleUpdateCheckOut}
-                                                className={`bg-white shadow-lg rounded-lg absolute z-50 p-4 w-64 ${
-                                                    (() => {
-                                                        const indexInPage =
-                                                            currentAttendances.indexOf(
-                                                                attendance,
-                                                            );
-                                                        return indexInPage >= 3
-                                                            ? "bottom-20 right-0"
-                                                            : "top-10 right-0";
-                                                    })()
-                                                }`}
+                                                className={`bg-white shadow-lg rounded-lg absolute z-50 p-4 w-64 ${(() => {
+                                                    const indexInPage =
+                                                        currentAttendances.indexOf(
+                                                            attendance,
+                                                        );
+                                                    return indexInPage >= 3
+                                                        ? "bottom-20 right-0"
+                                                        : "top-10 right-0";
+                                                })()}`}
                                             >
                                                 <p className="font-semibold text-sm mb-2">
                                                     Edit Jam Pulang
@@ -779,7 +965,10 @@ export default function InternDetail({ intern, divisions }) {
                                                             e.target.value,
                                                         )
                                                     }
-                                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                    min="00:00"
+                                                    max="23:59"
+                                                    step="60"
+                                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                                                 />
                                                 <div className="flex gap-2 mt-3">
                                                     <PrimaryButton
