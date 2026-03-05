@@ -42,6 +42,9 @@ Route::middleware('auth')->group(function () {
     Route::resource('interns', InternController::class);
     // reset poin tiap intern
     Route::post('/interns/reset-points', [InternController::class, 'resetPoints'])->name('interns.resetPoints');
+
+    // untuk update toleransi keterlambatan
+    Route::put('/interns/{intern}/update-toleransi', [InternController::class, 'updateToleransi'])->name('interns.updateToleransi');
     
     Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
     Route::put('/attendances/{attendance}/check-out', [AttendanceController::class, 'updateCheckOut'])->name('attendances.updateCheckOut');
@@ -73,7 +76,7 @@ Route::middleware('auth')->group(function () {
         ->name('interns.fingerprint.resetGroup');
 
     // Dev Tools
-    // Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
+    Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
     // Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
 });
 

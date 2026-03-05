@@ -273,15 +273,41 @@ class AttendanceController extends Controller
         if (!$attendance || !$attendance->check_in) {
             $checkInTime = $now->format('H:i');
 
-            // Logic Pengembalian Poin dari Alpha (-2)
-            // Tepat Waktu (<= 08:30) : +2 (Netto: 0)
-            // Terlambat (> 08:30)   : +1 (Netto: -1)
-            $isLate = $now->format('H:i:s') > '08:30:00';
+            // === LOGIKA BARU: CEK FLAG toleransi ===
+            $dayIndex = strtolower($now->format('l')); // monday, tuesday...
+            $toleransiMap = [
+                'monday'    => 'toleransi_senin',
+                'tuesday'   => 'toleransi_selasa',
+                'wednesday' => 'toleransi_rabu',
+                'thursday'  => 'toleransi_kamis',
+                'friday'    => 'toleransi_jumat',
+            ];
 
-            if ($isLate) {
-                $intern->increment('poin', 1);
-            } else {
-                $intern->increment('poin', 2);
+            // Cek apakah hari ini statusnya fleksibel untuk intern ini?
+            $toleransiColumn = $toleransiMap[$dayIndex] ?? null;
+            $isTodayToleransi = $toleransiColumn ? $intern->$toleransiColumn : false;
+
+            // Logic Pengembalian Poin dari Alpha (-2)
+            // Jika Fleksibel (True) -> Tidak dianggap terlambat jam berapapun.
+            // Jika Tidak Fleksibel (False) -> Cek apakah lewat 08:30.
+            $isLate = $isTodayToleransi ? false : ($now->format('H:i:s') > '08:30:00');
+
+            // === B. LOGIKA POIN (FIX BUG INFINITY) ===
+            // Cek: Apakah poin user sudah dipotong sistem tadi pagi?
+            // Tandanya adalah record sudah ada DAN statusnya 'alpha'.
+            if ($attendance && $attendance->status === 'alpha') {
+                // KASUS 1: Datang sesuai jadwal (Poin sudah -2)
+                // Kita kembalikan poinnya.
+                if ($isLate) {
+                    $intern->increment('poin', 1); // Balik 1 (Netto -1)
+                } else {
+                    $intern->increment('poin', 2); // Balik 2 (Netto 0)
+                }
+            }
+
+            // Safety net: Pastikan poin tidak pernah lebih dari 5 (Hard Cap)
+            if ($intern->poin > 5) {
+                $intern->update(['poin' => 5]);
             }
 
             if (!$attendance) {

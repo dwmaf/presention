@@ -123,6 +123,29 @@ class InternController extends Controller
         return redirect()->back()->with('error', 'Gagal mengunggah foto.');
     }
 
+    public function updateToleransi(Request $request, Intern $intern)
+    {
+        // Validasi input (boolean)
+        $validatedData = $request->validate([
+            'senin'  => 'boolean',
+            'selasa' => 'boolean',
+            'rabu'   => 'boolean',
+            'kamis'  => 'boolean',
+            'jumat'  => 'boolean',
+        ]);
+
+        // Mapping: Key 'senin' dari React -> Kolom 'toleransi_senin' di DB
+        $intern->update([
+            'toleransi_senin'  => $request->boolean('senin'),
+            'toleransi_selasa' => $request->boolean('selasa'),
+            'toleransi_rabu'   => $request->boolean('rabu'),
+            'toleransi_kamis'  => $request->boolean('kamis'),
+            'toleransi_jumat'  => $request->boolean('jumat'),
+        ]);
+
+        return redirect()->back()->with('success', 'Toleransi keterlambatan berhasil diperbarui.');
+    }
+
     public function exportAttendanceCsv(Intern $intern)
     {
         $filename = 'kehadiran_' . str_replace(' ', '_', strtolower($intern->name)) . '_' . now()->format('Ymd') . '.csv';
@@ -179,18 +202,18 @@ class InternController extends Controller
 
     public function destroy(Intern $intern)
     {
-        // Cegah penghapusan kalau sudah punya data kehadiran
-        if ($intern->attendances()->exists()) {
-            return redirect()->back()->with('error', 'Intern tidak bisa dihapus karena sudah memiliki data kehadiran.');
-        }
-
         if ($intern->foto && Storage::disk('public')->exists($intern->foto)) {
             Storage::disk('public')->delete($intern->foto);
         }
 
+        // 2. Hapus Semua Data Absensi Terkait (Cascade Manual)
+        // Ini penting supaya tidak ada data "yatim piatu" (orphan records) di tabel attendances
+        $intern->attendances()->delete();
+
+        // hapus data intern
         $intern->delete();
 
-        return redirect()->back()->with('success', 'Data magang deleted successfully!');
+        return redirect()->back()->with('success', 'Data magang beserta riwayat absensinya berhasil dihapus.');
     }
 
     public function resetPoints()

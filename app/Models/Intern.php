@@ -25,6 +25,11 @@ class Intern extends Model
         'kamis',
         'jumat',
         'poin',
+        'toleransi_senin',
+        'toleransi_selasa',
+        'toleransi_rabu',
+        'toleransi_kamis',
+        'toleransi_jumat'
     ];
 
     protected $casts = [
