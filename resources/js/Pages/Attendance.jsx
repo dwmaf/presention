@@ -44,13 +44,13 @@ export default function Attendance({
 
     const database_payload = [];
     fingerprintDatabase.forEach((u) => {
-        if (u.fmd) database_payload.push({ id: u.id, fmd: u.fmd });
-        if (u.second_fmd)
+        if (u.fmd && u.fmd.length > 50) database_payload.push({ id: u.id, fmd: u.fmd });
+        if (u.second_fmd && u.second_fmd.length > 50)
             database_payload.push({ id: u.id, fmd: u.second_fmd });
-        if (u.fmd_3) database_payload.push({ id: u.id, fmd: u.fmd_3 });
-        if (u.fmd_4) database_payload.push({ id: u.id, fmd: u.fmd_4 });
-        if (u.fmd_5) database_payload.push({ id: u.id, fmd: u.fmd_5 });
-        if (u.fmd_6) database_payload.push({ id: u.id, fmd: u.fmd_6 });
+        if (u.fmd_3 && u.fmd_3.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_3 });
+        if (u.fmd_4 && u.fmd_4.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_4 });
+        if (u.fmd_5 && u.fmd_5.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_5 });
+        if (u.fmd_6 && u.fmd_6.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_6 });
     });
 
     const startScanAndVerify = async () => {
@@ -259,9 +259,9 @@ export default function Attendance({
                             <path
                                 fill="none"
                                 stroke="currentColor"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
                                 d="M12 19v-8m-3 7v-7c0-1 .6-3 3-3s3 2 3 3v6m-9-3v-3c0-2 1.2-6 6-6s6 4 6 6m0 4v-1M6.001 17H6M7 3H5a2 2 0 0 0-2 2v2m0 10v2a2 2 0 0 0 2 2h2m10 0h2a2 2 0 0 0 2-2v-2m0-10V5a2 2 0 0 0-2-2h-2"
                             />
                         </svg>
@@ -451,9 +451,9 @@ export default function Attendance({
                                             <g
                                                 fill="none"
                                                 stroke="oklch(57.7% 0.245 27.325)"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="1.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="1.5"
                                             >
                                                 <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 14v-1.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
                                                 <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3m-4.421 7.364l2.122-2.121m0 0l2.121-2.122m-2.121 2.122L17.12 18.12m2.122 2.122l2.121 2.121" />
@@ -480,9 +480,9 @@ export default function Attendance({
                                             <g
                                                 fill="none"
                                                 stroke="oklch(52.7% 0.154 150.069)"
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="1.5"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="1.5"
                                             >
                                                 <path d="M7 16v-4.639c0-.51.1-.999.285-1.453M17 16v-3.185m-7.778-5.08A5.5 5.5 0 0 1 12 7c2.28 0 4.203 1.33 4.805 3.15M10 17v-2.177M14 17v-5.147C14 10.83 13.105 10 12 10s-2 .83-2 1.853v.794" />
                                                 <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10a10 10 0 0 1-.458 3M15.5 20.5l2 2l5-5" />

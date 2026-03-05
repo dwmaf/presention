@@ -194,12 +194,15 @@ class AttendanceController extends Controller
 
         // Jika berubah dari Alpha ke (Hadir/Izin/Sakit), kembalikan poinnya (+2)
         if ($oldStatus === 'alpha' && in_array($newStatus, ['hadir', 'izin', 'sakit'])) {
-            $attendance->intern->increment('poin', 2);
+            // Pastikan tidak lebih dari 5
+            $newPoin = min(5, $attendance->intern->poin + 2);
+            $attendance->intern->update(['poin' => $newPoin]);
         }
 
         // Jika berubah DARI (Hadir/Izin/Sakit) KEMBALI ke Alpha, potong poin lagi (-2)
         if ($newStatus === 'alpha' && in_array($oldStatus, ['hadir', 'izin', 'sakit'])) {
-            $attendance->intern->decrement('poin', 2);
+            $newPoin = max(0, $attendance->intern->poin - 2);
+            $attendance->intern->update(['poin' => $newPoin]);
         }
 
         return redirect()->back()->with('success', 'Status kehadiran berhasil diperbarui.');
@@ -310,6 +313,11 @@ class AttendanceController extends Controller
                 $intern->update(['poin' => 5]);
             }
 
+            // LOGIKA BARU: Safety net agar poin tidak pernah kurang dari 0
+            if ($intern->poin < 0) {
+                $intern->update(['poin' => 0]);
+            }
+
             if (!$attendance) {
                 Attendance::create([
                     'intern_id' => $intern->id,
@@ -403,8 +411,11 @@ class AttendanceController extends Controller
             $data = [];
 
             foreach ($internsTanpaPresensi as $i) {
-                // Potong 2 poin langsung saat record 'alpha' dibuat
-                $i->decrement('poin', 2);
+                // LOGIKA BARU: Kurangi 2 poin, tapi jangan sampai minus
+                // Menggunakan max(0, hitungan) memastikan nilai minimal adalah 0
+                $poinBaru = max(0, $i->poin - 2);
+                
+                $i->update(['poin' => $poinBaru]);
 
                 $data[] = [
                     'intern_id' => $i->id,
