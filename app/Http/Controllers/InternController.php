@@ -145,19 +145,19 @@ class InternController extends Controller
 
         // Mapping: Key 'senin' dari React -> Kolom 'toleransi_senin' di DB
         $intern->update([
-            'toleransi_senin'      => $request->input('senin.checked'),
+            'toleransi_senin'      => $request->input('senin.checked') ?? false,
             'toleransi_senin_time' => $request->input('senin.time') ?? '08:30:00',
 
-            'toleransi_selasa'      => $request->input('selasa.checked'),
+            'toleransi_selasa'      => $request->input('selasa.checked') ?? false,
             'toleransi_selasa_time' => $request->input('selasa.time') ?? '08:30:00',
             
-            'toleransi_rabu'      => $request->input('rabu.checked'),
+            'toleransi_rabu'      => $request->input('rabu.checked') ?? false,
             'toleransi_rabu_time' => $request->input('rabu.time') ?? '08:30:00',
             
-            'toleransi_kamis'      => $request->input('kamis.checked'),
+            'toleransi_kamis'      => $request->input('kamis.checked') ?? false,
             'toleransi_kamis_time' => $request->input('kamis.time') ?? '08:30:00',
             
-            'toleransi_jumat'      => $request->input('jumat.checked'),
+            'toleransi_jumat'      => $request->input('jumat.checked') ?? false,
             'toleransi_jumat_time' => $request->input('jumat.time') ?? '08:30:00',
         ]);
 
