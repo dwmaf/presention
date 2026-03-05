@@ -286,7 +286,7 @@ export default function Intern({ auth, interns, divisions }) {
 
                         <button
                             onClick={confirmResetPoints}
-                            className="inline-flex items-center px-4 py-2 bg-red-500 border border-transparent rounded-md font-semibold text-md text-white hover:bg-red-600 active:bg-red-700 focus:outline-none focus:border-orange-700 focus:ring focus:ring-orange-200 transition"
+                            className="inline-flex items-center px-4 py-2 bg-red-100 border border-transparent rounded-md font-semibold text-md text-red-700 hover:bg-red-300 active:bg-red-400 focus:outline-none transition"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"

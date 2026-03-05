@@ -62,7 +62,7 @@ export default function InternDetail({ intern, divisions }) {
             onError: (errors) => {
                 addToast(
                     "Gagal mengubah toleransi: " +
-                    Object.values(errors).join(", "),
+                        Object.values(errors).join(", "),
                     "error",
                 );
             },
@@ -190,11 +190,11 @@ export default function InternDetail({ intern, divisions }) {
         const confirmMessage =
             `PERINGATAN: Apakah Anda yakin ingin menghapus "${intern.name}"?\n\n` +
             `Semua data riwayat absensi, poin, dan foto akan ILANG PERMANEN.\n` +
-            `Jika ini data duplikat, pastikan Anda menghapus yang benar.\n` + 
+            `Jika ini data duplikat, pastikan Anda menghapus yang benar.\n` +
             `Jika ini data lama, silahkan download data kehadirannya dulu jika ingin membackupnya.`;
 
         if (confirm(confirmMessage)) {
-            router.delete(route('interns.destroy', intern.id), {
+            router.delete(route("interns.destroy", intern.id), {
                 onSuccess: () => {
                     addToast("Data berhasil dihapus selamanya.", "success");
                     // Opsi: Refresh halaman atau redirect jika perlu
@@ -202,11 +202,10 @@ export default function InternDetail({ intern, divisions }) {
                 },
                 onError: () => {
                     addToast("Gagal menghapus data.", "error");
-                }
+                },
             });
         }
     };
-
 
     const attendanceStyle = (status) => {
         const styles = {
@@ -256,7 +255,7 @@ export default function InternDetail({ intern, divisions }) {
                 onError: (errors) => {
                     addToast(
                         "Gagal mengubah status: " +
-                        Object.values(errors).join(", "),
+                            Object.values(errors).join(", "),
                         "error",
                     );
                 },
@@ -305,7 +304,7 @@ export default function InternDetail({ intern, divisions }) {
                 onError: (errors) => {
                     addToast(
                         "Gagal mengubah jam pulang: " +
-                        Object.values(errors).join(", "),
+                            Object.values(errors).join(", "),
                         "error",
                     );
                 },
@@ -338,7 +337,7 @@ export default function InternDetail({ intern, divisions }) {
                     onError: (errors) => {
                         addToast(
                             "Gagal menghapus jam pulang: " +
-                            Object.values(errors).join(", "),
+                                Object.values(errors).join(", "),
                             "error",
                         );
                     },
@@ -757,17 +756,17 @@ export default function InternDetail({ intern, divisions }) {
                                 errors.rabu ||
                                 errors.kamis ||
                                 errors.jumat) && (
-                                    <InputError
-                                        message={
-                                            errors.senin ||
-                                            errors.selasa ||
-                                            errors.rabu ||
-                                            errors.kamis ||
-                                            errors.jumat
-                                        }
-                                        className="mt-2"
-                                    />
-                                )}
+                                <InputError
+                                    message={
+                                        errors.senin ||
+                                        errors.selasa ||
+                                        errors.rabu ||
+                                        errors.kamis ||
+                                        errors.jumat
+                                    }
+                                    className="mt-2"
+                                />
+                            )}
                         </div>
 
                         {/* Poin */}
@@ -899,16 +898,31 @@ export default function InternDetail({ intern, divisions }) {
 
             <div className="mt-8 flex justify-between items-center">
                 <p className="font-semibold text-lg">Riwayat Kehadiran</p>
-                <button
-                    onClick={handleDeleteIntern}
-                    className="text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-4 py-2 text-center inline-flex items-center"
-                >
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                    Hapus Intern
-                </button>
-                <DownloadBtn
-                    onClick={`/interns/${intern.id}/export-attendance`}
-                />
+
+                <div className="flex gap-4">
+                    <DownloadBtn
+                        onClick={`/interns/${intern.id}/export-attendance`}
+                    />
+                    <button
+                        onClick={handleDeleteIntern}
+                        className="text-red-700 hover:bg-red-100 font-medium rounded-lg text-sm px-4 py-2 text-center inline-flex items-center"
+                    >
+                        <svg
+                            className="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            ></path>
+                        </svg>
+                        Hapus Intern
+                    </button>
+                </div>
             </div>
 
             <table className="w-full mt-2">
@@ -1044,7 +1058,7 @@ export default function InternDetail({ intern, divisions }) {
                                     {/* Ubah Status Kehadiran */}
                                     {showStatusForm &&
                                         currentAttendanceId ===
-                                        attendance.id && (
+                                            attendance.id && (
                                             <form
                                                 onSubmit={handleUpdateStatus}
                                                 className={`bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50 ${
@@ -1059,7 +1073,7 @@ export default function InternDetail({ intern, divisions }) {
                                                             ? "bottom-20 right-20"
                                                             : "right-20";
                                                     })()
-                                                    }`}
+                                                }`}
                                             >
                                                 <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
                                                     <input
@@ -1214,10 +1228,11 @@ export default function InternDetail({ intern, divisions }) {
                                 <button
                                     key={page}
                                     onClick={() => handlePageChange(page)}
-                                    className={`px-3 py-1 rounded-md ${currentPage === page
+                                    className={`px-3 py-1 rounded-md ${
+                                        currentPage === page
                                             ? "bg-blue-700 text-white"
                                             : "border border-gray-300 hover:bg-gray-50"
-                                        }`}
+                                    }`}
                                 >
                                     {page}
                                 </button>
