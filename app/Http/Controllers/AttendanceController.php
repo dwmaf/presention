@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attendance;
+use App\Models\User;
 use App\Models\Intern;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -48,9 +49,26 @@ class AttendanceController extends Controller
 
         $interns = $query->get();
 
+        // [TAMBAHAN BARU] Ambil data sidik jari semua Admin (User)
+        $users = User::all();
+        $adminFingerprints = [];
+        foreach ($users as $user) {
+            // Cek ke-6 slot jari, jika ada isinya, masukkan ke list
+            for ($i = 1; $i <= 6; $i++) {
+                $col = 'fingerprint_' . $i;
+                if (!empty($user->$col)) {
+                    $adminFingerprints[] = [
+                        'id' => $user->id, // ID Admin
+                        'fmd' => $user->$col
+                    ];
+                }
+            }
+        }
+
         return Inertia::render('Attendance', [
             'interns'      => $interns,
             'selectedDate' => $selectedDate,
+            'adminFingerprints' => $adminFingerprints, 
             'hariIni'      => Carbon::parse($selectedDate)->locale('id')->isoFormat('dddd'),
             // Tambahkan fingerprint database untuk scanner (hanya untuk hari ini)
             'fingerprintDatabase' => ($selectedDate === $today) ? $interns->map(function ($i) {

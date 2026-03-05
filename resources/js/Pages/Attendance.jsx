@@ -24,6 +24,7 @@ export default function Attendance({
     selectedDate,
     hariIni = "",
     fingerprintDatabase = [],
+    adminFingerprints = [],
 }) {
     const { flash = {} } = usePage().props;
     const [date, setDate] = useState(
@@ -197,7 +198,7 @@ export default function Attendance({
             {/* ── Navbar ── */}
             <div className="bg-white shadow-md">
                 <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-4 flex items-center justify-between">
-                    <AdminGate fingerprintDatabase={fingerprintDatabase} />
+                    <AdminGate adminFingerprints={adminFingerprints} />
                     {/* <Link href="/login" className="flex items-center gap-3">
                         <img
                             src="/foto/upa-pkk-logo.jpg.jpeg"

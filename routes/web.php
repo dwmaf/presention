@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\FingerprintController;
 use App\Http\Controllers\TesPresensi\SidikJariController;
 use App\Http\Controllers\TesPresensi\KehadiranController;
+use App\Http\Controllers\AdminFingerprintController;
 use App\Http\Controllers\TesPresensi\FingerprintDevController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
@@ -33,6 +34,13 @@ Route::middleware('auth')->group(function () {
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // --- ADMIN FINGERPRINT ENROLLMENT ---
+    Route::get('/profile/fingerprint', [AdminFingerprintController::class, 'index'])->name('profile.fingerprint');
+    // Ganti store single slot jadi store group
+    Route::post('/profile/fingerprint/store-group', [AdminFingerprintController::class, 'storeGroup'])->name('profile.fingerprint.storeGroup');
+    // Ganti destroy single slot jadi reset group
+    Route::delete('/profile/fingerprint/reset-group', [AdminFingerprintController::class, 'resetGroup'])->name('profile.fingerprint.resetGroup');
 
     // untuk nampilin halaman daftar divisi yg ada, nambah, edit, dan hapus
     Route::resource('divisions', DivisionController::class);

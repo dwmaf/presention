@@ -1,29 +1,27 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 
-export default function AdminGate({ fingerprintDatabase = [] }) {
+export default function AdminGate({ adminFingerprints = [] }) {
     const [isScanning, setIsScanning] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [status, setStatus] = useState("");
     const [errorMsg, setErrorMsg] = useState(null);
 
-    // --- LOGIC: DATA ADMIN (Hardcode Sementara) ---
-    // Masukkan ID Intern yang dipercaya sebagai admin di sini
-    const ADMIN_IDS = [43, 2];
-
     const handleAdminLogin = async () => {
+        // Cek dulu, ada data admin gak?
+        if (adminFingerprints.length === 0) {
+            alert("Belum ada data sidik jari Admin yang terdaftar di sistem.");
+            return;
+        }
+
         setIsScanning(true);
         setShowModal(true);
         setStatus("Tempelkan jari Admin...");
         setErrorMsg(null);
 
-        // Filter database agar valid (sama seperti logic presensi tapi internal sini aja)
-        const validDatabase = [];
-        fingerprintDatabase.forEach((u) => {
-            if (u.fmd && u.fmd.length > 50) validDatabase.push({ id: u.id, fmd: u.fmd });
-            if (u.second_fmd && u.second_fmd.length > 50) validDatabase.push({ id: u.id, fmd: u.second_fmd });
-            // Tambahkan jari 3-6 jika perlu
-        });
+        // [TAMBAHAN] Buat controller untuk membatalkan request
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 10 Detik timeout
 
         try {
             // Tunggu sebentar biar UI muncul
@@ -33,35 +31,43 @@ export default function AdminGate({ fingerprintDatabase = [] }) {
             const response = await fetch("http://localhost:5000/identify", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ database: validDatabase }),
+                body: JSON.stringify({ database: adminFingerprints }),
+                signal: controller.signal, // Sambungkan signal ke fetch
             });
+
+            // Hapus timeout jika berhasil connect sebelum 10 detik
+            clearTimeout(timeoutId);
 
             const result = await response.json();
 
             if (result.match) {
-                const userId = parseInt(result.user_id);
+                setStatus(`✅ Halo Admin (ID: ${result.user_id})! Mengalihkan...`);
 
-                if (ADMIN_IDS.includes(userId)) {
-                    setStatus("✅ Akses Diterima! Mengalihkan...");
-                    setTimeout(() => {
-                        window.location.href = "/login"; // Redirect ke Login Page
-                    }, 1000);
-                } else {
-                    throw new Error("⛔ Akses Ditolak! Anda bukan Admin.");
-                }
+                setTimeout(() => {
+                    // Redirect ke halaman login Laravel
+                    // Karena sudah verifikasi biometrik, user tinggal masukkan password (atau bisa auto-login via magic link kalau mau lebih canggih)
+                    // Untuk sekarang, kita arahkan ke login page biasa sebagai layer kedua (2FA).
+                    window.location.href = "/login"; 
+                }, 1000);
             } else {
-                throw new Error("❌ Sidik jari tidak dikenali.");
+                throw new Error("⛔ Akses Ditolak! Sidik jari tidak dikenali sebagai Admin.");
             }
         } catch (err) {
             console.error(err);
             setStatus("");
-            setErrorMsg(err.message || "Gagal terhubung ke scanner.");
+            // [TAMBAHAN] Tangani Error Timeout
+            if (err.name === 'AbortError') {
+                setErrorMsg("Waktu habis! Tidak ada jari terdeteksi.");
+            } else {
+                setErrorMsg(err.message || "Gagal terhubung ke scanner.");
+            }
 
             // Tutup modal otomatis setelah error
             setTimeout(() => {
                 handleClose();
             }, 2000);
         } finally {
+            clearTimeout(timeoutId); // Pastikan timeout dibersihkan
             setIsScanning(false);
         }
     };

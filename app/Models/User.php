@@ -21,6 +21,12 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'fingerprint_1',
+        'fingerprint_2',
+        'fingerprint_3',
+        'fingerprint_4',
+        'fingerprint_5',
+        'fingerprint_6',
     ];
 
     /**
