@@ -347,7 +347,7 @@ class AttendanceController extends Controller
 
         // 2. Check-Out (Sudah check_in tapi belum check_out)
         if ($attendance->check_in && !$attendance->check_out) {
-            $checkInTime = Carbon::createFromFormat('Y-m-d H:i:s', $today . ' ' . $attendance->check_in);
+            $checkInTime = Carbon::parse($today . ' ' . $attendance->check_in);
             $selisihMenit = abs($now->diffInMinutes($checkInTime));
 
             if ($selisihMenit < 30) {

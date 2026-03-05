@@ -26,10 +26,16 @@ class Attendance extends Model
             return null;
         }
         // Ambil string jam saja (biar gak bentrok sama tanggal)
-        $jamMasuk = \Carbon\Carbon::parse($this->check_in)->format('H:i:s');
+        // $jamMasuk = \Carbon\Carbon::parse($this->check_in)->format('H:i:s');
         
-        $checkIn = \Carbon\Carbon::createFromFormat('H:i:s', $jamMasuk);
-        $deadline = \Carbon\Carbon::createFromFormat('H:i:s', '08:30:00');
+        // $checkIn = \Carbon\Carbon::createFromFormat('H:i:s', $jamMasuk);
+        // $deadline = \Carbon\Carbon::createFromFormat('H:i:s', '08:30:00');
+        // Cara Baru (Aman & Robust):
+        // Kita gunakan jam Check-In hari ini sebagai patokan
+        $checkIn = \Carbon\Carbon::parse($this->check_in); 
+        
+        // Buat deadline jam 08:30:00 pada hari yang sama dengan jam check-in
+        $deadline = \Carbon\Carbon::parse($this->check_in)->setTime(8, 30, 0);
         if ($checkIn->gt($deadline)) {
             // Parameter 'true' di bawah ini gunanya biar hasilnya PASTI POSITIF
             return (int) $checkIn->diffInMinutes($deadline, true);
