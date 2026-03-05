@@ -48,7 +48,8 @@ export default function InternDetail({ intern, divisions }) {
         },
     });
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
-    const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] = useState(false);
+    const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] =
+        useState(false);
 
     // Buka modal
     const handleOpenToleransiModal = () => {
@@ -1128,7 +1129,9 @@ export default function InternDetail({ intern, divisions }) {
                                         !confirmingCheckOutDeletion && (
                                             <form
                                                 onSubmit={handleUpdateCheckOut}
-                                                onClick={(e) => e.stopPropagation()}
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
                                                 className={`bg-white shadow-lg rounded-lg absolute z-10 p-4 w-64 ${(() => {
                                                     const indexInPage =
                                                         currentAttendances.indexOf(
@@ -1393,94 +1396,115 @@ export default function InternDetail({ intern, divisions }) {
             )}
 
             {/* Modal Konfirmasi Hapus Intern */}
-            <Modal show={confirmingDeletion} onClose={closeDeletionModal}>
-                <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-red-500"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                        </svg>
-                        PERINGATAN: Apakah Anda yakin ingin menghapus "{intern.name}"?
-                    </h2>
-                    <div className="mt-4 text-sm text-gray-600 space-y-2">
-                        <p className="font-semibold">
-                            Semua data riwayat absensi, poin, dan foto akan <span className="font-bold text-red-700">HILANG PERMANEN.</span>
-                        </p>
-                        <p>
-                            Jika ini data duplikat, pastikan Anda menghapus yang benar.
-                        </p>
-                        <p>
-                            Jika ini data lama, silahkan download data kehadirannya dulu jika ingin membackupnya.
-                        </p>
-                    </div>
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeDeletionModal}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton
-                            className="ml-3"
-                            onClick={handleDeleteIntern}
-                        >
-                            Hapus Permanen
-                        </DangerButton>
+            {confirmingDeletion && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-500/75"
+                    onClick={closeDeletionModal}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-6 w-6 text-red-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                />
+                            </svg>
+                            PERINGATAN: Apakah Anda yakin ingin menghapus "
+                            {intern.name}"?
+                        </h2>
+                        <div className="mt-4 text-sm text-gray-600 space-y-2">
+                            <p className="font-semibold">
+                                Semua data riwayat absensi, poin, dan foto akan{" "}
+                                <span className="font-bold text-red-700">
+                                    HILANG PERMANEN.
+                                </span>
+                            </p>
+                            <p>
+                                Jika ini data duplikat, pastikan Anda menghapus
+                                yang benar.
+                            </p>
+                            <p>
+                                Jika ini data lama, silahkan download data
+                                kehadirannya dulu jika ingin membackupnya.
+                            </p>
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <SecondaryButton onClick={closeDeletionModal}>
+                                Batal
+                            </SecondaryButton>
+                            <DangerButton
+                                className="ml-3"
+                                onClick={handleDeleteIntern}
+                            >
+                                Hapus Permanen
+                            </DangerButton>
+                        </div>
                     </div>
                 </div>
-            </Modal>
+            )}
 
             {/* Modal Konfirmasi Hapus Jam Pulang */}
-            <Modal show={confirmingCheckOutDeletion} onClose={closeCheckOutDeletionModal}>
-                <div className="p-6 relative">
-                    {/* Tombol Close (X) */}
-                    <button
-                        onClick={closeCheckOutDeletionModal}
-                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                        aria-label="Close"
+            {confirmingCheckOutDeletion && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-500/75"
+                    onClick={closeCheckOutDeletionModal}
+                >
+                    <div
+                        className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 relative"
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                        <button
+                            onClick={closeCheckOutDeletionModal}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-
-                    <h2 className="text-lg font-medium text-gray-900 pr-8">
-                        Yakin ingin menghapus jam pulang?
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Tindakan ini tidak dapat dibatalkan.
-                    </p>
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeCheckOutDeletionModal}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton
-                            className="ml-3"
-                            onClick={handleDeleteCheckOut}
-                        >
-                            Hapus
-                        </DangerButton>
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-6 w-6"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                        </button>
+                        <h2 className="text-lg font-medium text-gray-900 pr-8">
+                            Yakin ingin menghapus jam pulang?
+                        </h2>
+                        <p className="mt-1 text-sm text-gray-600">
+                            Tindakan ini tidak dapat dibatalkan.
+                        </p>
+                        <div className="mt-6 flex justify-end">
+                            <SecondaryButton
+                                onClick={closeCheckOutDeletionModal}
+                            >
+                                Batal
+                            </SecondaryButton>
+                            <DangerButton
+                                className="ml-3"
+                                onClick={handleDeleteCheckOut}
+                            >
+                                Hapus
+                            </DangerButton>
+                        </div>
                     </div>
                 </div>
-            </Modal>
+            )}
         </div>
     );
 }
