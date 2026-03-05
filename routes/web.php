@@ -22,12 +22,13 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->middleware(['auth', 'verified'])->name('dashboard');
-Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
+
 // untuk nampilin halaman presensi bagi para intern
 Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance.index');
 Route::post('/attendance', [AttendanceController::class, 'store'])->name('attendance.store');
 Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->name('dashboard');
+    Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
     // route profil bawaan package breeze tidak/belum diperlukan
     // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -45,7 +46,7 @@ Route::middleware('auth')->group(function () {
 
     // untuk update toleransi keterlambatan
     Route::put('/interns/{intern}/update-toleransi', [InternController::class, 'updateToleransi'])->name('interns.updateToleransi');
-    
+
     Route::put('/attendances/{attendance}/status', [AttendanceController::class, 'updateStatus'])->name('attendances.updateStatus');
     Route::put('/attendances/{attendance}/check-out', [AttendanceController::class, 'updateCheckOut'])->name('attendances.updateCheckOut');
     Route::put('/interns/{intern}/update-photo', [InternController::class, 'updatePhoto'])->name('interns.updatePhoto');
@@ -74,13 +75,12 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/interns/{intern}/fingerprint/reset-group', [SidikJariController::class, 'resetGroup'])
         ->name('interns.fingerprint.resetGroup');
-
-    // Dev Tools
-    Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
-    // Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';
 
 // utk tes fingerprint
 Route::get('/test-fingerprint', [TesKomparasiSidikJariController::class, 'index'])->name('test.fingerprint');
+// Dev Tools
+Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
+// Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');

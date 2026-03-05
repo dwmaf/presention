@@ -1,5 +1,4 @@
-// resources/js/Pages/Attendance.jsx
-
+import AdminGate from "@/Components/AdminGate";
 import { Head, router, usePage } from "@inertiajs/react";
 import { useState, useRef, useEffect } from "react";
 import axios from "axios";
@@ -198,7 +197,8 @@ export default function Attendance({
             {/* ── Navbar ── */}
             <div className="bg-white shadow-md">
                 <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-4 flex items-center justify-between">
-                    <Link href="/login" className="flex items-center gap-3">
+                    <AdminGate fingerprintDatabase={fingerprintDatabase} />
+                    {/* <Link href="/login" className="flex items-center gap-3">
                         <img
                             src="/foto/upa-pkk-logo.jpg.jpeg"
                             alt="UPA PKK Logo"
@@ -212,7 +212,7 @@ export default function Attendance({
                                 Attendance System
                             </p>
                         </div>
-                    </Link>
+                    </Link> */}
 
                     {/* <div className="flex items-center gap-6">
                         {status && (

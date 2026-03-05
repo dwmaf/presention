@@ -27,24 +27,25 @@ export default function InternDetail({ intern, divisions }) {
     const [showToleransiModal, setShowToleransiModal] = useState(false);
     const [toleransiDays, setToleransiDays] = useState({
         senin: {
-            checked: intern?.toleransi_senin || false,
-            time: intern?.toleransi_senin_time || "07:00",
+            checked: Boolean(intern?.toleransi_senin),
+            // Ambil 5 karakter pertama (HH:MM) dari DB time string
+            time: intern?.toleransi_senin_time ? intern.toleransi_senin_time.slice(0,5) : "08:30",
         },
         selasa: {
-            checked: intern?.toleransi_selasa || false,
-            time: intern?.toleransi_selasa_time || "07:00",
+            checked: Boolean(intern?.toleransi_selasa),
+            time: intern?.toleransi_selasa_time ? intern.toleransi_selasa_time.slice(0,5) : "08:30",
         },
         rabu: {
-            checked: intern?.toleransi_rabu || false,
-            time: intern?.toleransi_rabu_time || "07:00",
+            checked: Boolean(intern?.toleransi_rabu),
+            time: intern?.toleransi_rabu_time ? intern.toleransi_rabu_time.slice(0,5) : "08:30",
         },
         kamis: {
-            checked: intern?.toleransi_kamis || false,
-            time: intern?.toleransi_kamis_time || "07:00",
+            checked: Boolean(intern?.toleransi_kamis),
+            time: intern?.toleransi_kamis_time ? intern.toleransi_kamis_time.slice(0,5) : "08:30",
         },
         jumat: {
-            checked: intern?.toleransi_jumat || false,
-            time: intern?.toleransi_jumat_time || "07:00",
+            checked: Boolean(intern?.toleransi_jumat),
+            time: intern?.toleransi_jumat_time ? intern.toleransi_jumat_time.slice(0,5) : "08:30",
         },
     });
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
@@ -54,11 +55,26 @@ export default function InternDetail({ intern, divisions }) {
     // Buka modal
     const handleOpenToleransiModal = () => {
         setToleransiDays({
-            senin: intern?.toleransi_senin || false,
-            selasa: intern?.toleransi_selasa || false,
-            rabu: intern?.toleransi_rabu || false,
-            kamis: intern?.toleransi_kamis || false,
-            jumat: intern?.toleransi_jumat || false,
+            senin: { 
+                checked: Boolean(intern?.toleransi_senin), 
+                time: intern?.toleransi_senin_time?.slice(0,5) || "08:30" 
+            },
+            selasa: { 
+                checked: Boolean(intern?.toleransi_selasa), 
+                time: intern?.toleransi_selasa_time?.slice(0,5) || "08:30" 
+            },
+            rabu: { 
+                checked: Boolean(intern?.toleransi_rabu), 
+                time: intern?.toleransi_rabu_time?.slice(0,5) || "08:30" 
+            },
+            kamis: { 
+                checked: Boolean(intern?.toleransi_kamis), 
+                time: intern?.toleransi_kamis_time?.slice(0,5) || "08:30" 
+            },
+            jumat: { 
+                checked: Boolean(intern?.toleransi_jumat), 
+                time: intern?.toleransi_jumat_time?.slice(0,5) || "08:30" 
+            },
         });
         setShowToleransiModal(true);
     };

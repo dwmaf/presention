@@ -29,7 +29,12 @@ class Intern extends Model
         'toleransi_selasa',
         'toleransi_rabu',
         'toleransi_kamis',
-        'toleransi_jumat'
+        'toleransi_jumat',
+        'toleransi_senin_time', 
+        'toleransi_selasa_time', 
+        'toleransi_rabu_time', 
+        'toleransi_kamis_time', 
+        'toleransi_jumat_time',
     ];
 
     protected $casts = [

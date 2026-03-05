@@ -127,20 +127,38 @@ class InternController extends Controller
     {
         // Validasi input (boolean)
         $validatedData = $request->validate([
-            'senin'  => 'boolean',
-            'selasa' => 'boolean',
-            'rabu'   => 'boolean',
-            'kamis'  => 'boolean',
-            'jumat'  => 'boolean',
+            'senin.checked' => 'boolean',
+            'senin.time'    => 'required_if:senin.checked,true',
+            
+            'selasa.checked'=> 'boolean',
+            'selasa.time'   => 'required_if:selasa.checked,true',
+
+            'rabu.checked'  => 'boolean',
+            'rabu.time'     => 'required_if:rabu.checked,true',
+
+            'kamis.checked' => 'boolean',
+            'kamis.time'    => 'required_if:kamis.checked,true',
+
+            'jumat.checked' => 'boolean',
+            'jumat.time'    => 'required_if:jumat.checked,true',
         ]);
 
         // Mapping: Key 'senin' dari React -> Kolom 'toleransi_senin' di DB
         $intern->update([
-            'toleransi_senin'  => $request->boolean('senin'),
-            'toleransi_selasa' => $request->boolean('selasa'),
-            'toleransi_rabu'   => $request->boolean('rabu'),
-            'toleransi_kamis'  => $request->boolean('kamis'),
-            'toleransi_jumat'  => $request->boolean('jumat'),
+            'toleransi_senin'      => $request->input('senin.checked'),
+            'toleransi_senin_time' => $request->input('senin.time'),
+
+            'toleransi_selasa'      => $request->input('selasa.checked'),
+            'toleransi_selasa_time' => $request->input('selasa.time'),
+            
+            'toleransi_rabu'      => $request->input('rabu.checked'),
+            'toleransi_rabu_time' => $request->input('rabu.time'),
+            
+            'toleransi_kamis'      => $request->input('kamis.checked'),
+            'toleransi_kamis_time' => $request->input('kamis.time'),
+            
+            'toleransi_jumat'      => $request->input('jumat.checked'),
+            'toleransi_jumat_time' => $request->input('jumat.time'),
         ]);
 
         return redirect()->back()->with('success', 'Toleransi keterlambatan berhasil diperbarui.');

@@ -279,21 +279,29 @@ class AttendanceController extends Controller
             // === LOGIKA BARU: CEK FLAG toleransi ===
             $dayIndex = strtolower($now->format('l')); // monday, tuesday...
             $toleransiMap = [
-                'monday'    => 'toleransi_senin',
-                'tuesday'   => 'toleransi_selasa',
-                'wednesday' => 'toleransi_rabu',
-                'thursday'  => 'toleransi_kamis',
-                'friday'    => 'toleransi_jumat',
+                'monday'    => ['flag' => 'toleransi_senin', 'time' => 'toleransi_senin_time'],
+                'tuesday'   => ['flag' => 'toleransi_selasa', 'time' => 'toleransi_selasa_time'],
+                'wednesday' => ['flag' => 'toleransi_rabu', 'time' => 'toleransi_rabu_time'],
+                'thursday'  => ['flag' => 'toleransi_kamis', 'time' => 'toleransi_kamis_time'],
+                'friday'    => ['flag' => 'toleransi_jumat', 'time' => 'toleransi_jumat_time'],
             ];
 
+            $deadlineTime = '08:30:00';
+            // Cek apakah ada toleransi hari ini?
+            if (isset($toleransiMap[$dayIndex])) {
+                $cols = $toleransiMap[$dayIndex];
+                // Jika Flag Toleransi Aktif (True), gunakan jam khususnya.
+                if ($intern->{$cols['flag']}) {
+                    $deadlineTime = $intern->{$cols['time']}; // Misal "09:00:00"
+                }
+            }
             // Cek apakah hari ini statusnya fleksibel untuk intern ini?
-            $toleransiColumn = $toleransiMap[$dayIndex] ?? null;
-            $isTodayToleransi = $toleransiColumn ? $intern->$toleransiColumn : false;
+            // $toleransiColumn = $toleransiMap[$dayIndex] ?? null;
+            // $isTodayToleransi = $toleransiColumn ? $intern->$toleransiColumn : false;
 
-            // Logic Pengembalian Poin dari Alpha (-2)
-            // Jika Fleksibel (True) -> Tidak dianggap terlambat jam berapapun.
-            // Jika Tidak Fleksibel (False) -> Cek apakah lewat 08:30.
-            $isLate = $isTodayToleransi ? false : ($now->format('H:i:s') > '08:30:00');
+            // Logic Terlambat: Bandingkan jam sekarang vs deadline
+            // Jika jam sekarang > deadline, maka late.
+            $isLate = ($now->format('H:i:s') > $deadlineTime);
 
             // === B. LOGIKA POIN (FIX BUG INFINITY) ===
             // Cek: Apakah poin user sudah dipotong sistem tadi pagi?
