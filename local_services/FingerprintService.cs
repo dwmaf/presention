@@ -373,16 +373,18 @@ namespace FingerprintService
         // ✅ CHANGED: retry capture + threshold compare benar + best score dikirim
         private string PerformVerification(string body)
         {
-            var req = DeserializeSafe<VerifyRequest>(body);
+            VerifyRequest req = DeserializeSafe<VerifyRequest>(body);
             if (req == null || req.database == null)
-                return Serialize(new VerifyResponse { match = false, message = "Invalid Body", best_score = int.MaxValue });
+                return Serialize(new VerifyResponse { match = false, message = "Invalid JSON Body or Database is Null", best_score = int.MaxValue });
 
-            Log("Verifying with " + req.database.Count + " template(s).");
+            Log("Verifying with " + req.database.Count + " records.");
 
-            CaptureResult cap = null;
-            Fmd candidate = null;
+            // 1. Capture Jari User (Proses Scan)
+            // CaptureResult capScore = null;
+            Fmd candidateFmd = null;
 
-            // 1) Capture candidate dengan retry
+            // --- Mulai Capture ---
+            bool captureSuccess = false;
             for (int attempt = 1; attempt <= CAPTURE_MAX_TRIES; attempt++)
             {
                 bool started = false;
@@ -392,101 +394,145 @@ namespace FingerprintService
                 }));
 
                 if (!started)
-                    return Serialize(new VerifyResponse { match = false, message = "Reader Init/Open Failed", best_score = int.MaxValue });
+                {
+                    Log("Capture Attempt " + attempt + " failed to start reader.");
+                    continue;
+                }
+                    // return Serialize(new VerifyResponse { match = false, message = "Reader Init/Open Failed", best_score = int.MaxValue });
 
                 Log("Waiting finger for verify... attempt " + attempt + "/" + CAPTURE_MAX_TRIES);
 
                 if (_waitForCapture.WaitOne(CAPTURE_TIMEOUT_MS))
                 {
-                    cap = _captureResult;
-                    if (cap == null)
+                    if (_captureResult != null && _captureResult.ResultCode == Constants.ResultCode.DP_SUCCESS)
                     {
-                        Log("CaptureResult null. Retrying verify capture...");
-                        continue;
+                        var result = FeatureExtraction.CreateFmdFromFid(_captureResult.Data, Constants.Formats.Fmd.ANSI);
+                        if (result.ResultCode == Constants.ResultCode.DP_SUCCESS && result.Data != null)
+                        {
+                            candidateFmd = result.Data;
+                            captureSuccess = true;
+                            // Reset Reader agar bersih
+                            this.Invoke(new MethodInvoker(() => CleanupReader()));
+                            break; 
+                        }
                     }
-                    if (cap.ResultCode != Constants.ResultCode.DP_SUCCESS)
+                    else
                     {
-                        Log("Verify capture ResultCode: " + cap.ResultCode);
-                        continue;
+                        Log("Capture result null or failed.");
                     }
-
-                    var fmdRes = FeatureExtraction.CreateFmdFromFid(cap.Data, Constants.Formats.Fmd.ANSI);
-                    if (fmdRes.ResultCode != Constants.ResultCode.DP_SUCCESS || fmdRes.Data == null)
-                    {
-                        Log("Verify FMD extraction failed: " + fmdRes.ResultCode);
-                        continue;
-                    }
-
-                    candidate = fmdRes.Data;
-                    break;
                 }
                 else
                 {
-                    Log("Verify capture timeout this attempt.");
+                    Log("Capture Timeout.");
                     this.Invoke(new MethodInvoker(() => CleanupReader()));
                 }
             }
 
-            if (candidate == null)
-                return Serialize(new VerifyResponse { match = false, message = "Bad Capture / Timeout", best_score = int.MaxValue });
+            if (!captureSuccess || candidateFmd == null)
+            {
+                return Serialize(new VerifyResponse { match = false, message = "Capture Failed or Timeout", best_score = int.MaxValue });
+            }
+            // --- Selesai Capture ---
 
-            // 2) Match
+            // if (candidate == null)
+            //     return Serialize(new VerifyResponse { match = false, message = "Bad Capture / Timeout", best_score = int.MaxValue });
+
+            // 2. Proses Pencocokan
             int bestScore = int.MaxValue;
             string bestId = null;
+            int counter = 0;
 
             foreach (var u in req.database)
             {
+                counter++;
+                // Log debug per 100 record biar ga spam
+                if (counter % 100 == 0) Log("Comparing record " + counter + "...");
+
                 try
                 {
-                    if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
+                    // Validasi Level 1: Null Check
+                    if (u == null) continue;
+                    if (string.IsNullOrEmpty(u.id)) continue;
+                    if (string.IsNullOrEmpty(u.fmd)) 
+                    {
+                        Log("Skip ID " + u.id + ": FMD string is empty/null");
                         continue;
+                    }
 
-                    // if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
-                    //     continue;
+                    // Validasi Level 2: Panjang String
                     if (u.fmd.Length < 50) 
-                        continue; 
+                    {
+                        Log("Skip ID " + u.id + ": FMD too short (" + u.fmd.Length + " chars)");
+                        continue;
+                    }
 
                     byte[] fmdBytes = null;
                     try 
                     {
                         fmdBytes = Convert.FromBase64String(u.fmd);
                     }
-                    catch 
+                    catch  (Exception b64Ex)
                     { 
                         // Jika bukan Base64 valid, skip aja jangan crash
+                        Log("Skip ID " + u.id + ": Bad Base64 format. " + b64Ex.Message);
                         continue; 
                     }
 
-                    // Import db FMD
-                    var importRes = Importer.ImportFmd(
-                        fmdBytes,
-                        Constants.Formats.Fmd.ANSI,
-                        Constants.Formats.Fmd.ANSI
-                    );
-
-                    if (importRes.ResultCode != Constants.ResultCode.DP_SUCCESS || importRes.Data == null)
-                        continue;
-
-                    var dbFmd = importRes.Data;
-
-                    // Compare view 0
-                    var res = Comparison.Compare(candidate, 0, dbFmd, 0);
-                    if (res.ResultCode != Constants.ResultCode.DP_SUCCESS)
-                        continue;
-
-                    if (res.Score < bestScore)
+                    if (fmdBytes == null || fmdBytes.Length == 0)
                     {
-                        bestScore = res.Score;
+                        Log("Skip ID " + u.id + ": Byte array is empty after conversion.");
+                        continue;
+                    }
+
+                    // Validasi Level 4: Import ke SDK DigitalPersona
+                    // Disini biasanya error "not enough data" terjadi jika byte array rusak
+                    DataResult<Fmd> importRes = Importer.ImportFmd(fmdBytes, Constants.Formats.Fmd.ANSI, Constants.Formats.Fmd.ANSI);
+
+                    if (importRes.ResultCode != Constants.ResultCode.DP_SUCCESS)
+                    {
+                        // Jangan biarkan error SDK membunuh loop, log saja dan continue
+                        Log("Skip ID " + u.id + ": ImportFmd Failed. Code: " + importRes.ResultCode);
+                        continue;
+                    }
+
+                    if (importRes.Data == null)
+                    {
+                        continue;
+                    }
+
+                    // Validasi Level 5: Bandingkan!
+                    // Parameter: (Fmd1, ViewIdx1, Fmd2, ViewIdx2)
+                    CompareResult compareRes = Comparison.Compare(candidateFmd, 0, importRes.Data, 0);
+
+                    if (compareRes.ResultCode != Constants.ResultCode.DP_SUCCESS)
+                    {
+                        Log("Skip ID " + u.id + ": Compare Error. Code: " + compareRes.ResultCode);
+                        continue; 
+                    }
+
+                    // Simpan skor terbaik (makin kecil makin cocok)
+                    if (compareRes.Score < bestScore)
+                    {
+                        bestScore = compareRes.Score;
                         bestId = u.id;
+                        
+                        // Optimasi: Jika skor = 0 (Match Sempurna), langsung break biar cepat
+                        if (bestScore == 0) 
+                        {
+                            Log("Perfect match found for ID: " + bestId);
+                            break;
+                        }
                     }
                 }
                 catch(Exception ex)
                 {
-                    Log("Import ERROR ID: " + u.id + " | " + ex.Message);
+                    // INI PENTING: Tangkap error per-item supaya satu data rusak tidak merusak semua proses
+                    string errId = (u != null && u.id != null) ? u.id : "Unknown";
+                    Log("CRITICAL ERROR on ID " + errId + ": " + ex.Message);
                 }
             }
 
-            Log("Best Score: " + bestScore);
+            Log("Best Match Score: " + bestScore + " for User ID: " + (bestId ?? "None"));
 
             if (bestId != null && bestScore < MATCH_THRESHOLD)
             {
@@ -494,7 +540,7 @@ namespace FingerprintService
                 {
                     match = true,
                     user_id = bestId,
-                    message = "Match Found",
+                    message = "Match Found (Score: " + bestScore + ")",
                     best_score = bestScore
                 });
             }
