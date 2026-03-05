@@ -24,11 +24,26 @@ export default function InternDetail({ intern, divisions }) {
     const itemsPerPage = 7;
     const [showToleransiModal, setShowToleransiModal] = useState(false);
     const [toleransiDays, setToleransiDays] = useState({
-        senin: intern?.toleransi_senin || false,
-        selasa: intern?.toleransi_selasa || false,
-        rabu: intern?.toleransi_rabu || false,
-        kamis: intern?.toleransi_kamis || false,
-        jumat: intern?.toleransi_jumat || false,
+        senin: {
+            checked: intern?.toleransi_senin || false,
+            time: intern?.toleransi_senin_time || "07:00",
+        },
+        selasa: {
+            checked: intern?.toleransi_selasa || false,
+            time: intern?.toleransi_selasa_time || "07:00",
+        },
+        rabu: {
+            checked: intern?.toleransi_rabu || false,
+            time: intern?.toleransi_rabu_time || "07:00",
+        },
+        kamis: {
+            checked: intern?.toleransi_kamis || false,
+            time: intern?.toleransi_kamis_time || "07:00",
+        },
+        jumat: {
+            checked: intern?.toleransi_jumat || false,
+            time: intern?.toleransi_jumat_time || "07:00",
+        },
     });
 
     // Buka modal
@@ -47,7 +62,14 @@ export default function InternDetail({ intern, divisions }) {
     const handleToleransiDayChange = (day) => {
         setToleransiDays((prev) => ({
             ...prev,
-            [day]: !prev[day],
+            [day]: { ...prev[day], checked: !prev[day].checked },
+        }));
+    };
+
+    const handleToleransiTimeChange = (day, value) => {
+        setToleransiDays((prev) => ({
+            ...prev,
+            [day]: { ...prev[day], time: value },
         }));
     };
 
@@ -448,7 +470,7 @@ export default function InternDetail({ intern, divisions }) {
                         {/* Modal Toleransi Keterlambatan */}
                         {showToleransiModal && (
                             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                                <div className="bg-white rounded-lg shadow-lg p-6 w-[40%] max-w-[60%]">
+                                <div className="bg-white rounded-lg shadow-lg p-6 w-[40%]">
                                     <h2 className="font-semibold text-lg mb-4">
                                         Pilih Hari Toleransi Terlambat
                                     </h2>
@@ -459,92 +481,186 @@ export default function InternDetail({ intern, divisions }) {
                                         jadwal kuliah pagi atau keperluan lain.
                                     </p>
 
-                                    {/* <div className="grid grid-cols-3 gap-2 mb-4">
-                                        {[
-                                            "senin",
-                                            "selasa",
-                                            "rabu",
-                                            "kamis",
-                                            "jumat",
-                                        ].map((day) => (
-                                            <label
-                                                key={day}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={toleransiDays[day]}
-                                                    onChange={() =>
-                                                        handleToleransiDayChange(
-                                                            day,
-                                                        )
-                                                    }
-                                                    className="rounded-sm cursor-pointer"
-                                                />
-                                                <span className="capitalize">
-                                                    {day}
-                                                </span>
-                                            </label>
-                                        ))}
-                                    </div> */}
-
-                                    <div className="grid grid-cols-3 gap-2 mb-4">
-                                        {/* Checkbox Setiap Hari */}
-                                        <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                    <div className="grid grid-cols-2 gap-2 mb-4">
+                                        {/* Checkbox per hari */}
+                                        {/* Senin */}
+                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
                                             <input
                                                 type="checkbox"
                                                 checked={
-                                                    toleransiDays.senin &&
-                                                    toleransiDays.selasa &&
-                                                    toleransiDays.rabu &&
-                                                    toleransiDays.kamis &&
-                                                    toleransiDays.jumat
+                                                    toleransiDays.senin.checked
                                                 }
-                                                onChange={(e) => {
-                                                    const checked =
-                                                        e.target.checked;
-                                                    setToleransiDays({
-                                                        senin: checked,
-                                                        selasa: checked,
-                                                        rabu: checked,
-                                                        kamis: checked,
-                                                        jumat: checked,
-                                                    });
-                                                }}
+                                                onChange={() =>
+                                                    handleToleransiDayChange(
+                                                        "senin",
+                                                    )
+                                                }
                                                 className="rounded-sm cursor-pointer focus:ring-transparent"
                                             />
-                                            <span className="text-sm text-gray-700">
-                                                Setiap Hari
+                                            <span className="text-sm text-gray-700 capitalize">
+                                                Senin
                                             </span>
+                                            <input
+                                                type="time"
+                                                min="07:00"
+                                                max="17:00"
+                                                step="60"
+                                                value={toleransiDays.senin.time}
+                                                onChange={(e) =>
+                                                    handleToleransiTimeChange(
+                                                        "senin",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !toleransiDays.senin.checked
+                                                }
+                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
+                                            />
                                         </label>
-
-                                        {/* Checkbox per hari */}
-                                        {[
-                                            "senin",
-                                            "selasa",
-                                            "rabu",
-                                            "kamis",
-                                            "jumat",
-                                        ].map((day) => (
-                                            <label
-                                                key={day}
-                                                className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer"
-                                            >
-                                                <input
-                                                    type="checkbox"
-                                                    checked={toleransiDays[day]}
-                                                    onChange={() =>
-                                                        handleToleransiDayChange(
-                                                            day,
-                                                        )
-                                                    }
-                                                    className="rounded-sm cursor-pointer focus:ring-transparent"
-                                                />
-                                                <span className="text-sm text-gray-700 capitalize">
-                                                    {day}
-                                                </span>
-                                            </label>
-                                        ))}
+                                        {/* Selasa */}
+                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    toleransiDays.selasa.checked
+                                                }
+                                                onChange={() =>
+                                                    handleToleransiDayChange(
+                                                        "selasa",
+                                                    )
+                                                }
+                                                className="rounded-sm cursor-pointer focus:ring-transparent"
+                                            />
+                                            <span className="text-sm text-gray-700 capitalize">
+                                                Selasa
+                                            </span>
+                                            <input
+                                                type="time"
+                                                min="07:00"
+                                                max="17:00"
+                                                step="60"
+                                                value={
+                                                    toleransiDays.selasa.time
+                                                }
+                                                onChange={(e) =>
+                                                    handleToleransiTimeChange(
+                                                        "selasa",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !toleransiDays.selasa
+                                                        .checked
+                                                }
+                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
+                                            />
+                                        </label>
+                                        {/* Rabu */}
+                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    toleransiDays.rabu.checked
+                                                }
+                                                onChange={() =>
+                                                    handleToleransiDayChange(
+                                                        "rabu",
+                                                    )
+                                                }
+                                                className="rounded-sm cursor-pointer focus:ring-transparent"
+                                            />
+                                            <span className="text-sm text-gray-700 capitalize">
+                                                Rabu
+                                            </span>
+                                            <input
+                                                type="time"
+                                                min="07:00"
+                                                max="17:00"
+                                                step="60"
+                                                value={toleransiDays.rabu.time}
+                                                onChange={(e) =>
+                                                    handleToleransiTimeChange(
+                                                        "rabu",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !toleransiDays.rabu.checked
+                                                }
+                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
+                                            />
+                                        </label>
+                                        {/* Kamis */}
+                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    toleransiDays.kamis.checked
+                                                }
+                                                onChange={() =>
+                                                    handleToleransiDayChange(
+                                                        "kamis",
+                                                    )
+                                                }
+                                                className="rounded-sm cursor-pointer focus:ring-transparent"
+                                            />
+                                            <span className="text-sm text-gray-700 capitalize">
+                                                Kamis
+                                            </span>
+                                            <input
+                                                type="time"
+                                                min="07:00"
+                                                max="17:00"
+                                                step="60"
+                                                value={toleransiDays.kamis.time}
+                                                onChange={(e) =>
+                                                    handleToleransiTimeChange(
+                                                        "kamis",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !toleransiDays.kamis.checked
+                                                }
+                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
+                                            />
+                                        </label>
+                                        {/* Jumat */}
+                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={
+                                                    toleransiDays.jumat.checked
+                                                }
+                                                onChange={() =>
+                                                    handleToleransiDayChange(
+                                                        "jumat",
+                                                    )
+                                                }
+                                                className="rounded-sm cursor-pointer focus:ring-transparent"
+                                            />
+                                            <span className="text-sm text-gray-700 capitalize">
+                                                Jumat
+                                            </span>
+                                            <input
+                                                type="time"
+                                                min="07:00"
+                                                max="17:00"
+                                                step="60"
+                                                value={toleransiDays.jumat.time}
+                                                onChange={(e) =>
+                                                    handleToleransiTimeChange(
+                                                        "jumat",
+                                                        e.target.value,
+                                                    )
+                                                }
+                                                disabled={
+                                                    !toleransiDays.jumat.checked
+                                                }
+                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
+                                            />
+                                        </label>
                                     </div>
 
                                     <div className="flex gap-2 justify-end">
