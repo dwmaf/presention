@@ -433,12 +433,25 @@ namespace FingerprintService
                     if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
                         continue;
 
-                    if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
-                        continue;
+                    // if (u == null || string.IsNullOrEmpty(u.id) || string.IsNullOrEmpty(u.fmd))
+                    //     continue;
+                    if (u.fmd.Length < 50) 
+                        continue; 
+
+                    byte[] fmdBytes = null;
+                    try 
+                    {
+                        fmdBytes = Convert.FromBase64String(u.fmd);
+                    }
+                    catch 
+                    { 
+                        // Jika bukan Base64 valid, skip aja jangan crash
+                        continue; 
+                    }
 
                     // Import db FMD
                     var importRes = Importer.ImportFmd(
-                        Convert.FromBase64String(u.fmd),
+                        fmdBytes,
                         Constants.Formats.Fmd.ANSI,
                         Constants.Formats.Fmd.ANSI
                     );
@@ -461,7 +474,7 @@ namespace FingerprintService
                 }
                 catch(Exception ex)
                 {
-                    Log("Import ERROR ID: " + u.id + " | " + ex.message);
+                    Log("Import ERROR ID: " + u.id + " | " + ex.Message);
                 }
             }
 
