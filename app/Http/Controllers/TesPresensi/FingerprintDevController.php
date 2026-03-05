@@ -12,37 +12,37 @@ class FingerprintDevController extends Controller
 {
     public function index()
     {
-        $interns = Intern::select('id', 'name', 'fingerprint_data', 'second_fingerprint_data')->get();
+        $interns = Intern::all();
         
         return Inertia::render('Tes Presensi/FingerprintList', [
             'interns' => $interns
         ]);
     }
 
-    public function exportCsv()
-    {
-        $interns = Intern::select('name', 'fingerprint_data', 'second_fingerprint_data')->get();
+    // public function exportCsv()
+    // {
+    //     $interns = Intern::all();
 
-        $response = new StreamedResponse(function () use ($interns) {
-            $handle = fopen('php://output', 'w');
+    //     $response = new StreamedResponse(function () use ($interns) {
+    //         $handle = fopen('php://output', 'w');
             
-            // Header
-            fputcsv($handle, ['Name', 'Primary Fingerprint (FMD)', 'Secondary Fingerprint (FMD)']);
+    //         // Header
+    //         fputcsv($handle, ['Name', 'Primary Fingerprint (FMD)', 'Secondary Fingerprint (FMD)']);
 
-            foreach ($interns as $intern) {
-                fputcsv($handle, [
-                    $intern->name,
-                    $intern->fingerprint_data ?? 'NULL',
-                    $intern->second_fingerprint_data ?? 'NULL',
-                ]);
-            }
+    //         foreach ($interns as $intern) {
+    //             fputcsv($handle, [
+    //                 $intern->name,
+    //                 $intern->fingerprint_data ?? 'NULL',
+    //                 $intern->second_fingerprint_data ?? 'NULL',
+    //             ]);
+    //         }
 
-            fclose($handle);
-        });
+    //         fclose($handle);
+    //     });
 
-        $response->headers->set('Content-Type', 'text/csv');
-        $response->headers->set('Content-Disposition', 'attachment; filename="fingerprint_data_export_' . now()->format('Y-m-d_H-i-s') . '.csv"');
+    //     $response->headers->set('Content-Type', 'text/csv');
+    //     $response->headers->set('Content-Disposition', 'attachment; filename="fingerprint_data_export_' . now()->format('Y-m-d_H-i-s') . '.csv"');
 
-        return $response;
-    }
+    //     return $response;
+    // }
 }
