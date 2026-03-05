@@ -10,7 +10,7 @@ export default function SearchBar({ onSearch }) {
     };
 
     return (
-        <div className="flex items-center rounded-md py-3 px-6 gap-2 flex-1 shadow-md focus-within:ring-2 bg-white">
+        <div className="flex items-center rounded-md py-3 px-6 gap-2 flex-1 shadow-xl focus-within:ring-2 bg-white">
             <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="18px"
