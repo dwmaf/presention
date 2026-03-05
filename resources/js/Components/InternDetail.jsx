@@ -2,11 +2,13 @@ import { useState } from "react";
 import { router, useForm } from "@inertiajs/react";
 import PrimaryButton from "./PrimaryButton";
 import SecondaryButton from "./SecondaryButton";
+import DangerButton from "./DangerButton";
 import InputLabel from "./InputLabel";
 import TextInput from "./TextInput";
 import InputError from "./InputError";
 import CustomSelect from "./CustomSelect";
 import DownloadBtn from "./DownloadBtn";
+import Modal from "@/Components/Modal";
 import { useToast } from "@/Components/ToastNotif";
 
 export default function InternDetail({ intern, divisions }) {
@@ -45,6 +47,8 @@ export default function InternDetail({ intern, divisions }) {
             time: intern?.toleransi_jumat_time || "07:00",
         },
     });
+    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+    const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] = useState(false);
 
     // Buka modal
     const handleOpenToleransiModal = () => {
@@ -208,25 +212,27 @@ export default function InternDetail({ intern, divisions }) {
     };
 
     // === FUNGSI HAPUS DATA INTERN===
-    const handleDeleteIntern = () => {
-        const confirmMessage =
-            `PERINGATAN: Apakah Anda yakin ingin menghapus "${intern.name}"?\n\n` +
-            `Semua data riwayat absensi, poin, dan foto akan ILANG PERMANEN.\n` +
-            `Jika ini data duplikat, pastikan Anda menghapus yang benar.\n` +
-            `Jika ini data lama, silahkan download data kehadirannya dulu jika ingin membackupnya.`;
+    const confirmDeleteIntern = () => {
+        setConfirmingDeletion(true);
+    };
 
-        if (confirm(confirmMessage)) {
-            router.delete(route("interns.destroy", intern.id), {
-                onSuccess: () => {
-                    addToast("Data berhasil dihapus selamanya.", "success");
-                    // Opsi: Refresh halaman atau redirect jika perlu
-                    window.location.reload();
-                },
-                onError: () => {
-                    addToast("Gagal menghapus data.", "error");
-                },
-            });
-        }
+    const closeDeletionModal = () => {
+        setConfirmingDeletion(false);
+    };
+
+    const handleDeleteIntern = () => {
+        router.delete(route("interns.destroy", intern.id), {
+            onSuccess: () => {
+                addToast("Data berhasil dihapus selamanya.", "success");
+                setConfirmingDeletion(false);
+                // Opsi: Refresh halaman atau redirect jika perlu
+                window.location.reload();
+            },
+            onError: () => {
+                addToast("Gagal menghapus data.", "error");
+                setConfirmingDeletion(false);
+            },
+        });
     };
 
     const attendanceStyle = (status) => {
@@ -342,30 +348,48 @@ export default function InternDetail({ intern, divisions }) {
     };
 
     // ✅ HANDLER untuk hapus Jam Pulang
+    const confirmDeleteCheckOut = () => {
+        setConfirmingCheckOutDeletion(true);
+    };
+
+    const closeCheckOutDeletionModal = () => {
+        // Tutup form edit jam pulang terlebih dahulu
+        setShowCheckOutForm(false);
+        setEditingCheckOutId(null);
+        setCheckOutValue("");
+        // Baru tutup modal konfirmasi
+        setConfirmingCheckOutDeletion(false);
+    };
+
     const handleDeleteCheckOut = () => {
-        if (confirm("Yakin ingin menghapus jam pulang?")) {
-            router.put(
-                `/attendances/${editingCheckOutId}/check-out`,
-                {
-                    check_out: null,
+        router.put(
+            `/attendances/${editingCheckOutId}/check-out`,
+            {
+                check_out: null,
+            },
+            {
+                onSuccess: () => {
+                    // Tutup semua modal dan form
+                    setShowCheckOutForm(false);
+                    setEditingCheckOutId(null);
+                    setCheckOutValue("");
+                    setConfirmingCheckOutDeletion(false);
+                    addToast("Jam pulang berhasil dihapus!", "success");
                 },
-                {
-                    onSuccess: () => {
-                        setShowCheckOutForm(false);
-                        setEditingCheckOutId(null);
-                        setCheckOutValue("");
-                        addToast("Jam pulang berhasil dihapus!", "success");
-                    },
-                    onError: (errors) => {
-                        addToast(
-                            "Gagal menghapus jam pulang: " +
-                                Object.values(errors).join(", "),
-                            "error",
-                        );
-                    },
+                onError: (errors) => {
+                    addToast(
+                        "Gagal menghapus jam pulang: " +
+                            Object.values(errors).join(", "),
+                        "error",
+                    );
+                    // Tetap tutup modal bahkan jika error
+                    setShowCheckOutForm(false);
+                    setEditingCheckOutId(null);
+                    setCheckOutValue("");
+                    setConfirmingCheckOutDeletion(false);
                 },
-            );
-        }
+            },
+        );
     };
 
     // ✅ TAMBAHKAN logic untuk pagination
@@ -733,7 +757,7 @@ export default function InternDetail({ intern, divisions }) {
                 {showForm && (
                     <form
                         action=""
-                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12 z-50"
+                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12 z-20"
                         onSubmit={handleSubmit}
                     >
                         <p className="font-medium text-lg mb-2">
@@ -1020,7 +1044,7 @@ export default function InternDetail({ intern, divisions }) {
                         onClick={`/interns/${intern.id}/export-attendance`}
                     />
                     <button
-                        onClick={handleDeleteIntern}
+                        onClick={confirmDeleteIntern}
                         className="text-red-700 hover:bg-red-100 font-medium rounded-lg text-sm px-4 py-2 text-center inline-flex items-center"
                     >
                         <svg
@@ -1100,10 +1124,12 @@ export default function InternDetail({ intern, divisions }) {
 
                                     {/* Form Edit Jam Pulang */}
                                     {showCheckOutForm &&
-                                        editingCheckOutId === attendance.id && (
+                                        editingCheckOutId === attendance.id &&
+                                        !confirmingCheckOutDeletion && (
                                             <form
                                                 onSubmit={handleUpdateCheckOut}
-                                                className={`bg-white shadow-lg rounded-lg absolute z-50 p-4 w-64 ${(() => {
+                                                onClick={(e) => e.stopPropagation()}
+                                                className={`bg-white shadow-lg rounded-lg absolute z-10 p-4 w-64 ${(() => {
                                                     const indexInPage =
                                                         currentAttendances.indexOf(
                                                             attendance,
@@ -1139,7 +1165,7 @@ export default function InternDetail({ intern, divisions }) {
                                                     <button
                                                         type="button"
                                                         onClick={
-                                                            handleDeleteCheckOut
+                                                            confirmDeleteCheckOut
                                                         }
                                                         className="flex-1 justify-center text-xs bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-md transition duration-150 ease-in-out"
                                                     >
@@ -1177,7 +1203,7 @@ export default function InternDetail({ intern, divisions }) {
                                             attendance.id && (
                                             <form
                                                 onSubmit={handleUpdateStatus}
-                                                className={`bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-50 ${
+                                                className={`bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-10 ${
                                                     // ✅ Hitung posisi row dalam halaman saat ini (0-6)
                                                     (() => {
                                                         const indexInPage =
@@ -1365,6 +1391,96 @@ export default function InternDetail({ intern, divisions }) {
                     </div>
                 </div>
             )}
+
+            {/* Modal Konfirmasi Hapus Intern */}
+            <Modal show={confirmingDeletion} onClose={closeDeletionModal}>
+                <div className="p-6">
+                    <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 text-red-500"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            />
+                        </svg>
+                        PERINGATAN: Apakah Anda yakin ingin menghapus "{intern.name}"?
+                    </h2>
+                    <div className="mt-4 text-sm text-gray-600 space-y-2">
+                        <p className="font-semibold">
+                            Semua data riwayat absensi, poin, dan foto akan <span className="font-bold text-red-700">HILANG PERMANEN.</span>
+                        </p>
+                        <p>
+                            Jika ini data duplikat, pastikan Anda menghapus yang benar.
+                        </p>
+                        <p>
+                            Jika ini data lama, silahkan download data kehadirannya dulu jika ingin membackupnya.
+                        </p>
+                    </div>
+                    <div className="mt-6 flex justify-end">
+                        <SecondaryButton onClick={closeDeletionModal}>
+                            Batal
+                        </SecondaryButton>
+                        <DangerButton
+                            className="ml-3"
+                            onClick={handleDeleteIntern}
+                        >
+                            Hapus Permanen
+                        </DangerButton>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Modal Konfirmasi Hapus Jam Pulang */}
+            <Modal show={confirmingCheckOutDeletion} onClose={closeCheckOutDeletionModal}>
+                <div className="p-6 relative">
+                    {/* Tombol Close (X) */}
+                    <button
+                        onClick={closeCheckOutDeletionModal}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        aria-label="Close"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+
+                    <h2 className="text-lg font-medium text-gray-900 pr-8">
+                        Yakin ingin menghapus jam pulang?
+                    </h2>
+                    <p className="mt-1 text-sm text-gray-600">
+                        Tindakan ini tidak dapat dibatalkan.
+                    </p>
+                    <div className="mt-6 flex justify-end">
+                        <SecondaryButton onClick={closeCheckOutDeletionModal}>
+                            Batal
+                        </SecondaryButton>
+                        <DangerButton
+                            className="ml-3"
+                            onClick={handleDeleteCheckOut}
+                        >
+                            Hapus
+                        </DangerButton>
+                    </div>
+                </div>
+            </Modal>
         </div>
     );
 }
