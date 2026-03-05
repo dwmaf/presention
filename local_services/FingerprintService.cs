@@ -115,7 +115,15 @@ namespace FingerprintService
 
         private void ServiceForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            try { _listener?.Abort(); } catch { }
+            // [FIX] Ganti operator ?. dengan pengecekan manual
+            try 
+            { 
+                if (_listener != null) 
+                {
+                    _listener.Abort(); 
+                }
+            } 
+            catch { }
             this.Invoke(new MethodInvoker(() => CleanupReader()));
         }
 
@@ -294,7 +302,7 @@ namespace FingerprintService
                     });
                 }
 
-                Log($"Waiting finger... attempt {attempt}/{CAPTURE_MAX_TRIES}");
+                Log("Waiting finger for verify... attempt " + attempt + "/" + CAPTURE_MAX_TRIES);
 
                 if (_waitForCapture.WaitOne(CAPTURE_TIMEOUT_MS))
                 {
@@ -341,7 +349,7 @@ namespace FingerprintService
                     return Serialize(new EnrollResponse
                     {
                         success = true,
-                        message = $"Success (attempt {attempt}/{CAPTURE_MAX_TRIES})",
+                        message = "Success (attempt " + attempt + "/" + CAPTURE_MAX_TRIES + ")",
                         fmd = b64,
                         image = img64
                     });
@@ -386,7 +394,7 @@ namespace FingerprintService
                 if (!started)
                     return Serialize(new VerifyResponse { match = false, message = "Reader Init/Open Failed", best_score = int.MaxValue });
 
-                Log($"Waiting finger for verify... attempt {attempt}/{CAPTURE_MAX_TRIES}");
+                Log("Waiting finger for verify... attempt " + attempt + "/" + CAPTURE_MAX_TRIES);
 
                 if (_waitForCapture.WaitOne(CAPTURE_TIMEOUT_MS))
                 {
