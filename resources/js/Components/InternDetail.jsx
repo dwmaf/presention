@@ -29,23 +29,33 @@ export default function InternDetail({ intern, divisions }) {
         senin: {
             checked: Boolean(intern?.toleransi_senin),
             // Ambil 5 karakter pertama (HH:MM) dari DB time string
-            time: intern?.toleransi_senin_time ? intern.toleransi_senin_time.slice(0,5) : "08:30",
+            time: intern?.toleransi_senin_time
+                ? intern.toleransi_senin_time.slice(0, 5)
+                : "08:30",
         },
         selasa: {
             checked: Boolean(intern?.toleransi_selasa),
-            time: intern?.toleransi_selasa_time ? intern.toleransi_selasa_time.slice(0,5) : "08:30",
+            time: intern?.toleransi_selasa_time
+                ? intern.toleransi_selasa_time.slice(0, 5)
+                : "08:30",
         },
         rabu: {
             checked: Boolean(intern?.toleransi_rabu),
-            time: intern?.toleransi_rabu_time ? intern.toleransi_rabu_time.slice(0,5) : "08:30",
+            time: intern?.toleransi_rabu_time
+                ? intern.toleransi_rabu_time.slice(0, 5)
+                : "08:30",
         },
         kamis: {
             checked: Boolean(intern?.toleransi_kamis),
-            time: intern?.toleransi_kamis_time ? intern.toleransi_kamis_time.slice(0,5) : "08:30",
+            time: intern?.toleransi_kamis_time
+                ? intern.toleransi_kamis_time.slice(0, 5)
+                : "08:30",
         },
         jumat: {
             checked: Boolean(intern?.toleransi_jumat),
-            time: intern?.toleransi_jumat_time ? intern.toleransi_jumat_time.slice(0,5) : "08:30",
+            time: intern?.toleransi_jumat_time
+                ? intern.toleransi_jumat_time.slice(0, 5)
+                : "08:30",
         },
     });
     const [confirmingDeletion, setConfirmingDeletion] = useState(false);
@@ -55,25 +65,25 @@ export default function InternDetail({ intern, divisions }) {
     // Buka modal
     const handleOpenToleransiModal = () => {
         setToleransiDays({
-            senin: { 
-                checked: Boolean(intern?.toleransi_senin), 
-                time: intern?.toleransi_senin_time?.slice(0,5) || "08:30" 
+            senin: {
+                checked: Boolean(intern?.toleransi_senin),
+                time: intern?.toleransi_senin_time?.slice(0, 5) || "08:30",
             },
-            selasa: { 
-                checked: Boolean(intern?.toleransi_selasa), 
-                time: intern?.toleransi_selasa_time?.slice(0,5) || "08:30" 
+            selasa: {
+                checked: Boolean(intern?.toleransi_selasa),
+                time: intern?.toleransi_selasa_time?.slice(0, 5) || "08:30",
             },
-            rabu: { 
-                checked: Boolean(intern?.toleransi_rabu), 
-                time: intern?.toleransi_rabu_time?.slice(0,5) || "08:30" 
+            rabu: {
+                checked: Boolean(intern?.toleransi_rabu),
+                time: intern?.toleransi_rabu_time?.slice(0, 5) || "08:30",
             },
-            kamis: { 
-                checked: Boolean(intern?.toleransi_kamis), 
-                time: intern?.toleransi_kamis_time?.slice(0,5) || "08:30" 
+            kamis: {
+                checked: Boolean(intern?.toleransi_kamis),
+                time: intern?.toleransi_kamis_time?.slice(0, 5) || "08:30",
             },
-            jumat: { 
-                checked: Boolean(intern?.toleransi_jumat), 
-                time: intern?.toleransi_jumat_time?.slice(0,5) || "08:30" 
+            jumat: {
+                checked: Boolean(intern?.toleransi_jumat),
+                time: intern?.toleransi_jumat_time?.slice(0, 5) || "08:30",
             },
         });
         setShowToleransiModal(true);
@@ -808,7 +818,7 @@ export default function InternDetail({ intern, divisions }) {
                                     label: div.nama_divisi,
                                 }))}
                                 placeholder="Pilih Divisi"
-                                error={errors.division_id}
+                                hasError={errors.division_id}
                             />
                             <InputError
                                 message={errors.division_id}
