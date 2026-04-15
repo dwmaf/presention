@@ -313,10 +313,7 @@ class AttendanceController extends Controller
                     $deadlineTime = $intern->{$cols['time']}; // Misal "09:00:00"
                 }
             }
-            // Cek apakah hari ini statusnya fleksibel untuk intern ini?
-            // $toleransiColumn = $toleransiMap[$dayIndex] ?? null;
-            // $isTodayToleransi = $toleransiColumn ? $intern->$toleransiColumn : false;
-
+            
             // Logic Terlambat: Bandingkan jam sekarang vs deadline
             // Jika jam sekarang > deadline, maka late.
             $isLate = ($now->format('H:i:s') > $deadlineTime);

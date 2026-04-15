@@ -31,15 +31,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
     // route profil bawaan package breeze tidak/belum diperlukan
-    // Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    // Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    // Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    
 
     // --- ADMIN FINGERPRINT ENROLLMENT ---
     Route::get('/profile/fingerprint', [AdminFingerprintController::class, 'index'])->name('profile.fingerprint');
-    // Ganti store single slot jadi store group
     Route::post('/profile/fingerprint/store-group', [AdminFingerprintController::class, 'storeGroup'])->name('profile.fingerprint.storeGroup');
-    // Ganti destroy single slot jadi reset group
     Route::delete('/profile/fingerprint/reset-group', [AdminFingerprintController::class, 'resetGroup'])->name('profile.fingerprint.resetGroup');
 
     // untuk nampilin halaman daftar divisi yg ada, nambah, edit, dan hapus
