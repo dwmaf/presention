@@ -1,12 +1,46 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, router } from "@inertiajs/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import RangeDatePicker from "@/Components/RangeDatePicker";
 import SearchBar from "@/Components/SearchBar";
 import DownloadBtn from "@/Components/DownloadBtn";
 
+/**
+ * * Dashboard Attendance Page
+ * * ----------------------------------------
+ * * Menampilkan data absensi intern dalam bentuk tabel
+ * * dengan fitur filter tanggal dan pencarian
+ *
+ * ! Fitur:
+ * ! - Filter berdasarkan range tanggal
+ * ! - Search berdasarkan nama intern
+ * ! - Export data absensi ke file
+ *
+ * ! Flow:
+ * ! 1. User pilih range tanggal → request ke server
+ * ! 2. Server kirim data sesuai range
+ * ! 3. User search → filter di frontend
+ *
+ * @param {Array} interns
+ * * Data intern + agregasi absensi
+ *
+ * @param {string} startDate
+ * * Tanggal awal filter (YYYY-MM-DD)
+ *
+ * @param {string} endDate
+ * * Tanggal akhir filter (YYYY-MM-DD)
+ */
+
+function formatDate(date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+}
+
 export default function Dashboard({ interns = [], startDate, endDate }) {
     const [searchTerm, setSearchTerm] = useState("");
+
     const [dateRange, setDateRange] = useState([
         startDate ? new Date(startDate) : new Date(),
         endDate ? new Date(endDate) : new Date(),
@@ -15,79 +49,31 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
     const handleDateRangeChange = (newValue) => {
         setDateRange(newValue);
 
-        if (newValue[0] && newValue[1]) {
-            const formatDate = (date) => {
-                const year = date.getFullYear();
-                const month = String(date.getMonth() + 1).padStart(2, "0");
-                const day = String(date.getDate()).padStart(2, "0");
-                return `${year}-${month}-${day}`;
-            };
+        if (!newValue?.[0] || !newValue?.[1]) return;
 
-            router.get(
-                route("dashboard"),
-                {
-                    start_date: formatDate(newValue[0]),
-                    end_date: formatDate(newValue[1]),
-                },
-                {
-                    preserveState: true,
-                    replace: true,
-                },
-            );
-        }
+        router.get(
+            route("dashboard"),
+            {
+                start_date: formatDate(newValue[0]),
+                end_date: formatDate(newValue[1]),
+            },
+            {
+                preserveState: true,
+                replace: true,
+            },
+        );
     };
 
-    // const handleDownload = () => {
-
-    //     // Implementasi download CSV
-    //     const csvData = [
-    //         [
-    //             "Nama",
-    //             "Divisi",
-    //             "Jumlah Hadir",
-    //             "Jumlah Izin",
-    //             "Jumlah Alpha",
-    //             "Total Jam",
-    //         ],
-    //         ...filteredInterns.map((intern) => [
-    //             intern.name,
-    //             intern.division?.nama_divisi ?? "-",
-    //             intern.jumlah_hadir,
-    //             intern.jumlah_izin,
-    //             intern.jumlah_alpha,
-    //             `${intern.total_jam} jam`,
-    //         ]),
-    //     ];
-
-    //     const csvContent = csvData.map((row) => row.join(",")).join("\n");
-    //     const blob = new Blob([csvContent], {
-    //         type: "text/csv;charset=utf-8;",
-    //     });
-    //     const link = document.createElement("a");
-    //     const url = URL.createObjectURL(blob);
-
-    //     const startFormatted = formatDateForFileName(dateRange[0]);
-    //     const endFormatted = formatDateForFileName(dateRange[1]);
-
-    //     link.setAttribute("href", url);
-    //     link.setAttribute(
-    //         "download",
-    //         `data_absensi_${startFormatted}_${endFormatted}.csv`,
-    //     );
-    //     link.style.visibility = "hidden";
-    //     document.body.appendChild(link);
-    //     link.click();
-    //     document.body.removeChild(link);
-    //     URL.revokeObjectURL(url);
-    // };
     const handleDownload = (e) => {
         e.preventDefault();
-        if (!dateRange || !dateRange[0] || !dateRange[1]) {
+
+        if (!dateRange?.[0] || !dateRange?.[1]) {
             alert(
                 "Silakan pilih rentang tanggal terlebih dahulu untuk mengunduh laporan.",
             );
             return;
         }
+
         const startDate = dateRange[0].toISOString().split("T")[0];
         const endDate = dateRange[1].toISOString().split("T")[0];
 
@@ -97,70 +83,83 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
         });
     };
 
-    const filteredInterns = interns.filter((intern) =>
-        intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
-    console.log("Filtered Interns:", filteredInterns);
+    /**
+     * ? Kenapa pakai useMemo?
+     * ? - Menghindari filter ulang setiap render
+     */
+    const filteredInterns = useMemo(() => {
+        return interns.filter((intern) =>
+            intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
+        );
+    }, [interns, searchTerm]);
+
+    const renderTableBody = () => {
+        if (filteredInterns.length === 0) {
+            return (
+                <tr>
+                    <td
+                        colSpan="6"
+                        className="px-6 py-12 text-center text-sm text-gray-400"
+                    >
+                        {interns.length === 0
+                            ? "Tidak ada data absensi untuk rentang tanggal ini."
+                            : "Karyawan tidak ditemukan."}
+                    </td>
+                </tr>
+            );
+        }
+
+        return filteredInterns.map((intern) => (
+            <tr key={intern.id} className="transition hover:bg-gray-50">
+                <td className="px-6 py-4">
+                    <img
+                        src={`/storage/${intern.foto}`}
+                        alt={intern.name}
+                        className="h-10 w-10 rounded-full object-cover"
+                    />
+                </td>
+                <td className="px-6 py-4">
+                    <div className="text-sm font-medium text-gray-900">
+                        {intern.name}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                        {intern.division?.nama_divisi ?? "-"}
+                    </div>
+                </td>
+                <td className="px-6 py-4 text-center">
+                    <span className="text-sm font-semibold text-gray-900">
+                        {intern.jumlah_hadir}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                    <span className="text-sm font-semibold text-gray-900">
+                        {intern.jumlah_izin}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                    <span className="text-sm font-semibold text-gray-900">
+                        {intern.jumlah_alpha}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                    <span className="text-sm font-semibold text-gray-900">
+                        {intern.total_jam} jam
+                    </span>
+                </td>
+            </tr>
+        ));
+    };
 
     return (
         <AuthenticatedLayout>
             <Head title="Data Absensi" />
 
-            <div className="pr-16 py-12 space-y-6">
+            <div className="space-y-6 py-12 pr-16">
                 {/* ── Title ── */}
                 <h1 className="text-2xl font-bold">Data Absensi</h1>
 
-                {/* ── Summary ── */}
-                {/* {filteredInterns.length > 0 && (
-                    <div className="bg-white rounded-xl shadow-md p-6">
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="text-center">
-                                <p className="text-gray-500 text-sm mb-1">
-                                    Total Karyawan
-                                </p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {filteredInterns.length}
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-gray-500 text-sm mb-1">
-                                    Total Hadir
-                                </p>
-                                <p className="text-2xl font-bold text-green-600">
-                                    {filteredInterns.reduce(
-                                        (sum, i) => sum + i.jumlah_hadir,
-                                        0,
-                                    )}
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-gray-500 text-sm mb-1">
-                                    Total Izin
-                                </p>
-                                <p className="text-2xl font-bold text-yellow-600">
-                                    {filteredInterns.reduce(
-                                        (sum, i) => sum + i.jumlah_izin,
-                                        0,
-                                    )}
-                                </p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-gray-500 text-sm mb-1">
-                                    Total Alpha
-                                </p>
-                                <p className="text-2xl font-bold text-red-600">
-                                    {filteredInterns.reduce(
-                                        (sum, i) => sum + i.jumlah_alpha,
-                                        0,
-                                    )}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                )} */}
-
                 {/* ── Header dengan Range Date Picker & Download ── */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative z-20">
+                <div className="relative z-20 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
                     <div className="w-full sm:w-auto">
                         <RangeDatePicker
                             value={dateRange}
@@ -182,88 +181,33 @@ export default function Dashboard({ interns = [], startDate, endDate }) {
                 />
 
                 {/* ── Table ── */}
-                <div className="bg-white rounded-md shadow-md overflow-hidden">
-                    <div className="overflow-x-auto max-h-screen custom-scrollbar">
+                <div className="overflow-hidden rounded-md bg-white shadow-md">
+                    <div className="custom-scrollbar max-h-screen overflow-x-auto">
                         <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                            <thead className="sticky top-0 z-10 border-b border-gray-200 bg-gray-50">
                                 <tr>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-600">
                                         Profil
                                     </th>
-                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-left text-xs font-semibold uppercase text-gray-600">
                                         Nama
                                     </th>
-                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase text-gray-600">
                                         Jumlah Hadir
                                     </th>
-                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase text-gray-600">
                                         Jumlah Izin
                                     </th>
-                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase text-gray-600">
                                         Jumlah Alpha
                                     </th>
-                                    <th className="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase ">
+                                    <th className="px-6 py-4 text-center text-xs font-semibold uppercase text-gray-600">
                                         Total Jam
                                     </th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200">
-                                {filteredInterns.length > 0 ? (
-                                    filteredInterns.map((intern) => (
-                                        <tr
-                                            key={intern.id}
-                                            className="hover:bg-gray-50 transition"
-                                        >
-                                            <td className="px-6 py-4">
-                                                <img
-                                                    src={`/storage/${intern.foto}`}
-                                                    alt={intern.name}
-                                                    className="w-10 h-10 rounded-full object-cover"
-                                                />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-medium text-gray-900">
-                                                    {intern.name}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    {intern.division
-                                                        ?.nama_divisi ?? "-"}
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {intern.jumlah_hadir}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {intern.jumlah_izin}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {intern.jumlah_alpha}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {intern.total_jam} jam
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td
-                                            colSpan="6"
-                                            className="px-6 py-12 text-center text-gray-400 text-sm"
-                                        >
-                                            {interns.length === 0
-                                                ? "Tidak ada data absensi untuk rentang tanggal ini."
-                                                : "Karyawan tidak ditemukan."}
-                                        </td>
-                                    </tr>
-                                )}
+                                {renderTableBody()}
                             </tbody>
                         </table>
                     </div>

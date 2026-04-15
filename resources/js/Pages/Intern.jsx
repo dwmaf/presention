@@ -1,213 +1,232 @@
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
 import { Head, useForm, usePage } from "@inertiajs/react";
 import { useState, useEffect } from "react";
-import InputError from "@/Components/InputError";
-import InputLabel from "@/Components/InputLabel";
-import Modal from "@/Components/Modal";
-import SecondaryButton from "@/Components/SecondaryButton";
-import TextInput from "@/Components/TextInput";
+
 import SearchBar from "@/Components/SearchBar";
 import PrimaryButton from "@/Components/PrimaryButton";
-import DangerButton from "@/Components/DangerButton";
 import InternCard from "@/Components/InternCard";
 import InternDetail from "@/Components/InternDetail";
-import CustomSelect from "@/Components/CustomSelect";
-import Sidebar from "@/Components/Sidebar";
-import { Link } from "@inertiajs/react";
+import Modal from "@/Components/Modal";
+
+import InternFormModal from "@/Components/InternFormModal";
+import InternDeleteModal from "@/Components//InternDeleteModal";
+import InternResetModal from "@/Components//InternResetModal";
+
+/**
+ * * InternPage Component
+ * * ----------------------------------------
+ * * Halaman utama untuk manajemen data karyawan (intern)
+ *
+ * ! Tanggung jawab utama:
+ * ! - Mengelola state global (interns, modal, form)
+ * ! - Meng-handle interaksi CRUD (create, update, delete)
+ * ! - Menjadi "controller" untuk seluruh komponen child
+ */
+
+/**
+ * * Constant Hari
+ *
+ * ? WHY:
+ * ? Menghindari hardcode berulang
+ * ? Single source of truth untuk semua logic jadwal
+ * ? Memudahkan scaling (misal tambah sabtu)
+ */
+const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"];
 
 export default function Intern({ auth, interns, divisions }) {
     const { flash } = usePage().props;
-    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const [search, setSearch] = useState("");
+
+    const [currentIntern, setCurrentIntern] = useState(null);
+
+    // Modal State
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [isEditMode, setIsEditMode] = useState(false);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [currentIntern, setCurrentIntern] = useState(null);
-    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [internToDelete, setInternToDelete] = useState(null);
-    const [confirmingResetPoints, setConfirmingResetPoints] = useState(false);
+    const [isResetOpen, setIsResetOpen] = useState(false);
+
     const [photoPreview, setPhotoPreview] = useState(null);
-    const [search, setSearch] = useState("");
+
     const [backToTop, setBackToTop] = useState(false);
+
+    const { data, setData, post, put, processing, errors, reset } = useForm({
+        name: "",
+        division_id: divisions?.length ? String(divisions[0].id) : "",
+        foto: null,
+        poin: 5,
+
+        senin: false,
+        selasa: false,
+        rabu: false,
+        kamis: false,
+        jumat: false,
+
+        _method: "POST",
+    });
+
+    const deleteForm = useForm({});
     const { post: postReset } = useForm();
-    // Di Intern.jsx, tambahkan ini
+
+    /**
+     * * Sync currentIntern dengan data terbaru
+     *
+     * ! Masalah:
+     * - Setelah update → data dari server berubah
+     * - Tapi currentIntern masih referensi lama (stale)
+     *
+     * ! Solusi:
+     * - Cari ulang dari props interns
+     */
     useEffect(() => {
         if (currentIntern) {
-            // Cari data terbaru dari array interns yang sudah di-refresh Inertia
             const updated = interns.find((i) => i.id === currentIntern.id);
             if (updated) setCurrentIntern(updated);
         }
-    }, [interns]); // Trigger setiap kali props `interns` berubah
+    }, [interns]);
+
+    /**
+     * * Open Create Modal
+     *
+     * ! Reset semua state agar:
+     * ? tidak membawa data lama
+     * ? form dalam kondisi fresh
+     */
+    const openCreate = () => {
+        reset();
+        setIsEditMode(false);
+        setCurrentIntern(null);
+        setPhotoPreview(null);
+        setIsFormOpen(true);
+    };
 
     // Tambahkan ini untuk melihat data
-    console.log("Semua interns:", interns);
-    console.log(
-        "ID interns:",
-        interns.map((i) => i.id),
-    );
+    // console.log("Semua interns:", interns);
+    // console.log(
+    //     "ID interns:",
+    //     interns.map((i) => i.id),
+    // );
 
-    const { data, setData, post, processing, errors, reset, clearErrors } =
-        useForm({
-            name: "",
-            division_id: divisions?.length ? String(divisions[0].id) : "",
-            barcode: "",
+    /**
+     * * Open Edit Modal
+     *
+     * ! WHY:
+     * - Isi form dengan data existing
+     * - Mode diubah agar submit jadi PUT
+     */
+    const openEdit = (intern) => {
+        setIsEditMode(true);
+        setCurrentIntern(intern);
+
+        console.log("Data yang akan dikirim:", data);
+
+        setData({
+            name: intern.name,
+            division_id: String(intern.division_id) || "",
+            poin: intern.poin ?? 5,
             foto: null,
 
-            // Jadwal (boolean)
-            senin: false,
-            selasa: false,
-            rabu: false,
-            kamis: false,
-            jumat: false,
+            senin: intern.senin,
+            selasa: intern.selasa,
+            rabu: intern.rabu,
+            kamis: intern.kamis,
+            jumat: intern.jumat,
 
-            // Poin
-            poin: 5,
-
-            _method: "POST",
+            _method: "put",
         });
 
-    const deleteForm = useForm({});
-
-    const openModal = (intern = null) => {
-        if (intern) {
-            // Mode edit
-            setCurrentIntern(intern);
-            setIsEditMode(true);
-            setData({
-                name: intern.name,
-                division_id: String(intern.division_id) || "",
-                senin: intern.senin,
-                selasa: intern.selasa,
-                rabu: intern.rabu,
-                kamis: intern.kamis,
-                jumat: intern.jumat,
-                poin: intern.poin ?? 5,
-                foto: null,
-            });
-            setPhotoPreview(null);
-        } else {
-            // Mode tambah - reset ke default
-            setCurrentIntern(null);
-            setIsEditMode(false);
-            setData({
-                name: "",
-                division_id: "", // Pastikan ini string kosong
-                senin: false,
-                selasa: false,
-                rabu: false,
-                kamis: false,
-                jumat: false,
-                poin: 5,
-                foto: null,
-            });
-            setPhotoPreview(null);
-        }
-        setIsModalOpen(true);
+        setPhotoPreview(null);
+        setIsFormOpen(true);
 
         clearErrors();
     };
 
-    const openDetailModal = (intern) => {
-        setCurrentIntern(intern);
-        setIsDetailOpen(true);
-    };
-
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setCurrentIntern(null);
-        setPhotoPreview(null);
-        reset();
-    };
-
-    const handlePhotoChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setData("foto", file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setPhotoPreview(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
+    /**
+     * * Submit Form (Create / Update)
+     *
+     * ! Single entry point untuk semua submit
+     */
     const submit = (e) => {
         e.preventDefault();
 
-        data._method = "PUT";
-        if (isEditMode) {
-            post(route("interns.update", currentIntern.id), {
-                onSuccess: closeModal,
-            });
-        } else {
-            data._method = "POST";
-            post(route("interns.store"), {
-                onSuccess: closeModal,
-            });
-        }
+        const url = isEditMode
+            ? route("interns.update", currentIntern.id)
+            : route("interns.store");
+
+        post(url, {
+            onSuccess: () => setIsFormOpen(false),
+            // Hapus data form setelah berhasil create, tapi tidak saat edit
+            onFinish: () => {
+                if (!isEditMode) {
+                    reset();
+                }
+            },
+        });
     };
 
-    const confirmDeletion = (intern) => {
-        setConfirmingDeletion(true);
+    /**
+     * * Delete Flow
+     *
+     * ? WHY:
+     * ? Simpan target sebelum buka modal
+     * ? Hindari race condition
+     */
+    const confirmDelete = (intern) => {
         setInternToDelete(intern);
-    };
-
-    const closeDeletionModal = () => {
-        setConfirmingDeletion(false);
-        setInternToDelete(null);
+        setIsDeleteOpen(true);
     };
 
     const deleteIntern = () => {
         deleteForm.delete(route("interns.destroy", internToDelete.id), {
-            onSuccess: closeDeletionModal,
+            onSuccess: () => setIsDeleteOpen(false),
         });
     };
 
-    const renderJadwal = (intern) => {
-        const hari = [
-            ["Sen", "senin"],
-            ["Sel", "selasa"],
-            ["Rab", "rabu"],
-            ["Kam", "kamis"],
-            ["Jum", "jumat"],
-        ];
-
-        const aktif = hari
-            .filter(([, key]) => !!intern?.[key])
-            .map(([label]) => label);
-
-        if (aktif.length === 5) return "Setiap hari";
-
-        return aktif.length ? aktif.join(", ") : "-";
+    const resetPoints = () => {
+        postReset(route("interns.resetPoints"), {
+            onSuccess: () => setIsResetOpen(false),
+        });
     };
 
     const isAllDaysChecked = () => {
-        return (
-            data.senin && data.selasa && data.rabu && data.kamis && data.jumat
-        );
+        return DAYS.every((day) => data[day]);
     };
 
-    // Toggle semua hari
     const handleToggleAllDays = (checked) => {
-        setData({
-            ...data,
-            senin: checked,
-            selasa: checked,
-            rabu: checked,
-            kamis: checked,
-            jumat: checked,
-        });
+        const updated = {};
+        DAYS.forEach((d) => (updated[d] = checked));
+        setData({ ...data, ...updated });
     };
 
+    /**
+     * * Filtering Intern
+     *
+     * ! Client-side filtering
+     *
+     * ? Kenapa tidak backend?
+     * ? - Data masih kecil
+     * ? - UX lebih cepat (no loading)
+     */
     const filteredInterns = interns.filter((intern) => {
         const keyword = search.toLowerCase();
 
-        const nameMatch = intern.name?.toLowerCase().includes(keyword);
-
-        const divisionMatch = intern.division?.nama_divisi
-            ?.toLowerCase()
-            .includes(keyword);
-
-        return nameMatch || divisionMatch;
+        return (
+            intern.name?.toLowerCase().includes(keyword) ||
+            intern.division?.nama_divisi?.toLowerCase().includes(keyword)
+        );
     });
+
+    /**
+     * * Cek tanggal 1
+     *
+     * ! Digunakan untuk:
+     * - warning reset poin
+     * - bukan sebagai pembatas (UX decision)
+     */
+    const today = new Date();
+    const isFirstDate = today.getDate() === 1;
 
     // Balik ke atas
     useEffect(() => {
@@ -231,46 +250,24 @@ export default function Intern({ auth, interns, divisions }) {
         });
     };
 
-    // Cek apakah hari ini tanggal 1
-    const today = new Date();
-    const isFirstDate = today.getDate() === 1;
-    // buka modal konfirmasi reset poin
-    const confirmResetPoints = () => {
-        setConfirmingResetPoints(true);
-    };
-    // tutup modal konfirmasi reset poin
-    const closeResetPointsModal = () => {
-        setConfirmingResetPoints(false);
-    };
-    // hit endpoint post untuk reset poin
-    const resetPoints = () => {
-        postReset(route("interns.resetPoints"), {
-            onSuccess: () => {
-                closeResetPointsModal();
-                // Opsional: tambahkan notifikasi toast jika ada
-            },
-            preserveScroll: true,
-        });
-    };
-
     return (
         <AuthenticatedLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 className="text-xl font-semibold leading-tight text-gray-800">
                     Manajemen Karyawan
                 </h2>
             }
         >
             <Head title="Karyawan" />
 
-            <div className="py-12 relative">
-                <div className="max-w-7xl mx-auto pr-16">
-                    {/* Tombol Reset & Notifikasi */}
-                    <div className="flex items-center justify-between mt-4 sm:mt-0">
+            <div className="relative py-12">
+                <div className="mx-auto max-w-7xl pr-16">
+                    {/* HEADER */}
+                    <div className="mt-4 flex items-center justify-between sm:mt-0">
                         <h1 className="text-2xl font-bold">Daftar Karyawan</h1>
                         {isFirstDate && (
-                            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-1.5 rounded-lg text-sm flex items-center gap-2 animate-pulse">
+                            <div className="flex animate-pulse items-center gap-2 rounded-lg border border-yellow-400 bg-yellow-100 px-3 py-1.5 text-sm text-yellow-700">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="16"
@@ -285,12 +282,12 @@ export default function Intern({ auth, interns, divisions }) {
                         )}
 
                         <button
-                            onClick={confirmResetPoints}
-                            className="inline-flex items-center px-4 py-2 bg-red-100 border border-transparent rounded-md font-semibold text-md text-red-700 hover:bg-red-300 active:bg-red-400 focus:outline-none transition"
+                            onClick={() => setIsResetOpen(true)}
+                            className="text-md inline-flex items-center rounded-md border border-transparent bg-red-100 px-4 py-2 font-semibold text-red-700 transition hover:bg-red-300 focus:outline-none active:bg-red-400"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                className="w-4 h-4 mr-2"
+                                className="mr-2 h-4 w-4"
                                 viewBox="0 0 24 24"
                                 fill="none"
                                 stroke="currentColor"
@@ -304,7 +301,7 @@ export default function Intern({ auth, interns, divisions }) {
                     </div>
 
                     {/* Search bar dan tambah karyawan */}
-                    <div className="flex justify-end my-12 gap-4">
+                    <div className="my-12 flex justify-end gap-4">
                         <SearchBar onSearch={setSearch} />
                         <PrimaryButton
                             icon={
@@ -323,19 +320,22 @@ export default function Intern({ auth, interns, divisions }) {
                                     </g>
                                 </svg>
                             }
-                            onClick={() => openModal()}
+                            onClick={openCreate}
                         >
                             Tambah Karyawan
                         </PrimaryButton>
                     </div>
 
                     {/* Daftar karyawan */}
-                    <div className="grid grid-cols-5 gap-4 mb-8">
+                    <div className="mb-8 grid grid-cols-5 gap-4">
                         {filteredInterns.map((intern) => (
                             <InternCard
                                 key={intern.id}
                                 intern={intern}
-                                onClick={() => openDetailModal(intern)}
+                                onClick={() => {
+                                    setCurrentIntern(intern);
+                                    setIsDetailOpen(true);
+                                }}
                             />
                         ))}
 
@@ -351,7 +351,7 @@ export default function Intern({ auth, interns, divisions }) {
                 {backToTop && (
                     <button
                         onClick={scrollToTop}
-                        className="p-2 bg-blue-100 hover:bg-blue-200 text-white rounded-full flex items-center justify-center fixed bottom-8 right-8 shadow-lg transition-all duration-300 z-50 group"
+                        className="group fixed bottom-8 right-8 z-50 flex items-center justify-center rounded-full bg-blue-100 p-2 text-white shadow-lg transition-all duration-300 hover:bg-blue-200"
                         aria-label="Back to top"
                     >
                         <svg
@@ -359,7 +359,7 @@ export default function Intern({ auth, interns, divisions }) {
                             width="40"
                             height="40"
                             viewBox="0 0 12 24"
-                            className="-rotate-90 group-hover:-translate-y-1 transition-transform"
+                            className="-rotate-90 transition-transform group-hover:-translate-y-1"
                         >
                             <path
                                 fill="oklch(42.4% 0.199 265.638)"
@@ -369,368 +369,61 @@ export default function Intern({ auth, interns, divisions }) {
                         </svg>
                     </button>
                 )}
-            </div>
 
-            <Modal
-                show={isDetailOpen}
-                onClose={() => setIsDetailOpen(false)}
-                maxWidth="80%"
-                maxHeight="full"
-            >
-                {currentIntern && (
-                    <InternDetail
-                        intern={currentIntern}
-                        divisions={divisions}
+                {/* DETAIL MODAL */}
+                {isDetailOpen && currentIntern && (
+                    <Modal
+                        show={isDetailOpen}
                         onClose={() => setIsDetailOpen(false)}
-                    />
-                )}
-            </Modal>
-
-            <Modal
-                show={isModalOpen}
-                onClose={closeModal}
-                maxWidth="fit"
-                maxHeight="fit"
-            >
-                <form
-                    onSubmit={submit}
-                    className="p-6 w-fit"
-                    encType="multipart/form-data"
-                >
-                    <h2 className="text-lg font-medium text-gray-900">
-                        {isEditMode ? "Edit Karyawan" : "Tambah Karyawan"}
-                    </h2>
-                    <div className="flex gap-4">
-                        {/* Upload & Preview Foto */}
-                        <div className="mt-2 w-fit">
-                            <InputLabel htmlFor="foto">
-                                {photoPreview || currentIntern?.foto ? (
-                                    // Preview
-                                    <div className="relative w-40 h-60">
-                                        <img
-                                            src={
-                                                photoPreview
-                                                    ? photoPreview
-                                                    : `/storage/${currentIntern.foto}`
-                                            }
-                                            alt="Preview"
-                                            className="w-full h-full object-cover rounded-xl border-2 border-blue-500"
-                                        />
-
-                                        {/* Tombol ganti */}
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setPhotoPreview(null);
-                                                setData("foto", null);
-                                            }}
-                                            className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-2 hover:bg-red-600"
-                                        >
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="10px"
-                                                height="10px"
-                                                viewBox="0 0 15 15"
-                                            >
-                                                <path
-                                                    fill="#fff"
-                                                    d="M3.64 2.27L7.5 6.13l3.84-3.84A.92.92 0 0 1 12 2a1 1 0 0 1 1 1a.9.9 0 0 1-.27.66L8.84 7.5l3.89 3.89A.9.9 0 0 1 13 12a1 1 0 0 1-1 1a.92.92 0 0 1-.69-.27L7.5 8.87l-3.85 3.85A.92.92 0 0 1 3 13a1 1 0 0 1-1-1a.9.9 0 0 1 .27-.66L6.16 7.5L2.27 3.61A.9.9 0 0 1 2 3a1 1 0 0 1 1-1c.24.003.47.1.64.27"
-                                                />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                ) : (
-                                    // Upload
-                                    <div className="flex justify-center items-center flex-col cursor-pointer border-2 border-dashed rounded-xl py-8 px-6 w-40 h-60">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="60px"
-                                            height="60px"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                fill="oklch(70.7% 0.022 261.325)"
-                                                d="M10 16h4c.55 0 1-.45 1-1v-5h1.59c.89 0 1.34-1.08.71-1.71L12.71 3.7a.996.996 0 0 0-1.41 0L6.71 8.29c-.63.63-.19 1.71.7 1.71H9v5c0 .55.45 1 1 1m-4 2h12c.55 0 1 .45 1 1s-.45 1-1 1H6c-.55 0-1-.45-1-1s.45-1 1-1"
-                                            />
-                                        </svg>
-                                        <p className="text-gray-400 text-center">
-                                            {data.foto
-                                                ? data.foto.name
-                                                : "Upload foto"}
-                                        </p>
-                                        <input
-                                            id="foto"
-                                            type="file"
-                                            name="foto"
-                                            accept="image/*"
-                                            onChange={handlePhotoChange}
-                                            className="hidden"
-                                        />
-                                    </div>
-                                )}
-                            </InputLabel>
-
-                            <InputError
-                                message={errors.foto}
-                                className="mt-2"
+                        maxWidth="80%"
+                        maxHeight="full"
+                    >
+                        {currentIntern && (
+                            <InternDetail
+                                intern={currentIntern}
+                                onClose={() => setIsDetailOpen(false)}
+                                onEdit={openEdit}
+                                onDelete={confirmDelete}
+                                divisions={divisions}
                             />
-                        </div>
-
-                        <div>
-                            <div>
-                                <InputLabel htmlFor="name" value="Nama" />
-                                <TextInput
-                                    id="name"
-                                    type="text"
-                                    name="name"
-                                    value={data.name}
-                                    onChange={(e) =>
-                                        setData("name", e.target.value)
-                                    }
-                                    className="mt-1 block w-full"
-                                    isFocused
-                                    placeholder="Nama Karyawan"
-                                />
-                                <InputError
-                                    message={errors.name}
-                                    className="mt-2"
-                                />
-                            </div>
-
-                            {/* Divisi */}
-                            <div className="mt-2">
-                                <InputLabel
-                                    htmlFor="division_id"
-                                    value="Divisi"
-                                />
-                                <CustomSelect
-                                    value={data.division_id}
-                                    onChange={(value) =>
-                                        setData("division_id", value)
-                                    }
-                                    options={divisions.map((div) => ({
-                                        value: String(div.id),
-                                        label: div.nama_divisi,
-                                    }))}
-                                    placeholder="Pilih Divisi"
-                                    error={errors.division_id}
-                                />
-                                <InputError
-                                    message={errors.division_id}
-                                    className="mt-2"
-                                />
-                            </div>
-
-                            {/* Jadwal */}
-                            <div className="mt-2">
-                                <InputLabel value="Jadwal (Pilih hari masuk)" />
-                                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={isAllDaysChecked()}
-                                            onChange={(e) =>
-                                                handleToggleAllDays(
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Setiap Hari
-                                        </span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.senin}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "senin",
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Senin
-                                        </span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.selasa}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "selasa",
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Selasa
-                                        </span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.rabu}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "rabu",
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Rabu
-                                        </span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.kamis}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "kamis",
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Kamis
-                                        </span>
-                                    </label>
-
-                                    <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={data.jumat}
-                                            onChange={(e) =>
-                                                setData(
-                                                    "jumat",
-                                                    e.target.checked,
-                                                )
-                                            }
-                                            className="rounded-sm cursor-pointer focus:ring-transparent"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Jumat
-                                        </span>
-                                    </label>
-                                </div>
-
-                                {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
-                                {(errors.senin ||
-                                    errors.selasa ||
-                                    errors.rabu ||
-                                    errors.kamis ||
-                                    errors.jumat) && (
-                                    <InputError
-                                        message={
-                                            errors.senin ||
-                                            errors.selasa ||
-                                            errors.rabu ||
-                                            errors.kamis ||
-                                            errors.jumat
-                                        }
-                                        className="mt-2"
-                                    />
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-12 flex justify-end">
-                        <SecondaryButton onClick={closeModal}>
-                            Batal
-                        </SecondaryButton>
-                        <PrimaryButton className="ml-3" disabled={processing}>
-                            {isEditMode ? "Update" : "Simpan"}
-                        </PrimaryButton>
-                    </div>
-                </form>
-            </Modal>
-
-            <Modal show={confirmingDeletion} onClose={closeDeletionModal}>
-                <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900">
-                        Apakah anda yakin ingin menghapus data ini?
-                    </h2>
-                    <p className="mt-1 text-sm text-gray-600">
-                        Tindakan ini tidak dapat dibatalkan.
-                    </p>
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeDeletionModal}>
-                            Batal
-                        </SecondaryButton>
-                        <DangerButton
-                            className="ml-3"
-                            onClick={deleteIntern}
-                            disabled={deleteForm.processing}
-                        >
-                            Hapus
-                        </DangerButton>
-                    </div>
-                </div>
-            </Modal>
-
-            {/* MODAL KONFIRMASI RESET POIN */}
-            <Modal show={confirmingResetPoints} onClose={closeResetPointsModal}>
-                <div className="p-6">
-                    <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-orange-500"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                            />
-                        </svg>
-                        Konfirmasi Reset Poin
-                    </h2>
-
-                    <p className="mt-4 text-sm text-gray-600">
-                        {isFirstDate ? (
-                            "Apakah anda yakin ingin mereset poin semua karyawan menjadi 5?"
-                        ) : (
-                            <>
-                                Peringatan:{" "}
-                                <span className="text-red-700">
-                                    Hari ini <b>BUKAN</b> tanggal 1.
-                                </span>{" "}
-                                Apakah anda yakin ingin mereset poin semua
-                                karyawan saat ini walaupun bukan tanggal 1?
-                            </>
                         )}
-                    </p>
+                    </Modal>
+                )}
 
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeResetPointsModal}>
-                            Batal
-                        </SecondaryButton>
-                        <PrimaryButton
-                            className="ml-3 bg-red-600 hover:bg-red-700 focus:bg-red-700 active:bg-red-800 text-white"
-                            onClick={resetPoints}
-                        >
-                            Reset Semua Poin
-                        </PrimaryButton>
-                    </div>
-                </div>
-            </Modal>
+                <InternFormModal
+                    show={isFormOpen}
+                    onClose={() => setIsFormOpen(false)}
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        console.log("Submit dari InternFormModal terpicu!");
+                    }}
+                    data={data}
+                    setData={setData}
+                    processing={processing}
+                    errors={errors}
+                    isEditMode={isEditMode}
+                    divisions={divisions}
+                    photoPreview={photoPreview}
+                    setPhotoPreview={setPhotoPreview}
+                    isAllDaysChecked={isAllDaysChecked}
+                    handleToggleAllDays={handleToggleAllDays}
+                    currentIntern={currentIntern}
+                />
+
+                <InternDeleteModal
+                    show={isDeleteOpen}
+                    onClose={() => setIsDeleteOpen(false)}
+                    onDelete={deleteIntern}
+                    processing={deleteForm.processing}
+                />
+
+                <InternResetModal
+                    show={isResetOpen}
+                    onClose={() => setIsResetOpen(false)}
+                    onConfirm={resetPoints}
+                    isFirstDate={isFirstDate}
+                />
+            </div>
         </AuthenticatedLayout>
     );
 }

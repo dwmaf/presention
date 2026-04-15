@@ -1,7 +1,47 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Head, useForm } from "@inertiajs/react";
-import { Link } from "@inertiajs/react"; // Pastikan import Link
+import { Link } from "@inertiajs/react";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout";
+
+/**
+ * * FingerprintEnrollment Page
+ * * ----------------------------------------
+ * * Halaman untuk proses pendaftaran (enrollment) sidik jari intern
+ *
+ * ! Menggunakan pendekatan Local Service (C#) sebagai sumber utama
+ * ! Web SDK tetap tersedia sebagai fallback (opsional)
+ *
+ * ? Kenapa pakai Local Service?
+ * ? - Lebih stabil dibanding Web SDK (tidak tergantung browser)
+ * ? - Proses capture lebih cepat & minim error permission
+ * ? - Kontrol penuh terhadap device fingerprint
+ *
+ * @param {Object} auth
+ * * Data user yang sedang login
+ *
+ * @param {Object} intern
+ * * Data intern yang akan didaftarkan sidik jarinya
+ *
+ * ! Flow utama:
+ * ! 1. User klik "Mulai Scan"
+ * ! 2. Request ke Local Service (localhost:5000)
+ * ! 3. Service mengembalikan FMD (Fingerprint Minutiae Data)
+ * ! 4. Data disimpan ke state & bisa dikirim ke backend
+ *
+ * ! State penting:
+ * ! - fingerprint_data → hasil FMD untuk disimpan ke database
+ * ! - fingerprintImage → preview visual sidik jari (optional)
+ * ! - acquisitionStarted → kontrol UI saat scanning
+ *
+ * ? Kenapa tidak langsung simpan ke DB saat scan?
+ * ? - Memberi kesempatan user untuk validasi hasil scan
+ * ? - Menghindari data buruk langsung tersimpan
+ *
+ * TODO Improvement Ideas:
+ * TODO - Tambahkan retry otomatis jika scan gagal
+ * TODO - Tambahkan indikator kualitas fingerprint
+ * TODO - Support multiple finger enrollment
+ */
 
 export default function FingerprintEnrollment({ auth, intern }) {
     const [sdkReady, setSdkReady] = useState(false);
@@ -10,13 +50,22 @@ export default function FingerprintEnrollment({ auth, intern }) {
     const [status, setStatus] = useState("Initializing...");
     const [fingerprintImage, setFingerprintImage] = useState(null);
     const [acquisitionStarted, setAcquisitionStarted] = useState(false);
+
     const sdkRef = useRef(null);
 
+    /**
+     * * Form inertia untuk submit ke backend
+     */
     const { data, setData, post, processing, errors, reset } = useForm({
         fingerprint_data: "",
     });
 
-    // Helper to load scripts sequentially
+    /**
+     * * Load external SDK scripts (fallback)
+     *
+     * ? Kenapa masih ada?
+     * ? - Untuk compatibility jika Local Service tidak tersedia
+     */
     const loadScripts = async () => {
         const scripts = [
             "/vendor/es6-shim.js",
@@ -30,6 +79,7 @@ export default function FingerprintEnrollment({ auth, intern }) {
                     resolve();
                     return;
                 }
+
                 const script = document.createElement("script");
                 script.src = src;
                 script.onload = resolve;
@@ -40,9 +90,10 @@ export default function FingerprintEnrollment({ auth, intern }) {
     };
 
     useEffect(() => {
-        // Kita menggunakan Local Service C#, jadi Web SDK tidak wajib diload.
-        // Namun jika masih ingin fallback, biarkan.
-        // Disini kita set status ready langsung untuk Local Service.
+        /**
+         * * Disini kita set status ready langsung untuk Local Service.
+         * ? Kita menggunakan Local Service C#, jadi Web SDK tidak wajib diload.
+         * ? Namun jika masih ingin fallback, biarkan. */
         setSdkReady(true);
         setStatus("Siap. Pastikan aplikasi C# berjalan.");
 
@@ -53,34 +104,47 @@ export default function FingerprintEnrollment({ auth, intern }) {
         };
     }, []);
 
+    /**
+     * * Inisialisasi Web SDK (fallback)
+     *
+     * ? Kapan dipakai?
+     * ? - Jika Local Service gagal / tidak tersedia
+     */
     const initializeSdk = () => {
         const sdk = new window.Fingerprint.WebApi();
         sdkRef.current = sdk;
 
-        sdk.onDeviceConnected = (e) => {
+        sdk.onDeviceConnected = () => {
             setStatus("Device Connected");
             refreshReaders();
         };
-        sdk.onDeviceDisconnected = (e) => {
+
+        sdk.onDeviceDisconnected = () => {
             setStatus("Device Disconnected");
             refreshReaders();
         };
-        sdk.onCommunicationFailed = (e) => {
+
+        sdk.onCommunicationFailed = () => {
             setStatus("Communication Failed");
         };
+
+        /**
+         * * Handler saat fingerprint berhasil di-capture
+         */
         sdk.onSamplesAcquired = (s) => {
-            console.log("Sample acquired", s);
             try {
                 const samples = JSON.parse(s.samples);
-                console.log("Samples parsed:", samples);
 
-                if (samples && samples.length > 0) {
+                if (samples?.length > 0) {
                     const sampleData = samples[0];
-                    console.log("Sample[0] type:", typeof sampleData);
-                    console.log("Sample[0] content:", sampleData); // Debug log tambahan
 
-                    // Determine format
-                    // 2 is Intermediate (Feature Set)
+                    /**
+                     * * Handle format Feature Set (FMD)
+                     *
+                     * ? Kenapa pakai Feature Set?
+                     * ? - Lebih ringan dari image
+                     * ? - Bisa langsung digunakan untuk matching
+                     */
                     if (
                         s.sampleFormat ===
                         window.Fingerprint.SampleFormat.Intermediate
@@ -88,44 +152,32 @@ export default function FingerprintEnrollment({ auth, intern }) {
                         let featureSetString = "";
 
                         if (typeof sampleData === "string") {
-                            // Kasus 1: SDK mengembalikan string base64url langsung
                             featureSetString =
                                 window.Fingerprint.b64UrlTo64(sampleData);
                         } else if (typeof sampleData === "object") {
-                            // Kasus 2: SDK mengembalikan objek (seperti yang terjadi sekarang)
-                            // Biasanya data mentah ada di properti 'Data' atau kita perlu stringify objeknya
-                            // Jika sampleData adalah objek Feature Set murni, kita bisa menyimpannya sebagai JSON string
-                            // atau mengambil properti tertentu.
-
-                            // Coba cari properti Data jika ada, jika tidak, simpan seluruh objek sebagai string
                             if (sampleData.Data) {
                                 featureSetString =
                                     window.Fingerprint.b64UrlTo64(
                                         sampleData.Data,
                                     );
                             } else {
-                                // Fallback: Serealize objek menjadi string JSON untuk disimpan
-                                // Perhatian: Ini mungkin bukan format standar feature set mentah,
-                                // tapi cukup untuk disimpan dan dikirim kembali nanti jika strukturnya konsisten.
                                 featureSetString = JSON.stringify(sampleData);
                             }
                         }
 
                         if (featureSetString) {
                             setData("fingerprint_data", featureSetString);
-                            setStatus(
-                                "Fingerprint captured (Feature Set). Ready to save.",
-                            );
-                        } else {
-                            setStatus(
-                                "Error: Could not extract feature set data.",
-                            );
+                            setStatus("Fingerprint captured. Ready to save.");
                         }
-                    } else if (
+                    }
+
+                    /**
+                     * * Handle image preview (opsional)
+                     */
+                    if (
                         s.sampleFormat ===
                         window.Fingerprint.SampleFormat.PngImage
                     ) {
-                        // ...existing code...
                         if (typeof sampleData === "string") {
                             const src =
                                 "data:image/png;base64," +
@@ -135,21 +187,27 @@ export default function FingerprintEnrollment({ auth, intern }) {
                     }
                 }
             } catch (e) {
-                console.error("Error processing sample:", e);
                 setStatus("Error processing sample data.");
             }
         };
+
         sdk.onQualityReported = (e) => {
-            setStatus(`Quality reported: ${e.quality}`);
+            setStatus(`Quality: ${e.quality}`);
         };
 
-        setSdkReady(true);
         refreshReaders();
         setStatus("SDK Ready");
     };
 
+    /**
+     * * Ambil daftar device fingerprint
+     *
+     * ? Kenapa perlu?
+     * ? - Untuk multi device support
+     */
     const refreshReaders = () => {
         if (!sdkRef.current) return;
+
         sdkRef.current
             .enumerateDevices()
             .then((devices) => {
@@ -159,10 +217,16 @@ export default function FingerprintEnrollment({ auth, intern }) {
                 }
             })
             .catch((err) => {
-                setStatus("Error enumerating devices: " + err.message);
+                setStatus("Error: " + err.message);
             });
     };
 
+    /**
+     * * Start capture via Local Service
+     *
+     * ? Kenapa async?
+     * ? - Karena komunikasi HTTP ke service eksternal
+     */
     const startCapture = async () => {
         setStatus("Connecting to Local Service (localhost:5000)...");
         setAcquisitionStarted(true);
@@ -209,99 +273,20 @@ export default function FingerprintEnrollment({ auth, intern }) {
 
     const submit = (e) => {
         e.preventDefault();
+
         post(route("interns.fingerprint-enrollment.store", intern.id), {
             onSuccess: () => {
                 setStatus("Fingerprint saved!");
                 reset();
-                // Optionally stop capture or keep going
             },
         });
     };
 
     return (
-        // <div className="min-h-screen bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
-        //     <Head title="Fingerprint Enrollment" />
-
-        //     <div className="max-w-md mx-auto bg-white rounded-lg shadow-md overflow-hidden">
-        //         <div className="px-6 py-8">
-        //             <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
-        //                 Fingerprint Enrollment
-        //             </h2>
-
-        //             <div className="mb-6">
-        //                 <label className="block text-sm font-medium text-gray-700 mb-2">
-        //                     Status
-        //                 </label>
-        //                 <div className="p-3 bg-gray-50 rounded border border-gray-200 text-sm text-gray-600">
-        //                     {status}
-        //                 </div>
-        //             </div>
-
-        //             <div className="mb-6">
-        //                 <label className="block text-sm font-medium text-gray-700 mb-2">
-        //                     Select Reader
-        //                 </label>
-        //                 <select
-        //                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        //                     value={selectedReader}
-        //                     onChange={(e) => setSelectedReader(e.target.value)}
-        //                     disabled={!sdkReady || readers.length === 0}
-        //                 >
-        //                     {readers.length === 0 ? (
-        //                         <option>No readers found</option>
-        //                     ) : (
-        //                         readers.map(r => <option key={r} value={r}>{r}</option>)
-        //                     )}
-        //                 </select>
-        //             </div>
-
-        //             <div className="flex justify-between space-x-4 mb-8">
-
-        //                 {!acquisitionStarted ? (
-        //                     <button
-        //                         type="button"
-        //                         onClick={startCapture}
-        //                         disabled={!selectedReader}
-        //                         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50"
-        //                     >
-        //                         Start Capture
-        //                     </button>
-        //                 ) : (
-        //                     <button
-        //                         type="button"
-        //                         onClick={stopCapture}
-        //                         className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-        //                     >
-        //                         Stop Capture
-        //                     </button>
-        //                 )}
-        //             </div>
-
-        //             {data.fingerprint_data && (
-        //                 <div className="mb-6">
-        //                     <div className="p-3 bg-green-50 text-green-700 text-sm rounded border border-green-200 mb-4">
-        //                         Fingerprint data captured successfully.
-        //                     </div>
-
-        //                     <form onSubmit={submit}>
-        //                         <button
-        //                             type="submit"
-        //                             disabled={processing}
-        //                             className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-        //                         >
-        //                             {processing ? 'Saving...' : 'Save Fingerprint Template'}
-        //                         </button>
-        //                     </form>
-        //                 </div>
-        //             )}
-        //         </div>
-        //     </div>
-        // </div>
-
         <AuthenticatedLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 className="text-xl font-semibold leading-tight text-gray-800">
                     Enrollment: {intern.name}
                 </h2>
             }
@@ -309,9 +294,9 @@ export default function FingerprintEnrollment({ auth, intern }) {
             <Head title={`Enrollment - ${intern.name}`} />
 
             <div className="py-12">
-                <div className="max-w-2xl mx-auto sm:px-6 lg:px-8">
-                    <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
-                        <div className="text-center mb-8">
+                <div className="mx-auto max-w-2xl sm:px-6 lg:px-8">
+                    <div className="overflow-hidden bg-white p-6 shadow-sm sm:rounded-lg">
+                        <div className="mb-8 text-center">
                             <h3 className="text-lg font-medium text-gray-900">
                                 Pendaftaran Sidik Jari
                             </h3>
@@ -322,21 +307,21 @@ export default function FingerprintEnrollment({ auth, intern }) {
 
                         {/* Status Box */}
                         <div
-                            className={`mb-6 p-4 rounded-md border ${data.fingerprint_data ? "bg-green-50 border-green-200 text-green-700" : "bg-gray-50 border-gray-200 text-gray-700"}`}
+                            className={`mb-6 rounded-md border p-4 ${data.fingerprint_data ? "border-green-200 bg-green-50 text-green-700" : "border-gray-200 bg-gray-50 text-gray-700"}`}
                         >
                             <p className="text-center font-medium">{status}</p>
                         </div>
 
                         {/* Reader Selection (Auto-handled by C# Service) */}
                         <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                            <label className="mb-2 block text-sm font-medium text-gray-700">
                                 Scanner Device
                             </label>
                             <input
                                 type="text"
                                 disabled
                                 value="Auto (Managed by Local Service)"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100 text-gray-500"
+                                className="w-full rounded-md border border-gray-300 bg-gray-100 px-3 py-2 text-gray-500"
                             />
                         </div>
 
@@ -346,17 +331,17 @@ export default function FingerprintEnrollment({ auth, intern }) {
                                 <img
                                     src={fingerprintImage}
                                     alt="Fingerprint"
-                                    className="h-48 border rounded shadow-sm"
+                                    className="h-48 rounded border shadow-sm"
                                 />
                             </div>
                         )}
 
                         {/* Controls */}
-                        <div className="flex justify-center space-x-4 mb-8">
+                        <div className="mb-8 flex justify-center space-x-4">
                             <button
                                 type="button"
                                 onClick={refreshReaders}
-                                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                             >
                                 Refresh Readers
                             </button>
@@ -365,7 +350,7 @@ export default function FingerprintEnrollment({ auth, intern }) {
                                     type="button"
                                     onClick={startCapture}
                                     disabled={acquisitionStarted}
-                                    className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50"
+                                    className="rounded-md bg-indigo-600 px-6 py-2 text-white hover:bg-indigo-700 disabled:opacity-50"
                                 >
                                     Mulai Scan (Local Service)
                                 </button>
@@ -373,27 +358,27 @@ export default function FingerprintEnrollment({ auth, intern }) {
                                 <button
                                     type="button"
                                     onClick={stopCapture}
-                                    className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                                    className="rounded-md bg-red-600 px-6 py-2 text-white hover:bg-red-700"
                                 >
                                     Stop Scan
                                 </button>
                             )}
                         </div>
 
-                        {/* Save Button */}
+                        {/* Submit Button */}
                         {data.fingerprint_data && (
                             <form
                                 onSubmit={submit}
-                                className="border-t pt-6 mt-6"
+                                className="mt-6 border-t pt-6"
                             >
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-green-600 font-bold">
+                                    <span className="text-sm font-bold text-green-600">
                                         ✓ Data sidik jari berhasil diambil
                                     </span>
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 shadow-md transform hover:scale-105 transition-all"
+                                        className="transform rounded-md bg-green-600 px-6 py-2 text-white shadow-md transition-all hover:scale-105 hover:bg-green-700"
                                     >
                                         {processing
                                             ? "Menyimpan..."
@@ -406,7 +391,7 @@ export default function FingerprintEnrollment({ auth, intern }) {
                         <div className="mt-4 text-center">
                             <Link
                                 href={route("interns.index")}
-                                className="text-gray-500 text-sm hover:underline"
+                                className="text-sm text-gray-500 hover:underline"
                             >
                                 Kembali ke daftar anak magang
                             </Link>

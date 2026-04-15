@@ -1,127 +1,97 @@
 import { useState } from "react";
 import { router, useForm } from "@inertiajs/react";
+
 import PrimaryButton from "./PrimaryButton";
 import SecondaryButton from "./SecondaryButton";
 import DangerButton from "./DangerButton";
-import InputLabel from "./InputLabel";
-import TextInput from "./TextInput";
-import InputError from "./InputError";
-import CustomSelect from "./CustomSelect";
 import DownloadBtn from "./DownloadBtn";
-import Modal from "@/Components/Modal";
 import { useToast } from "@/Components/ToastNotif";
 
+import AttendanceTable from "./AttendanceTable";
+import InternForm from "./InternForm";
+import ToleransiModal from "./ToleransiModal";
+import CheckOutForm from "./CheckOutForm";
+import EditStatusForm from "./EditStatusForm";
+import ConfirmModal from "./ConfirmModal";
+
+/**
+ * * Attendance Config (Single Source of Truth)
+ * ? Kenapa penting?
+ * ? - Menghindari hardcode berulang di banyak component
+ * ? - Jika ada perubahan label/style → cukup di sini
+ *
+ * ! Digunakan oleh:
+ * - Badge di tabel
+ * - EditStatusForm
+ * - Render helper
+ */
+const ATTENDANCE_STYLE = {
+    hadir: "bg-green-100 text-green-700",
+    izin: "bg-yellow-100 text-yellow-700",
+    sakit: "bg-indigo-100 text-indigo-700",
+    alpha: "bg-red-100 text-red-700",
+};
+
+const ATTENDANCE_LABEL = {
+    hadir: "Hadir",
+    izin: "Izin",
+    sakit: "Sakit",
+    alpha: "Alpha",
+};
+
+const getAttendanceStyle = (status) =>
+    ATTENDANCE_STYLE[status] || "bg-gray-100 text-gray-700";
+
+const getAttendanceLabel = (status) => ATTENDANCE_LABEL[status] || "Tidak ada";
+
+/**
+ * * InternDetail Page Component
+ * * ------------------------------------------------------------
+ * * Halaman detail untuk satu intern (karyawan magang)
+ *
+ * ? Kenapa component ini kompleks?
+ * ? - Menggabungkan banyak fitur dalam satu halaman:
+ * ?   - Edit profil intern
+ * ?   - Upload foto
+ * ?   - Manajemen kehadiran (status & jam pulang)
+ * ?   - Statistik
+ * ?   - Export & delete data
+ *
+ * ! Architecture decision:
+ * ! - Logic dipusatkan di sini (state orchestration)
+ * ! - UI kompleks dipisah ke component kecil:
+ * !   - AttendanceTable
+ * !   - EditStatusForm
+ * !   - CheckOutForm
+ * !   - ConfirmModal
+ * !   - InternForm
+ *
+ * ? Kenapa pakai pattern ini?
+ * ? - Menghindari "God Component UI"
+ * ? - Tapi tetap centralize business logic (lebih mudah tracing)
+ *
+ * ! Responsibility:
+ * - Mengelola seluruh state halaman
+ * - Handle komunikasi API (Inertia router)
+ * - Mengatur interaksi antar component
+ *
+ * ! Tidak bertanggung jawab:
+ * - Styling detail tiap UI kecil
+ * - Rendering tabel detail (delegated ke AttendanceTable)
+ *
+ * @param {Object} props
+ * @param {Object} props.intern
+ * * Data lengkap intern (profil + attendance + statistik)
+ *
+ * @param {Array} props.divisions
+ * * List divisi untuk dropdown edit intern
+ */
 export default function InternDetail({ intern, divisions }) {
     if (!intern) return null;
 
-    const [uploading, setUploading] = useState(false);
-    const [showForm, setShowForm] = useState(false);
-    const [showStatusForm, setShowStatusForm] = useState(false);
-    const [selectedStatus, setSelectedStatus] = useState("");
-    const [currentAttendanceId, setCurrentAttendanceId] = useState(null);
-    const [showCheckOutForm, setShowCheckOutForm] = useState(false);
-    const [editingCheckOutId, setEditingCheckOutId] = useState(null);
-    const [checkOutValue, setCheckOutValue] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 7;
-    const [showToleransiModal, setShowToleransiModal] = useState(false);
-    const [toleransiDays, setToleransiDays] = useState({
-        senin: {
-            checked: Boolean(intern?.toleransi_senin),
-            // Ambil 5 karakter pertama (HH:MM) dari DB time string
-            time: intern?.toleransi_senin_time
-                ? intern.toleransi_senin_time.slice(0, 5)
-                : "08:30",
-        },
-        selasa: {
-            checked: Boolean(intern?.toleransi_selasa),
-            time: intern?.toleransi_selasa_time
-                ? intern.toleransi_selasa_time.slice(0, 5)
-                : "08:30",
-        },
-        rabu: {
-            checked: Boolean(intern?.toleransi_rabu),
-            time: intern?.toleransi_rabu_time
-                ? intern.toleransi_rabu_time.slice(0, 5)
-                : "08:30",
-        },
-        kamis: {
-            checked: Boolean(intern?.toleransi_kamis),
-            time: intern?.toleransi_kamis_time
-                ? intern.toleransi_kamis_time.slice(0, 5)
-                : "08:30",
-        },
-        jumat: {
-            checked: Boolean(intern?.toleransi_jumat),
-            time: intern?.toleransi_jumat_time
-                ? intern.toleransi_jumat_time.slice(0, 5)
-                : "08:30",
-        },
-    });
-    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
-    const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] =
-        useState(false);
+    const { addToast } = useToast();
 
-    // Buka modal
-    const handleOpenToleransiModal = () => {
-        setToleransiDays({
-            senin: {
-                checked: Boolean(intern?.toleransi_senin),
-                time: intern?.toleransi_senin_time?.slice(0, 5) || "08:30",
-            },
-            selasa: {
-                checked: Boolean(intern?.toleransi_selasa),
-                time: intern?.toleransi_selasa_time?.slice(0, 5) || "08:30",
-            },
-            rabu: {
-                checked: Boolean(intern?.toleransi_rabu),
-                time: intern?.toleransi_rabu_time?.slice(0, 5) || "08:30",
-            },
-            kamis: {
-                checked: Boolean(intern?.toleransi_kamis),
-                time: intern?.toleransi_kamis_time?.slice(0, 5) || "08:30",
-            },
-            jumat: {
-                checked: Boolean(intern?.toleransi_jumat),
-                time: intern?.toleransi_jumat_time?.slice(0, 5) || "08:30",
-            },
-        });
-        setShowToleransiModal(true);
-    };
-
-    // Toggle hari
-    const handleToleransiDayChange = (day) => {
-        setToleransiDays((prev) => ({
-            ...prev,
-            [day]: { ...prev[day], checked: !prev[day].checked },
-        }));
-    };
-
-    const handleToleransiTimeChange = (day, value) => {
-        setToleransiDays((prev) => ({
-            ...prev,
-            [day]: { ...prev[day], time: value },
-        }));
-    };
-
-    // Simpan ke backend (atau sesuaikan sesuai kebutuhan)
-    const handleSaveToleransiDays = () => {
-        router.put(`/interns/${intern.id}/update-toleransi`, toleransiDays, {
-            onSuccess: () => {
-                setShowToleransiModal(false);
-                addToast("Toleransi keterlambatan berhasil diubah!", "success");
-                router.reload();
-            },
-            onError: (errors) => {
-                addToast(
-                    "Gagal mengubah toleransi: " +
-                        Object.values(errors).join(", "),
-                    "error",
-                );
-            },
-        });
-    };
-
+    // ── Form data (edit info intern) ──────────────────────────
     const { data, setData, errors, reset } = useForm({
         name: intern?.name || "",
         division_id: String(intern?.division_id || ""),
@@ -133,14 +103,55 @@ export default function InternDetail({ intern, divisions }) {
         poin: intern?.poin ?? 5,
     });
 
-    const { addToast } = useToast();
+    /**
+     * * UI State Management
+     * ? Kenapa banyak state?
+     * ? - Setiap fitur punya lifecycle sendiri:
+     * ?   - modal buka/tutup
+     * ?   - form aktif/tidak
+     * ?   - selected item
+     *
+     * ! Trade-off:
+     * - Banyak state → verbose
+     * - Tapi lebih explicit & predictable
+     */
+
+    // ── UI State ──────────────────────────────────────────────
+    const [uploading, setUploading] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [showToleransiModal, setShowToleransiModal] = useState(false);
+
+    // ── Status kehadiran ──────────────────────────────────────
+    const [showStatusForm, setShowStatusForm] = useState(false);
+    const [currentAttendanceId, setCurrentAttendanceId] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState("");
+
+    // ── Jam Pulang ────────────────────────────────────────────
+    const [showCheckOutForm, setShowCheckOutForm] = useState(false);
+    const [editingCheckOutId, setEditingCheckOutId] = useState(null);
+    const [checkOutValue, setCheckOutValue] = useState("");
+
+    // ── Confirm modals ────────────────────────────────────────
+    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
+    const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] =
+        useState(false);
+
+    /**
+     * * Derived Values
+     * ? Kenapa dipisah?
+     * ? - Menghindari perhitungan ulang di JSX
+     * ? - Meningkatkan readability
+     *
+     * ! Contoh:
+     * - poinStyle → UI logic
+     * - renderJadwal → transform data → display
+     */
 
     const poin = intern.poin ?? 0;
     const poinStyle =
         poin < 3 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
 
-    const fingerprint = intern.fingerprint_data;
-    const fingerStyle = fingerprint
+    const fingerStyle = intern.fingerprint_data
         ? "bg-green-100 text-green-700"
         : "bg-red-100 text-red-700";
 
@@ -153,29 +164,22 @@ export default function InternDetail({ intern, divisions }) {
         if (intern.jumat) days.push("Jumat");
 
         if (days.length === 5) return "Setiap hari";
-
         return days.length > 0 ? days.join(", ") : "Belum ada jadwal";
     };
 
-    // Jadwal
-    const isAllDaysChecked = () => {
-        return (
-            data.senin && data.selasa && data.rabu && data.kamis && data.jumat
-        );
-    };
-
-    const handleToggleAllDays = (checked) => {
-        setData({
-            ...data,
-            senin: checked,
-            selasa: checked,
-            rabu: checked,
-            kamis: checked,
-            jumat: checked,
-        });
-    };
-
-    // Ubah Foto
+    /**
+     * * Photo Upload Handler
+     *
+     * ! Validasi:
+     * - Format file
+     * - Ukuran file (2MB)
+     *
+     * ! Flow:
+     * - User pilih file
+     * - Validasi
+     * - Upload via Inertia
+     * - Reload data
+     */
     const handlePhotoClick = () => {
         document.getElementById("photo-upload").click();
     };
@@ -195,7 +199,6 @@ export default function InternDetail({ intern, divisions }) {
             return;
         }
 
-        // Upload foto
         setUploading(true);
         const formData = new FormData();
         formData.append("foto", file);
@@ -217,89 +220,78 @@ export default function InternDetail({ intern, divisions }) {
         });
     };
 
-    // Arahkan ke page FingerPrint Enrollment
-    const handleFingerEnrollment = () => {
-        router.visit(`/interns/${intern.id}/create-fingerprint`);
-    };
-
-    // Simpan perubahan form
+    /**
+     * * Edit Intern Handler
+     *
+     * ? Kenapa pakai useForm (Inertia)?
+     * ? - Built-in error handling
+     * ? - Simplify binding input → backend
+     *
+     * ! Behavior:
+     * - Submit → PUT request
+     * - Success → close form
+     * - Cancel → reset state
+     */
     const handleSubmit = (e) => {
         e.preventDefault();
         router.put(`/interns/${intern.id}`, data, {
-            onSuccess: () => {
-                setShowForm(false);
-            },
+            onSuccess: () => setShowForm(false),
         });
     };
 
-    // Close form & reset data
     const handleCloseForm = () => {
         reset();
         setShowForm(false);
     };
 
-    // === FUNGSI HAPUS DATA INTERN===
-    const confirmDeleteIntern = () => {
-        setConfirmingDeletion(true);
-    };
+    // ============================================================
+    // HANDLERS — TOLERANSI
+    // ============================================================
 
-    const closeDeletionModal = () => {
-        setConfirmingDeletion(false);
-    };
-
-    const handleDeleteIntern = () => {
-        router.delete(route("interns.destroy", intern.id), {
+    const handleSaveToleransi = (toleransiDays) => {
+        router.put(`/interns/${intern.id}/update-toleransi`, toleransiDays, {
             onSuccess: () => {
-                addToast("Data berhasil dihapus selamanya.", "success");
-                setConfirmingDeletion(false);
-                // Opsi: Refresh halaman atau redirect jika perlu
-                window.location.reload();
+                setShowToleransiModal(false);
+                addToast("Toleransi keterlambatan berhasil diubah!", "success");
+                router.reload();
             },
-            onError: () => {
-                addToast("Gagal menghapus data.", "error");
-                setConfirmingDeletion(false);
+            onError: (errors) => {
+                addToast(
+                    "Gagal mengubah toleransi: " +
+                        Object.values(errors).join(", "),
+                    "error",
+                );
             },
         });
     };
 
-    const attendanceStyle = (status) => {
-        const styles = {
-            hadir: "bg-green-100 text-green-700",
-            izin: "bg-yellow-100 text-yellow-700",
-            sakit: "bg-indigo-100 text-indigo-700",
-            alpha: "bg-red-100 text-red-700",
-        };
-
-        return styles[status] || "bg-gray-100 text-gray-700";
-    };
-
-    const attendanceLabel = (status) => {
-        const labels = {
-            hadir: "Hadir",
-            izin: "Izin",
-            sakit: "Sakit",
-            alpha: "Alpha",
-        };
-
-        return labels[status] || "Tidak ada";
-    };
-
-    // ✅ TAMBAHKAN HANDLER untuk toggle form status
+    /**
+     * * Attendance Status Handler
+     *
+     * ? Kenapa pakai toggle pattern?
+     * ? - UX: klik lagi untuk close
+     * ? - Menghindari multiple dropdown terbuka
+     *
+     * ! State penting:
+     * - currentAttendanceId → row aktif
+     * - selectedStatus → value sementara
+     */
     const handleToggleStatusForm = (attendanceId, currentStatus) => {
-        setShowStatusForm(!showStatusForm);
-        setCurrentAttendanceId(attendanceId);
-        setSelectedStatus(currentStatus);
+        if (showStatusForm && currentAttendanceId === attendanceId) {
+            setShowStatusForm(false);
+            setCurrentAttendanceId(null);
+            setSelectedStatus("");
+        } else {
+            setShowStatusForm(true);
+            setCurrentAttendanceId(attendanceId);
+            setSelectedStatus(currentStatus);
+        }
     };
 
-    // ✅ TAMBAHKAN HANDLER untuk update status
-    const handleUpdateStatus = (e) => {
-        e.preventDefault();
-
+    const handleSaveStatus = (status) => {
         router.put(
             `/attendances/${currentAttendanceId}/status`,
-            {
-                status: selectedStatus,
-            },
+            { status },
             {
                 onSuccess: () => {
                     setShowStatusForm(false);
@@ -318,14 +310,24 @@ export default function InternDetail({ intern, divisions }) {
         );
     };
 
-    // ✅ TAMBAHKAN HANDLER untuk cancel
     const handleCancelStatusUpdate = () => {
         setShowStatusForm(false);
         setSelectedStatus("");
         setCurrentAttendanceId(null);
     };
 
-    // ✅ HANDLER untuk edit Jam Pulang
+    /**
+     * * Check-Out Handler
+     *
+     * ? Kenapa dipisah dari status?
+     * ? - Domain berbeda:
+     * ?   - Status → kehadiran
+     * ?   - CheckOut → waktu kerja
+     *
+     * ! Edge case:
+     * - Bisa null (belum checkout)
+     * - Bisa dihapus (reset)
+     */
     const handleToggleCheckOutForm = (attendanceId, currentCheckOut) => {
         if (showCheckOutForm && editingCheckOutId === attendanceId) {
             setShowCheckOutForm(false);
@@ -340,15 +342,10 @@ export default function InternDetail({ intern, divisions }) {
         }
     };
 
-    // ✅ HANDLER untuk update Jam Pulang
-    const handleUpdateCheckOut = (e) => {
-        e.preventDefault();
-
+    const handleSaveCheckOut = (value) => {
         router.put(
             `/attendances/${editingCheckOutId}/check-out`,
-            {
-                check_out: checkOutValue || null,
-            },
+            { check_out: value },
             {
                 onSuccess: () => {
                     setShowCheckOutForm(false);
@@ -367,36 +364,18 @@ export default function InternDetail({ intern, divisions }) {
         );
     };
 
-    // ✅ HANDLER untuk cancel edit Jam Pulang
     const handleCancelCheckOutUpdate = () => {
         setShowCheckOutForm(false);
         setEditingCheckOutId(null);
         setCheckOutValue("");
     };
 
-    // ✅ HANDLER untuk hapus Jam Pulang
-    const confirmDeleteCheckOut = () => {
-        setConfirmingCheckOutDeletion(true);
-    };
-
-    const closeCheckOutDeletionModal = () => {
-        // Tutup form edit jam pulang terlebih dahulu
-        setShowCheckOutForm(false);
-        setEditingCheckOutId(null);
-        setCheckOutValue("");
-        // Baru tutup modal konfirmasi
-        setConfirmingCheckOutDeletion(false);
-    };
-
     const handleDeleteCheckOut = () => {
         router.put(
             `/attendances/${editingCheckOutId}/check-out`,
-            {
-                check_out: null,
-            },
+            { check_out: null },
             {
                 onSuccess: () => {
-                    // Tutup semua modal dan form
                     setShowCheckOutForm(false);
                     setEditingCheckOutId(null);
                     setCheckOutValue("");
@@ -409,7 +388,6 @@ export default function InternDetail({ intern, divisions }) {
                             Object.values(errors).join(", "),
                         "error",
                     );
-                    // Tetap tutup modal bahkan jika error
                     setShowCheckOutForm(false);
                     setEditingCheckOutId(null);
                     setCheckOutValue("");
@@ -419,24 +397,135 @@ export default function InternDetail({ intern, divisions }) {
         );
     };
 
-    // ✅ TAMBAHKAN logic untuk pagination
-    const attendances = intern.attendances || [];
-    const totalPages = Math.ceil(attendances.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentAttendances = attendances.slice(startIndex, endIndex);
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
+    /**
+     * * Delete Intern Handler
+     *
+     * ! Danger Zone:
+     * - Menghapus semua data (attendance, foto, dll)
+     *
+     * ? Kenapa pakai confirm modal?
+     * ? - Mencegah destructive action tanpa sadar
+     */
+    const handleDeleteIntern = () => {
+        router.delete(route("interns.destroy", intern.id), {
+            onSuccess: () => {
+                addToast("Data berhasil dihapus selamanya.", "success");
+                setConfirmingDeletion(false);
+                window.location.reload();
+            },
+            onError: () => {
+                addToast("Gagal menghapus data.", "error");
+                setConfirmingDeletion(false);
+            },
+        });
     };
+
+    /**
+     * * Render Helper Pattern
+     *
+     * ? Kenapa tidak langsung di AttendanceTable?
+     * ? - Karena butuh akses ke state parent
+     * ? - AttendanceTable harus tetap generic
+     *
+     * ! Pattern:
+     * - Parent inject logic via render props
+     *
+     * ? Benefit:
+     * - Table reusable
+     * - Logic tetap centralized
+     */
+
+    /**
+     * * Render kolom Jam Pulang + CheckOutForm
+     * ! Dipakai sebagai render prop di AttendanceTable
+     */
+    const renderCheckOut = (attendance, indexInPage, totalInPage) => {
+        const position =
+            indexInPage >= totalInPage - (totalInPage > 4 ? totalInPage - 3 : 0)
+                ? "top"
+                : "bottom";
+
+        return (
+            <div className="relative">
+                <button
+                    onClick={() =>
+                        handleToggleCheckOutForm(
+                            attendance.id,
+                            attendance.check_out,
+                        )
+                    }
+                    className="cursor-pointer rounded px-2 py-1 hover:bg-gray-100"
+                >
+                    {attendance.check_out
+                        ? attendance.check_out.slice(0, 5)
+                        : "-"}
+                </button>
+
+                {!confirmingCheckOutDeletion && (
+                    <CheckOutForm
+                        show={
+                            showCheckOutForm &&
+                            editingCheckOutId === attendance.id
+                        }
+                        position={position}
+                        value={checkOutValue}
+                        setValue={setCheckOutValue}
+                        onSave={handleSaveCheckOut}
+                        onDelete={() => setConfirmingCheckOutDeletion(true)}
+                        onCancel={handleCancelCheckOutUpdate}
+                    />
+                )}
+            </div>
+        );
+    };
+
+    /**
+     * * Render kolom Status + EditStatusForm
+     * ! Dipakai sebagai render prop di AttendanceTable
+     */
+    const renderStatus = (attendance, indexInPage, totalInPage) => {
+        const position = indexInPage >= 3 ? "top" : "bottom";
+
+        return (
+            <div className="relative">
+                <button
+                    onClick={() =>
+                        handleToggleStatusForm(attendance.id, attendance.status)
+                    }
+                    className={`rounded-md px-2 py-0.5 font-medium ${getAttendanceStyle(attendance.status)}`}
+                >
+                    {getAttendanceLabel(attendance.status)}
+                </button>
+
+                <EditStatusForm
+                    show={
+                        showStatusForm && currentAttendanceId === attendance.id
+                    }
+                    position={position}
+                    selectedStatus={selectedStatus}
+                    setSelectedStatus={setSelectedStatus}
+                    onSave={handleSaveStatus}
+                    onCancel={handleCancelStatusUpdate}
+                    getStyle={getAttendanceStyle}
+                    getLabel={getAttendanceLabel}
+                />
+            </div>
+        );
+    };
+
+    // ============================================================
+    // RENDER
+    // ============================================================
 
     return (
         <div className="px-8 py-6">
-            <div className="flex justify-between relative">
-                {/* Foto & Detail Singkat Karyawan */}
+            {/* ── Profile Section ─────────────────────────────── */}
+            <div className="relative flex justify-between">
+                {/* Foto & Info Singkat */}
                 <div className="flex gap-4">
+                    {/* Foto */}
                     <div
-                        className="w-40 h-40 relative group cursor-pointer"
+                        className="group relative h-40 w-40 cursor-pointer"
                         onClick={handlePhotoClick}
                     >
                         {intern.foto ? (
@@ -444,10 +533,10 @@ export default function InternDetail({ intern, divisions }) {
                                 <img
                                     src={`/storage/${intern.foto}`}
                                     alt={intern.name}
-                                    className="w-full h-full object-cover object-top rounded-xl"
+                                    className="h-full w-full rounded-xl object-cover object-top"
                                 />
-                                <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                    <span className="text-white font-medium">
+                                <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black bg-opacity-0 opacity-0 transition-all duration-300 group-hover:bg-opacity-50 group-hover:opacity-100">
+                                    <span className="font-medium text-white">
                                         {uploading
                                             ? "Mengupload..."
                                             : "Ubah Foto"}
@@ -455,7 +544,7 @@ export default function InternDetail({ intern, divisions }) {
                                 </div>
                             </>
                         ) : (
-                            <div className="w-48 h-64 bg-gray-200 rounded-xl flex items-center justify-center text-gray-500">
+                            <div className="flex h-64 w-48 items-center justify-center rounded-xl bg-gray-200 text-gray-500">
                                 {uploading ? "Mengupload..." : "Upload Foto"}
                             </div>
                         )}
@@ -468,20 +557,18 @@ export default function InternDetail({ intern, divisions }) {
                             disabled={uploading}
                         />
                     </div>
+
+                    {/* Info */}
                     <div className="flex flex-col gap-4">
-                        <div className="flex items-center gap-2">
-                            <p className="font-bold text-2xl">{intern.name}</p>
-                        </div>
+                        <p className="text-2xl font-bold">{intern.name}</p>
 
-                        <div className="flex items-center gap-2">
-                            <p className="font-medium text-md">
-                                {intern.division?.nama_divisi || "-"}
-                            </p>
-                        </div>
+                        <p className="text-md font-medium">
+                            {intern.division?.nama_divisi || "-"}
+                        </p>
 
-                        {/* Jadwal */}
+                        {/* Jadwal + Toleransi */}
                         <div className="flex items-center gap-4">
-                            <p className="text-sm flex gap-1 items-center font-medium text-gray-500">
+                            <p className="flex items-center gap-1 text-sm font-medium text-gray-500">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
                                     width="18"
@@ -498,10 +585,11 @@ export default function InternDetail({ intern, divisions }) {
                                 </svg>
                                 {renderJadwal()}
                             </p>
+
                             <button
-                                className="flex gap-1 items-center"
-                                onClick={handleOpenToleransiModal}
                                 type="button"
+                                className="flex items-center gap-1"
+                                onClick={() => setShowToleransiModal(true)}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -518,233 +606,21 @@ export default function InternDetail({ intern, divisions }) {
                             </button>
                         </div>
 
-                        {/* Modal Toleransi Keterlambatan */}
-                        {showToleransiModal && (
-                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                                <div className="bg-white rounded-lg shadow-lg p-6 w-[40%]">
-                                    <h2 className="font-semibold text-lg mb-4">
-                                        Pilih Hari Toleransi Terlambat
-                                    </h2>
-
-                                    <p className="text-xs mb-4">
-                                        Pilih hari di mana toleransi
-                                        keterlambatan diperbolehkan. Seperti ada
-                                        jadwal kuliah pagi atau keperluan lain.
-                                    </p>
-
-                                    <div className="grid grid-cols-2 gap-2 mb-4">
-                                        {/* Checkbox per hari */}
-                                        {/* Senin */}
-                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    toleransiDays.senin.checked
-                                                }
-                                                onChange={() =>
-                                                    handleToleransiDayChange(
-                                                        "senin",
-                                                    )
-                                                }
-                                                className="rounded-sm cursor-pointer focus:ring-transparent"
-                                            />
-                                            <span className="text-sm text-gray-700 capitalize">
-                                                Senin
-                                            </span>
-                                            <input
-                                                type="time"
-                                                min="07:00"
-                                                max="17:00"
-                                                step="60"
-                                                value={toleransiDays.senin.time}
-                                                onChange={(e) =>
-                                                    handleToleransiTimeChange(
-                                                        "senin",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !toleransiDays.senin.checked
-                                                }
-                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
-                                            />
-                                        </label>
-                                        {/* Selasa */}
-                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    toleransiDays.selasa.checked
-                                                }
-                                                onChange={() =>
-                                                    handleToleransiDayChange(
-                                                        "selasa",
-                                                    )
-                                                }
-                                                className="rounded-sm cursor-pointer focus:ring-transparent"
-                                            />
-                                            <span className="text-sm text-gray-700 capitalize">
-                                                Selasa
-                                            </span>
-                                            <input
-                                                type="time"
-                                                min="07:00"
-                                                max="17:00"
-                                                step="60"
-                                                value={
-                                                    toleransiDays.selasa.time
-                                                }
-                                                onChange={(e) =>
-                                                    handleToleransiTimeChange(
-                                                        "selasa",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !toleransiDays.selasa
-                                                        .checked
-                                                }
-                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
-                                            />
-                                        </label>
-                                        {/* Rabu */}
-                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    toleransiDays.rabu.checked
-                                                }
-                                                onChange={() =>
-                                                    handleToleransiDayChange(
-                                                        "rabu",
-                                                    )
-                                                }
-                                                className="rounded-sm cursor-pointer focus:ring-transparent"
-                                            />
-                                            <span className="text-sm text-gray-700 capitalize">
-                                                Rabu
-                                            </span>
-                                            <input
-                                                type="time"
-                                                min="07:00"
-                                                max="17:00"
-                                                step="60"
-                                                value={toleransiDays.rabu.time}
-                                                onChange={(e) =>
-                                                    handleToleransiTimeChange(
-                                                        "rabu",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !toleransiDays.rabu.checked
-                                                }
-                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
-                                            />
-                                        </label>
-                                        {/* Kamis */}
-                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    toleransiDays.kamis.checked
-                                                }
-                                                onChange={() =>
-                                                    handleToleransiDayChange(
-                                                        "kamis",
-                                                    )
-                                                }
-                                                className="rounded-sm cursor-pointer focus:ring-transparent"
-                                            />
-                                            <span className="text-sm text-gray-700 capitalize">
-                                                Kamis
-                                            </span>
-                                            <input
-                                                type="time"
-                                                min="07:00"
-                                                max="17:00"
-                                                step="60"
-                                                value={toleransiDays.kamis.time}
-                                                onChange={(e) =>
-                                                    handleToleransiTimeChange(
-                                                        "kamis",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !toleransiDays.kamis.checked
-                                                }
-                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
-                                            />
-                                        </label>
-                                        {/* Jumat */}
-                                        <label className="flex items-center justify-between gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                            <input
-                                                type="checkbox"
-                                                checked={
-                                                    toleransiDays.jumat.checked
-                                                }
-                                                onChange={() =>
-                                                    handleToleransiDayChange(
-                                                        "jumat",
-                                                    )
-                                                }
-                                                className="rounded-sm cursor-pointer focus:ring-transparent"
-                                            />
-                                            <span className="text-sm text-gray-700 capitalize">
-                                                Jumat
-                                            </span>
-                                            <input
-                                                type="time"
-                                                min="07:00"
-                                                max="17:00"
-                                                step="60"
-                                                value={toleransiDays.jumat.time}
-                                                onChange={(e) =>
-                                                    handleToleransiTimeChange(
-                                                        "jumat",
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                disabled={
-                                                    !toleransiDays.jumat.checked
-                                                }
-                                                className="ml-2 border rounded px-2 py-1 text-sm w-24 cursor-pointer"
-                                            />
-                                        </label>
-                                    </div>
-
-                                    <div className="flex gap-2 justify-end">
-                                        <SecondaryButton
-                                            onClick={() =>
-                                                setShowToleransiModal(false)
-                                            }
-                                            className="justify-center flex-1"
-                                        >
-                                            Batal
-                                        </SecondaryButton>
-                                        <PrimaryButton
-                                            onClick={handleSaveToleransiDays}
-                                            className="justify-center flex-1"
-                                        >
-                                            Simpan
-                                        </PrimaryButton>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Poin & Status Fingerprint */}
+                        {/* Poin + Fingerprint + Edit */}
                         <div className="flex gap-2">
                             <p
-                                className={`${poinStyle} w-fit  py-0.5 px-2 rounded-lg text-xs font-semibold flex items-center`}
+                                className={`${poinStyle} flex w-fit items-center rounded-lg px-2 py-0.5 text-xs font-semibold`}
                             >
                                 {poin} Poin
                             </p>
-                            {/* Kalo di klik bakal ke Fingerprint Enrollment */}
+
                             <button
-                                onClick={handleFingerEnrollment}
-                                className={`${fingerStyle} rounded-full flex items-center px-2`}
+                                onClick={() =>
+                                    router.visit(
+                                        `/interns/${intern.id}/create-fingerprint`,
+                                    )
+                                }
+                                className={`${fingerStyle} flex items-center rounded-full px-2`}
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -760,11 +636,11 @@ export default function InternDetail({ intern, divisions }) {
                                     />
                                 </svg>
                                 {intern.fingerprint_data ? (
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <span className="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
                                         Terdaftar
                                     </span>
                                 ) : (
-                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <span className="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">
                                         Belum Terdaftar
                                     </span>
                                 )}
@@ -780,210 +656,30 @@ export default function InternDetail({ intern, divisions }) {
                     </div>
                 </div>
 
-                {/* Form edit info */}
-                {showForm && (
-                    <form
-                        action=""
-                        className="bg-white shadow-lg border absolute left-[23rem] px-6 py-3 rounded-md space-y-4 w-5/12 z-20"
-                        onSubmit={handleSubmit}
-                    >
-                        <p className="font-medium text-lg mb-2">
-                            Edit Informasi Karyawan
-                        </p>
-                        {/* Nama */}
-                        <div>
-                            <InputLabel htmlFor="name" value="Nama" />
-                            <TextInput
-                                id="name"
-                                type="text"
-                                name="name"
-                                value={data.name}
-                                onChange={(e) =>
-                                    setData("name", e.target.value)
-                                }
-                                className="rounded-md border-gray-400 w-full"
-                            />
-                        </div>
+                {/* Form Edit Info */}
+                <InternForm
+                    show={showForm}
+                    setShow={setShowForm}
+                    data={data}
+                    setData={setData}
+                    errors={errors}
+                    divisions={divisions}
+                    onSubmit={handleSubmit}
+                    onCancel={handleCloseForm}
+                />
 
-                        {/* Divisi */}
-                        <div>
-                            <InputLabel htmlFor="division_id" value="Divisi" />
-                            <CustomSelect
-                                value={String(data.division_id)}
-                                onChange={(value) =>
-                                    setData("division_id", value)
-                                }
-                                options={divisions.map((div) => ({
-                                    value: String(div.id),
-                                    label: div.nama_divisi,
-                                }))}
-                                placeholder="Pilih Divisi"
-                                hasError={errors.division_id}
-                            />
-                            <InputError
-                                message={errors.division_id}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        {/* Jadwal */}
-                        <div className="mt-2">
-                            <InputLabel value="Jadwal (Pilih hari masuk)" />
-                            <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isAllDaysChecked()}
-                                        onChange={(e) =>
-                                            handleToggleAllDays(
-                                                e.target.checked,
-                                            )
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Setiap Hari
-                                    </span>
-                                </label>
-
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.senin}
-                                        onChange={(e) =>
-                                            setData("senin", e.target.checked)
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Senin
-                                    </span>
-                                </label>
-
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.selasa}
-                                        onChange={(e) =>
-                                            setData("selasa", e.target.checked)
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Selasa
-                                    </span>
-                                </label>
-
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.rabu}
-                                        onChange={(e) =>
-                                            setData("rabu", e.target.checked)
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Rabu
-                                    </span>
-                                </label>
-
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.kamis}
-                                        onChange={(e) =>
-                                            setData("kamis", e.target.checked)
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Kamis
-                                    </span>
-                                </label>
-
-                                <label className="flex items-center gap-2 rounded-md border border-gray-200 px-3 py-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={data.jumat}
-                                        onChange={(e) =>
-                                            setData("jumat", e.target.checked)
-                                        }
-                                        className="rounded-sm cursor-pointer focus:ring-transparent"
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Jumat
-                                    </span>
-                                </label>
-                            </div>
-
-                            {/* kalau backend validasi per field, ini nampilin error pertama yang ketemu */}
-                            {(errors.senin ||
-                                errors.selasa ||
-                                errors.rabu ||
-                                errors.kamis ||
-                                errors.jumat) && (
-                                <InputError
-                                    message={
-                                        errors.senin ||
-                                        errors.selasa ||
-                                        errors.rabu ||
-                                        errors.kamis ||
-                                        errors.jumat
-                                    }
-                                    className="mt-2"
-                                />
-                            )}
-                        </div>
-
-                        {/* Poin */}
-                        <div className="">
-                            <InputLabel htmlFor="poin" value="Poin" />
-                            <TextInput
-                                id="poin"
-                                type="number"
-                                min="0"
-                                name="poin"
-                                value={data.poin}
-                                onChange={(e) =>
-                                    setData("poin", Number(e.target.value))
-                                }
-                                className="mt-1 block w-full"
-                                placeholder="0"
-                            />
-                            <InputError
-                                message={errors.poin}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        {/* Aksi */}
-                        <div className="flex gap-2 justify-end">
-                            <SecondaryButton
-                                onClick={handleCloseForm}
-                                className="w-full justify-center"
-                            >
-                                Batal
-                            </SecondaryButton>
-                            <PrimaryButton className="w-full justify-center">
-                                Simpan
-                            </PrimaryButton>
-                        </div>
-                    </form>
-                )}
-
-                {/* Detail Kehadiran Karyawan */}
+                {/* Statistik Kehadiran */}
                 <div className="flex flex-col justify-between">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <p className="text-sm">Total Kehadiran</p>
-                            <p className="font-medium text-lg">
+                            <p className="text-lg font-medium">
                                 {intern.total_kehadiran || 0} hari
                             </p>
                         </div>
                         <div>
                             <p className="text-sm">Total Jam</p>
-                            <p className="font-medium text-lg">
+                            <p className="text-lg font-medium">
                                 {intern.total_jam || 0} jam
                             </p>
                         </div>
@@ -992,7 +688,7 @@ export default function InternDetail({ intern, divisions }) {
                                 Jam Masuk{" "}
                                 <span className="text-xs">(rata-rata)</span>
                             </p>
-                            <p className="font-medium text-lg">
+                            <p className="text-lg font-medium">
                                 {intern.avg_jam_masuk || "-"}
                             </p>
                         </div>
@@ -1001,14 +697,14 @@ export default function InternDetail({ intern, divisions }) {
                                 Jam Pulang{" "}
                                 <span className="text-xs">(rata-rata)</span>
                             </p>
-                            <p className="font-medium text-lg">
+                            <p className="text-lg font-medium">
                                 {intern.avg_jam_pulang || "-"}
                             </p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-3 items-center border-2 border-gray-300 text-center rounded-lg text-sm ">
+
+                    <div className="grid grid-cols-3 items-center rounded-lg border-2 border-gray-300 text-center text-sm">
                         <p className="flex items-center gap-1 font-medium">
-                            {" "}
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="23px"
@@ -1025,7 +721,7 @@ export default function InternDetail({ intern, divisions }) {
                             </span>{" "}
                             Hadir
                         </p>
-                        <p className="border-r-2 border-l-2 border-gray-300 flex items-center gap-1 font-medium">
+                        <p className="flex items-center gap-1 border-l-2 border-r-2 border-gray-300 font-medium">
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 width="23px"
@@ -1063,19 +759,21 @@ export default function InternDetail({ intern, divisions }) {
                 </div>
             </div>
 
-            <div className="mt-8 flex justify-between items-center">
-                <p className="font-semibold text-lg">Riwayat Kehadiran</p>
+            {/* ── Riwayat Kehadiran ────────────────────────────── */}
+            <div className="mt-8 flex items-center justify-between">
+                <p className="text-lg font-semibold">Riwayat Kehadiran</p>
 
                 <div className="flex gap-4">
                     <DownloadBtn
                         onClick={`/interns/${intern.id}/export-attendance`}
                     />
+
                     <button
-                        onClick={confirmDeleteIntern}
-                        className="text-red-700 hover:bg-red-100 font-medium rounded-lg text-sm px-4 py-2 text-center inline-flex items-center"
+                        onClick={() => setConfirmingDeletion(true)}
+                        className="inline-flex items-center rounded-lg px-4 py-2 text-center text-sm font-medium text-red-700 hover:bg-red-100"
                     >
                         <svg
-                            className="w-4 h-4 mr-2"
+                            className="mr-2 h-4 w-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -1085,452 +783,75 @@ export default function InternDetail({ intern, divisions }) {
                                 strokeLinejoin="round"
                                 strokeWidth="2"
                                 d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            ></path>
+                            />
                         </svg>
                         Hapus Intern
                     </button>
                 </div>
             </div>
 
-            <table className="w-full mt-2">
-                <thead className="bg-gray-100 border-b-2 border-gray-400 text-left">
-                    <tr>
-                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
-                            Tanggal
-                        </th>
-                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
-                            Hari
-                        </th>
-                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
-                            Jam Masuk
-                        </th>
-                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
-                            Jam Pulang
-                        </th>
-                        <th className="px-4 py-2 text-gray-500 font-semibold text-md">
-                            Status Kehadiran
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {/* Tabel Dinamis - Row tabel otomatis bertambah sesuai dengan jadwal intern & isinya juga*/}
-                    {currentAttendances.length > 0 ? (
-                        currentAttendances?.map((attendance) => (
-                            <tr
-                                key={attendance.id}
-                                className="hover:bg-gray-50 border-b-2 border-gray-400"
-                            >
-                                <td className="px-4 py-2">{attendance.date}</td>
-                                <td className="px-4 py-2">{attendance.hari}</td>
-                                <td className="px-4 py-2 ">
-                                    <div className="flex gap-1 items-center">
-                                        {attendance.check_in
-                                            ? attendance.check_in.slice(0, 5)
-                                            : "-"}
-                                        {attendance.terlambat && (
-                                            <span className="text-xs flex items-center bg-yellow-100 text-yellow-700 py-0.5 px-1 font-medium rounded-md">
-                                                (+{attendance.terlambat}m)
-                                            </span>
-                                        )}
-                                    </div>
-                                </td>
-                                <td className="px-4 py-2 relative">
-                                    <button
-                                        onClick={() =>
-                                            handleToggleCheckOutForm(
-                                                attendance.id,
-                                                attendance.check_out,
-                                            )
-                                        }
-                                        className="hover:bg-gray-100 px-2 py-1 rounded cursor-pointer"
-                                    >
-                                        {attendance.check_out
-                                            ? attendance.check_out.slice(0, 5)
-                                            : "-"}
-                                    </button>
+            {/* Tabel Kehadiran */}
+            <AttendanceTable
+                attendances={intern.attendances || []}
+                renderCheckOut={(attendance, indexInPage, totalInPage) =>
+                    renderCheckOut(attendance, indexInPage, totalInPage)
+                }
+                renderStatus={(attendance, indexInPage, totalInPage) =>
+                    renderStatus(attendance, indexInPage, totalInPage)
+                }
+            />
 
-                                    {/* Form Edit Jam Pulang */}
-                                    {showCheckOutForm &&
-                                        editingCheckOutId === attendance.id &&
-                                        !confirmingCheckOutDeletion && (
-                                            <form
-                                                onSubmit={handleUpdateCheckOut}
-                                                onClick={(e) =>
-                                                    e.stopPropagation()
-                                                }
-                                                className={`bg-white shadow-lg rounded-lg absolute z-10 p-4 w-64 ${(() => {
-                                                    const indexInPage =
-                                                        currentAttendances.indexOf(
-                                                            attendance,
-                                                        );
-                                                    return indexInPage >= 3
-                                                        ? "bottom-20 right-0"
-                                                        : "top-10 right-0";
-                                                })()}`}
-                                            >
-                                                <p className="font-semibold text-sm mb-2">
-                                                    Edit Jam Pulang
-                                                </p>
-                                                <input
-                                                    type="time"
-                                                    value={checkOutValue}
-                                                    onChange={(e) =>
-                                                        setCheckOutValue(
-                                                            e.target.value,
-                                                        )
-                                                    }
-                                                    min="00:00"
-                                                    max="23:59"
-                                                    step="60"
-                                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
-                                                />
-                                                <div className="flex gap-2 mt-3">
-                                                    <PrimaryButton
-                                                        type="submit"
-                                                        className="flex-1 justify-center text-xs"
-                                                    >
-                                                        Simpan
-                                                    </PrimaryButton>
-                                                    <button
-                                                        type="button"
-                                                        onClick={
-                                                            confirmDeleteCheckOut
-                                                        }
-                                                        className="flex-1 justify-center text-xs bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-md transition duration-150 ease-in-out"
-                                                    >
-                                                        Hapus
-                                                    </button>
-                                                </div>
-                                                <SecondaryButton
-                                                    type="button"
-                                                    onClick={
-                                                        handleCancelCheckOutUpdate
-                                                    }
-                                                    className="w-full justify-center text-xs mt-2"
-                                                >
-                                                    Batal
-                                                </SecondaryButton>
-                                            </form>
-                                        )}
-                                </td>
-                                <td className="px-4 py-2">
-                                    <button
-                                        onClick={() =>
-                                            handleToggleStatusForm(
-                                                attendance.id,
-                                                attendance.status,
-                                            )
-                                        }
-                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle(attendance.status)}`}
-                                    >
-                                        {attendanceLabel(attendance.status)}
-                                    </button>
+            {/* ── Modals ───────────────────────────────────────── */}
 
-                                    {/* Ubah Status Kehadiran */}
-                                    {showStatusForm &&
-                                        currentAttendanceId ===
-                                            attendance.id && (
-                                            <form
-                                                onSubmit={handleUpdateStatus}
-                                                className={`bg-white shadow-lg gap-2 rounded-lg absolute w-50 z-10 ${
-                                                    // ✅ Hitung posisi row dalam halaman saat ini (0-6)
-                                                    (() => {
-                                                        const indexInPage =
-                                                            currentAttendances.indexOf(
-                                                                attendance,
-                                                            );
-                                                        // Jika row ke-4 atau lebih (row 5, 6, 7), tampilkan form di atas
-                                                        return indexInPage >= 3
-                                                            ? "bottom-20 right-20"
-                                                            : "right-20";
-                                                    })()
-                                                }`}
-                                            >
-                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3 rounded-t-lg">
-                                                    <input
-                                                        type="radio"
-                                                        name="status kehadiran"
-                                                        value="hadir"
-                                                        checked={
-                                                            selectedStatus ===
-                                                            "hadir"
-                                                        }
-                                                        onChange={(e) =>
-                                                            setSelectedStatus(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                                    />
-                                                    <span
-                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("hadir")}`}
-                                                    >
-                                                        {attendanceLabel(
-                                                            "hadir",
-                                                        )}
-                                                    </span>
-                                                </label>
-                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                                    <input
-                                                        type="radio"
-                                                        name="status kehadiran"
-                                                        value="izin"
-                                                        checked={
-                                                            selectedStatus ===
-                                                            "izin"
-                                                        }
-                                                        onChange={(e) =>
-                                                            setSelectedStatus(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                                    />
-                                                    <span
-                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("izin")}`}
-                                                    >
-                                                        {attendanceLabel(
-                                                            "izin",
-                                                        )}
-                                                    </span>
-                                                </label>
-                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                                    <input
-                                                        type="radio"
-                                                        name="status kehadiran"
-                                                        value="sakit"
-                                                        checked={
-                                                            selectedStatus ===
-                                                            "sakit"
-                                                        }
-                                                        onChange={(e) =>
-                                                            setSelectedStatus(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                                    />
-                                                    <span
-                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("sakit")}`}
-                                                    >
-                                                        {attendanceLabel(
-                                                            "sakit",
-                                                        )}
-                                                    </span>
-                                                </label>
-                                                <label className="flex gap-2 items-center hover:bg-gray-100 cursor-pointer px-3 py-3">
-                                                    <input
-                                                        type="radio"
-                                                        name="status kehadiran"
-                                                        value="alpha"
-                                                        checked={
-                                                            selectedStatus ===
-                                                            "alpha"
-                                                        }
-                                                        onChange={(e) =>
-                                                            setSelectedStatus(
-                                                                e.target.value,
-                                                            )
-                                                        }
-                                                        className="appearance-none border-2 border-blue-700 rounded-full checked:bg-blue-700 checked:border-blue-700 checked:shadow-[inset_0_0_0_9px_rgb(29,78,216)] transition duration-200 focus:ring-0 focus:ring-offset-0 focus:outline-none cursor-pointer"
-                                                    />
-                                                    <span
-                                                        className={`py-0.5 px-2 rounded-md font-medium ${attendanceStyle("alpha")}`}
-                                                    >
-                                                        {attendanceLabel(
-                                                            "alpha",
-                                                        )}
-                                                    </span>
-                                                </label>
-                                                <div className="flex gap-2 my-2 w-full">
-                                                    <PrimaryButton
-                                                        type="submit"
-                                                        className="flex-1 justify-center text-sm ml-2"
-                                                    >
-                                                        Simpan
-                                                    </PrimaryButton>
-                                                    <SecondaryButton
-                                                        type="button"
-                                                        onClick={
-                                                            handleCancelStatusUpdate
-                                                        }
-                                                        className="flex-1 justify-center text-sm mr-2"
-                                                    >
-                                                        Batal
-                                                    </SecondaryButton>
-                                                </div>
-                                            </form>
-                                        )}
-                                </td>
-                            </tr>
-                        ))
-                    ) : (
-                        <tr>
-                            <td
-                                colSpan="5"
-                                className="px-4 py-8 text-center text-gray-500"
-                            >
-                                Belum ada riwayat kehadiran
-                            </td>
-                        </tr>
-                    )}
-                </tbody>
-            </table>
+            {/* Toleransi */}
+            <ToleransiModal
+                show={showToleransiModal}
+                intern={intern}
+                onClose={() => setShowToleransiModal(false)}
+                onSave={handleSaveToleransi}
+            />
 
-            {/* ✅ TAMBAHKAN Pagination Controls */}
-            {totalPages >= 0 && (
-                <div className="flex justify-between items-center mt-4">
-                    <p className="text-gray-500">
-                        Menampilkan {endIndex} dari {attendances.length} data
-                    </p>
-
-                    <div className="flex gap-2 items-center">
-                        <button
-                            onClick={() => handlePageChange(currentPage - 1)}
-                            disabled={currentPage === 1}
-                            className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                        >
-                            Previous
-                        </button>
-
-                        {[...Array(totalPages)].map((_, index) => {
-                            const page = index + 1;
-                            return (
-                                <button
-                                    key={page}
-                                    onClick={() => handlePageChange(page)}
-                                    className={`px-3 py-1 rounded-md ${
-                                        currentPage === page
-                                            ? "bg-blue-700 text-white"
-                                            : "border border-gray-300 hover:bg-gray-50"
-                                    }`}
-                                >
-                                    {page}
-                                </button>
-                            );
-                        })}
-
-                        <button
-                            onClick={() => handlePageChange(currentPage + 1)}
-                            disabled={currentPage === totalPages}
-                            className="px-3 py-1 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                        >
-                            Next
-                        </button>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Konfirmasi Hapus Intern */}
-            {confirmingDeletion && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-500/75"
-                    onClick={closeDeletionModal}
-                >
-                    <div
-                        className="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 p-6"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <h2 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6 text-red-500"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                />
-                            </svg>
-                            PERINGATAN: Apakah Anda yakin ingin menghapus "
-                            {intern.name}"?
-                        </h2>
-                        <div className="mt-4 text-sm text-gray-600 space-y-2">
-                            <p className="font-semibold">
-                                Semua data riwayat absensi, poin, dan foto akan{" "}
-                                <span className="font-bold text-red-700">
-                                    HILANG PERMANEN.
-                                </span>
-                            </p>
-                            <p>
-                                Jika ini data duplikat, pastikan Anda menghapus
-                                yang benar.
-                            </p>
-                            <p>
-                                Jika ini data lama, silahkan download data
-                                kehadirannya dulu jika ingin membackupnya.
-                            </p>
-                        </div>
-                        <div className="mt-6 flex justify-end">
-                            <SecondaryButton onClick={closeDeletionModal}>
-                                Batal
-                            </SecondaryButton>
-                            <DangerButton
-                                className="ml-3"
-                                onClick={handleDeleteIntern}
-                            >
-                                Hapus Permanen
-                            </DangerButton>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Modal Konfirmasi Hapus Jam Pulang */}
-            {confirmingCheckOutDeletion && (
-                <div
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-500/75"
-                    onClick={closeCheckOutDeletionModal}
-                >
-                    <div
-                        className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6 relative"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            onClick={closeCheckOutDeletionModal}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-6 w-6"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M6 18L18 6M6 6l12 12"
-                                />
-                            </svg>
-                        </button>
-                        <h2 className="text-lg font-medium text-gray-900 pr-8">
-                            Yakin ingin menghapus jam pulang?
-                        </h2>
-                        <p className="mt-1 text-sm text-gray-600">
-                            Tindakan ini tidak dapat dibatalkan.
+            {/* Konfirmasi Hapus Intern */}
+            <ConfirmModal
+                show={confirmingDeletion}
+                title={`PERINGATAN: Apakah Anda yakin ingin menghapus "${intern.name}"?`}
+                description={
+                    <div className="space-y-2">
+                        <p className="font-semibold">
+                            Semua data riwayat absensi, poin, dan foto akan{" "}
+                            <span className="font-bold text-red-700">
+                                HILANG PERMANEN.
+                            </span>
                         </p>
-                        <div className="mt-6 flex justify-end">
-                            <SecondaryButton
-                                onClick={closeCheckOutDeletionModal}
-                            >
-                                Batal
-                            </SecondaryButton>
-                            <DangerButton
-                                className="ml-3"
-                                onClick={handleDeleteCheckOut}
-                            >
-                                Hapus
-                            </DangerButton>
-                        </div>
+                        <p>
+                            Jika ini data duplikat, pastikan Anda menghapus yang
+                            benar.
+                        </p>
+                        <p>
+                            Jika ini data lama, silahkan download data
+                            kehadirannya dulu jika ingin membackupnya.
+                        </p>
                     </div>
-                </div>
-            )}
+                }
+                confirmText="Hapus Permanen"
+                onCancel={() => setConfirmingDeletion(false)}
+                onConfirm={handleDeleteIntern}
+            />
+
+            {/* Konfirmasi Hapus Jam Pulang */}
+            <ConfirmModal
+                show={confirmingCheckOutDeletion}
+                title="Yakin ingin menghapus jam pulang?"
+                description="Tindakan ini tidak dapat dibatalkan."
+                confirmText="Hapus"
+                onCancel={() => {
+                    setShowCheckOutForm(false);
+                    setEditingCheckOutId(null);
+                    setCheckOutValue("");
+                    setConfirmingCheckOutDeletion(false);
+                }}
+                onConfirm={handleDeleteCheckOut}
+            />
         </div>
     );
 }

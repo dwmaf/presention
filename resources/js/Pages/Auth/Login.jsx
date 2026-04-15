@@ -7,7 +7,59 @@ import TextInput from "@/Components/TextInput";
 import GuestLayout from "@/Layouts/GuestLayout";
 import { Head, Link, useForm } from "@inertiajs/react";
 
+/**
+ * * Login Page Component
+ * * ----------------------------------------
+ * * Halaman autentikasi untuk admin menggunakan Inertia.js.
+ *
+ * ? Kenapa pakai Inertia useForm?
+ * ? - Menggabungkan state + request + error handling dalam satu hook
+ * ? - Mengurangi boilerplate (tidak perlu axios + state manual)
+ * ? - Error dari backend langsung terintegrasi ke UI
+ *
+ * ! Responsibility:
+ * - Mengelola state form login (email, password, remember)
+ * - Mengirim request login ke server
+ * - Menampilkan error validasi dari backend
+ * - Menangani UI interaktif (toggle password visibility)
+ *
+ * ! Tidak bertanggung jawab:
+ * - Validasi kredensial (backend)
+ * - Redirect setelah login (ditangani server / middleware)
+ *
+ * @param {Object} props
+ * @param {string|null} props.status
+ *   → Pesan status dari server (misal: reset password berhasil)
+ *
+ * @param {boolean} props.canResetPassword
+ *   → Menentukan apakah fitur reset password tersedia
+ *   → (saat ini tidak digunakan karena UI di-comment)
+ *
+ * ? Behavior penting:
+ * - Password otomatis di-reset setelah submit (security best practice)
+ * - Toggle show/hide password tidak mempengaruhi value input
+ * - Error akan muncul secara inline pada masing-masing field
+ *
+ * ? Struktur state (useForm):
+ * {
+ *   email: string,
+ *   password: string,
+ *   remember: boolean
+ * }
+ *
+ * ? UX Notes:
+ * - Placeholder digunakan sebagai label untuk desain minimal
+ * - Icon mata digunakan untuk meningkatkan usability password input
+ * - Checkbox "remember" untuk persistent login session
+ */
 export default function Login({ status, canResetPassword }) {
+    /**
+     * * Form state (Inertia)
+     * * ----------------------------------------
+     * * Kenapa useForm?
+     * * - Built-in handling request + validation error
+     * * - Lebih clean dibanding useState manual
+     */
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
         password: "",
@@ -16,6 +68,11 @@ export default function Login({ status, canResetPassword }) {
 
     const [showPassword, setShowPassword] = useState(false);
 
+    /**
+     * * Handle submit login
+     * * ----------------------------------------
+     * * Reset password setelah submit (security)
+     */
     const submit = (e) => {
         e.preventDefault();
 
@@ -33,7 +90,8 @@ export default function Login({ status, canResetPassword }) {
                 </div>
             )}
 
-            <div className="flex justify-center relative">
+            <div className="relative flex justify-center">
+                {/* Background SVG kiri */}
                 <svg
                     width="50"
                     height="70"
@@ -50,22 +108,22 @@ export default function Login({ status, canResetPassword }) {
 
                 <form
                     onSubmit={submit}
-                    className="px-12 py-8 flex flex-col justify-between"
+                    className="flex flex-col justify-between px-12 py-8"
                 >
                     <div>
-                        <div className="flex gap-4 items-center justify-center mb-8">
+                        <div className="mb-8 flex items-center justify-center gap-4">
                             <img
                                 src="/foto/upa-pkk-logo.jpg.jpeg"
                                 alt="Logo UPA PKK"
-                                className="w-16 aspect-square"
+                                className="aspect-square w-16"
                             />
-                            <p className="font-semibold text-5xl">UPA PKK</p>
+                            <p className="text-5xl font-semibold">UPA PKK</p>
                         </div>
 
-                        <p className="font-semibold text-2xl mb-2">
+                        <p className="mb-2 text-2xl font-semibold">
                             Selamat Datang!
                         </p>
-                        <p className="font-medium text-gray-400 mb-8 text-sm">
+                        <p className="mb-8 text-sm font-medium text-gray-400">
                             Silahkan isi untuk masuk ke halaman admin
                         </p>
 
@@ -77,7 +135,7 @@ export default function Login({ status, canResetPassword }) {
                                     name="email"
                                     placeholder="Email"
                                     value={data.email}
-                                    className="mt-1 block w-full text-md"
+                                    className="text-md mt-1 block w-full"
                                     autoComplete="username"
                                     isFocused={true}
                                     onChange={(e) =>
@@ -101,7 +159,7 @@ export default function Login({ status, canResetPassword }) {
                                         name="password"
                                         placeholder="Password"
                                         value={data.password}
-                                        className="flex mt-1 justify-center w-full text-md pr-10"
+                                        className="text-md mt-1 flex w-full justify-center pr-10"
                                         autoComplete="current-password"
                                         onChange={(e) =>
                                             setData("password", e.target.value)
@@ -162,7 +220,7 @@ export default function Login({ status, canResetPassword }) {
                     </div>
 
                     <div className="mt-4 block">
-                        <label className="flex items-center cursor-pointer">
+                        <label className="flex cursor-pointer items-center">
                             <Checkbox
                                 name="remember"
                                 checked={data.remember}
@@ -199,7 +257,7 @@ export default function Login({ status, canResetPassword }) {
                     <img
                         src="/foto/UPA PKK.jpeg"
                         alt="UPA PKK"
-                        className="h-full w-[28rem] aspect-square object-cover"
+                        className="aspect-square h-full w-[28rem] object-cover"
                     />
                 </div>
 

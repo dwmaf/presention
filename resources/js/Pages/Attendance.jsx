@@ -1,11 +1,43 @@
 import AdminGate from "@/Components/AdminGate";
 import { Head, router, usePage } from "@inertiajs/react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import InternCard from "@/Components/InternCard";
 import SearchBar from "@/Components/SearchBar";
 import { Link } from "@inertiajs/react";
 import CustomDatePicker from "@/Components/DatePicker";
+
+/**
+ * * Attendance Page Component
+ * * ----------------------------------------
+ * * Halaman utama untuk mengelola absensi harian intern
+ *
+ * ! Fitur:
+ * ! - Scan fingerprint → verifikasi → simpan attendance
+ * ! - Filter intern berdasarkan nama
+ * ! - Filter berdasarkan tanggal
+ * ! - Feedback hasil scan (success / error)
+ *
+ * ! Flow:
+ * ! 1. Scan → kirim fingerprint database
+ * ! 2. Service return user_id
+ * ! 3. Kirim ke backend → simpan attendance
+ *
+ * @param {Array} interns
+ * * Data intern + attendance
+ *
+ * @param {string} selectedDate
+ * * Tanggal aktif (YYYY-MM-DD)
+ *
+ * @param {string} hariIni
+ * * Nama hari (display)
+ *
+ * @param {Array} fingerprintDatabase
+ * * Data fingerprint user
+ *
+ * @param {Array} adminFingerprints
+ * * Data fingerprint admin
+ */
 
 // Format tanggal ke format Indonesia
 function formatTanggalIndonesia(dateStr) {
@@ -19,6 +51,32 @@ function formatTanggalIndonesia(dateStr) {
     });
 }
 
+// * Hindari magic number
+const MIN_FMD_LENGTH = 50;
+
+// * Field fingerprint (biar scalable)
+const FINGERPRINT_KEYS = [
+    "fmd",
+    "second_fmd",
+    "fmd_3",
+    "fmd_4",
+    "fmd_5",
+    "fmd_6",
+];
+
+/**
+ * * Build fingerprint payload
+ * ? - Menghindari logic berulang
+ * ? - Lebih scalable jika field bertambah
+ */
+function buildFingerprintPayload(database = []) {
+    return database.flatMap((user) =>
+        FINGERPRINT_KEYS.filter(
+            (key) => user[key]?.length > MIN_FMD_LENGTH,
+        ).map((key) => ({ id: user.id, fmd: user[key] })),
+    );
+}
+
 export default function Attendance({
     interns = [],
     selectedDate,
@@ -27,131 +85,131 @@ export default function Attendance({
     adminFingerprints = [],
 }) {
     const { flash = {} } = usePage().props;
+
     const [date, setDate] = useState(
         selectedDate || new Date().toISOString().split("T")[0],
     );
-    const [searchTerm, setSearchTerm] = useState("");
-    const dateInputRef = useRef(null);
-    const [modalOpen, setModalOpen] = useState(false);
 
-    // Fingerprint State
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const [modalOpen, setModalOpen] = useState(false);
     const [status, setStatus] = useState(null);
     const [isScanning, setIsScanning] = useState(false);
     const [feedback, setFeedback] = useState(null);
 
-    const datePickerRef = useRef(null);
     const [open, setOpen] = useState(false);
 
-    const database_payload = [];
-    fingerprintDatabase.forEach((u) => {
-        if (u.fmd && u.fmd.length > 50) database_payload.push({ id: u.id, fmd: u.fmd });
-        if (u.second_fmd && u.second_fmd.length > 50)
-            database_payload.push({ id: u.id, fmd: u.second_fmd });
-        if (u.fmd_3 && u.fmd_3.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_3 });
-        if (u.fmd_4 && u.fmd_4.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_4 });
-        if (u.fmd_5 && u.fmd_5.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_5 });
-        if (u.fmd_6 && u.fmd_6.length > 50) database_payload.push({ id: u.id, fmd: u.fmd_6 });
-    });
+    /**
+     * ? Kenapa pakai useMemo?
+     * ? - Hindari rebuild payload setiap render
+     */
+    const fingerprintPayload = useMemo(() => {
+        return buildFingerprintPayload(fingerprintDatabase);
+    }, [fingerprintDatabase]);
 
-    const startScanAndVerify = async () => {
-        if (isScanning) return;
-        setIsScanning(true);
-        setStatus("Memindai jari...");
-        setFeedback(null);
-        setModalOpen(true);
+    /**
+     * ? Kenapa pakai useMemo?
+     * ? - Filter + sort cukup mahal jika data besar
+     */
+    const filteredInterns = useMemo(() => {
+        return interns
+            .filter((intern) =>
+                intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
+            )
+            .sort((a, b) => {
+                const aHadir = a?.attendances?.[0]?.check_in ? 1 : 0;
+                const bHadir = b?.attendances?.[0]?.check_in ? 1 : 0;
+                return aHadir - bHadir;
+            });
+    }, [interns, searchTerm]);
 
-        try {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-
-            // 1. C# Service untuk Identifikasi
-            const payload = { database: database_payload };
-            const response = await fetch("http://localhost:5000/identify", {
+    /**
+     * * Identify user dari fingerprint service
+     */
+    const identifyUser = async () => {
+        const res = await fetch(
+            import.meta.env.VITE_FINGERPRINT_API ||
+                "http://localhost:5000/identify",
+            {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+                body: JSON.stringify({ database: fingerprintPayload }),
+            },
+        );
 
-            const result = await response.json();
+        const result = await res.json();
 
-            if (result.match) {
-                const userId = result.user_id;
-                setStatus(`Terdeteksi! Menghubungi server...`);
+        //! Jika tidak dikenali
+        if (!result.match) {
+            throw new Error("Sidik jari tidak dikenali");
+        }
 
-                // setFeedback({
-                //     type: "success",
-                //     message: `✅ ${data.name}: ${data.message}`,
-                // });
+        return result.user_id;
+    };
 
-                try {
-                    // 2. Kirim hasil match ke Laravel
-                    const presensiRes = await axios.post("/attendance", {
-                        intern_id: userId,
-                    });
+    /**
+     * * Kirim attendance ke backend
+     */
+    const submitAttendance = async (userId) => {
+        const res = await axios.post("/attendance", {
+            intern_id: userId,
+        });
 
-                    const data = presensiRes.data;
-                    setFeedback({
-                        type: "success",
-                        message: data.message || `Berhasil Masuk: ${data.name}`,
-                    });
-                    setStatus(null);
-                    setIsScanning(false); // Stop animasi scanning
+        return res.data;
+    };
 
-                    // Reload data intern di halaman
-                    router.reload({ only: ["interns"] });
-                } catch (err) {
-                    // ERROR DARI LARAVEL (Misal: Belum 30 menit)
-                    console.log("Error Laravel:", err.response); // Debug
+    /**
+     * * Main scan flow
+     * ? Kenapa dipisah?
+     * ? - Biar flow jelas (identify → submit)
+     * ? - Mudah di-debug
+     */
+    const startScanAndVerify = useCallback(async () => {
+        //! Prevent double click
+        if (isScanning) return;
 
-                    let msg = "Gagal mencatat presensi.";
-                    // Ambil pesan error spesifik
-                    if (
-                        err.response &&
-                        err.response.data &&
-                        err.response.data.message
-                    ) {
-                        msg = err.response.data.message;
-                    }
-                    setFeedback({ type: "error", message: `${msg}` });
-                    setStatus(null);
-                    setIsScanning(false);
-                }
-            } else {
-                setFeedback({
-                    type: "error",
-                    message: "Sidik jari tidak dikenali.",
-                });
-                setStatus(null);
-                setIsScanning(false);
-            }
-        } catch (err) {
-            console.error("Error Koneksi:", err);
+        setIsScanning(true);
+        setStatus("Memindai jari...");
+        setModalOpen(true);
+        setFeedback(null);
+
+        try {
+            await new Promise((r) => setTimeout(r, 500));
+
+            const userId = await identifyUser();
+
+            setStatus("Terdeteksi! Menghubungi server...");
+
+            const data = await submitAttendance(userId);
+
             setFeedback({
-                type: "error",
-                message: (
-                    <p className="text-center">
-                        Gagal terhubung ke <br /> Fingerprint Service.
-                    </p>
-                ),
+                type: "success",
+                message: data.message || `Berhasil Masuk: ${data.name}`,
             });
+
+            router.reload({ only: ["interns"] });
+        } catch (err) {
+            //! Error handling unified
+            const message =
+                err?.response?.data?.message ||
+                err.message ||
+                "Gagal mencatat presensi";
+
+            setFeedback({ type: "error", message });
+        } finally {
+            //* Pastikan state reset
             setStatus(null);
             setIsScanning(false);
         }
-        // finally {
-        //     setIsScanning(false);
-        //     setStatus(null);
-        // }
-    };
+    }, [isScanning, fingerprintPayload]);
 
-    const handleDateChange = (e) => {
-        const newDate = e.target.value;
-        setDate(newDate);
+    const handleDateChange = (formatted) => {
+        setDate(formatted);
+
         router.get(
             route("attendance.index"),
-            { date: newDate },
-            {
-                preserveState: true,
-                replace: true,
-            },
+            { date: formatted },
+            { preserveState: true, replace: true },
         );
     };
 
@@ -162,34 +220,56 @@ export default function Attendance({
         setFeedback(null);
     };
 
-    // Bersihkan feedback otomatis setelah 5 detik
+    // * Bersihkan feedback otomatis setelah 5 detik
+    /**
+     * ? Kenapa auto-clear feedback?
+     * ? - Menghindari UI kotor / stale state
+     */
     useEffect(() => {
-        if (feedback) {
-            const timer = setTimeout(() => setFeedback(null), 5000);
-            return () => clearTimeout(timer);
-        }
+        if (!feedback) return;
+        const t = setTimeout(() => setFeedback(null), 5000);
+        return () => clearTimeout(t);
     }, [feedback]);
 
+    /**
+     * * Auto close modal?
+     * ? - UX lebih smooth tanpa perlu klik manual
+     */
     useEffect(() => {
-        if (feedback && !isScanning) {
-            const timer = setTimeout(() => {
-                setModalOpen(false);
-                setFeedback(null);
-                setStatus(null);
-            }, 2000); // modal tertutup otomatis setelah 2 detik
-            return () => clearTimeout(timer);
-        }
+        if (!feedback || isScanning) return;
+        const t = setTimeout(handleCloseModal, 2000);
+        return () => clearTimeout(t);
     }, [feedback, isScanning]);
 
-    const filteredInterns = interns
-        .filter((intern) =>
-            intern.name.toLowerCase().includes(searchTerm.toLowerCase()),
-        )
-        .sort((a, b) => {
-            const aHadir = a?.attendances?.[0]?.check_in ? 1 : 0;
-            const bHadir = b?.attendances?.[0]?.check_in ? 1 : 0;
-            return aHadir - bHadir;
-        });
+    const renderInternList = () => {
+        if (filteredInterns.length === 0) {
+            return (
+                <div className="col-span-full py-16 text-center">
+                    {interns.length === 0 ? (
+                        <p className="text-lg font-medium text-gray-400">
+                            Tidak ada intern terjadwal pada hari{" "}
+                            <span className="font-bold capitalize">
+                                {hariIni}
+                            </span>
+                            .
+                        </p>
+                    ) : (
+                        <p className="text-lg font-medium text-gray-400">
+                            Intern tidak ditemukan.
+                        </p>
+                    )}
+                </div>
+            );
+        }
+
+        return filteredInterns.map((intern) => (
+            <InternCard
+                key={intern.id}
+                intern={intern}
+                attendance={intern?.attendances?.[0] || null}
+            />
+        ));
+    };
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -197,58 +277,24 @@ export default function Attendance({
 
             {/* ── Navbar ── */}
             <div className="bg-white shadow-md">
-                <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-4 flex items-center justify-between">
+                <div className="mx-auto flex max-w-[1400px] items-center justify-between px-10 py-4 sm:px-14 lg:px-20">
                     <AdminGate adminFingerprints={adminFingerprints} />
-                    {/* <Link href="/login" className="flex items-center gap-3">
-                        <img
-                            src="/foto/upa-pkk-logo.jpg.jpeg"
-                            alt="UPA PKK Logo"
-                            className="w-12 h-12 rounded-full object-cover flex-shrink-0"
-                        />
-                        <div>
-                            <p className="text-gray-900 font-bold text-lg leading-tight">
-                                UPA PKK
-                            </p>
-                            <p className="text-gray-500 text-sm">
-                                Attendance System
-                            </p>
-                        </div>
-                    </Link> */}
-
-                    {/* <div className="flex items-center gap-6">
-                        {status && (
-                            <span className="text-blue-600 font-medium animate-pulse text-sm">
-                                {status}
-                            </span>
-                        )}
-                        {feedback && (
-                            <div
-                                className={`px-4 py-2 rounded-lg text-sm font-bold shadow-sm border ${
-                                    feedback.type === "success"
-                                        ? "bg-green-50 border-green-200 text-green-700"
-                                        : "bg-red-50 border-red-200 text-red-700"
-                                }`}
-                            >
-                                {feedback.message}
-                            </div>
-                        )}
-                    </div> */}
                 </div>
             </div>
 
-            <div className="max-w-[1400px] mx-auto px-10 sm:px-14 lg:px-20 py-8">
-                <div className="flex justify-between mb-8">
-                    <h1 className="text-2xl font-semibold hidden md:block">
+            <div className="mx-auto max-w-[1400px] px-10 py-8 sm:px-14 lg:px-20">
+                <div className="mb-8 flex justify-between">
+                    <h1 className="hidden text-2xl font-semibold md:block">
                         Absensi Harian
                     </h1>
                     {/* Tombol Scan Kecil */}
                     <button
                         onClick={startScanAndVerify}
                         disabled={isScanning}
-                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium transition transform active:scale-95 ${
+                        className={`flex transform items-center gap-2 rounded-xl px-5 py-2.5 font-medium transition active:scale-95 ${
                             isScanning
-                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                : "bg-blue-400 hover:bg-blue-300 text-white"
+                                ? "cursor-not-allowed bg-gray-300 text-gray-500"
+                                : "bg-blue-400 text-white hover:bg-blue-300"
                         }`}
                     >
                         <svg
@@ -274,10 +320,10 @@ export default function Attendance({
                 </div>
 
                 {/* ── Search + Date ── */}
-                <div className="flex items-center mb-8">
+                <div className="mb-8 flex items-center">
                     {/* Date Picker */}
                     <div
-                        className="relative flex items-center cursor-pointer"
+                        className="relative flex cursor-pointer items-center"
                         onClick={() => setOpen(true)}
                     >
                         <svg
@@ -292,35 +338,25 @@ export default function Attendance({
                             />
                         </svg>
                         <CustomDatePicker
-                            ref={datePickerRef}
                             value={new Date(date)}
                             onChange={(d) => {
                                 if (!d) return;
-                                const newDate = Array.isArray(d) ? d[0] : d;
-                                const formatted = newDate
+                                const formatted = (Array.isArray(d) ? d[0] : d)
                                     .toISOString()
                                     .split("T")[0];
-                                setDate(formatted);
-                                router.get(
-                                    route("attendance.index"),
-                                    { date: formatted },
-                                    {
-                                        preserveState: true,
-                                        replace: true,
-                                    },
-                                );
+                                handleDateChange(formatted);
                             }}
                             open={open}
                             onClickOutside={() => setOpen(false)}
                             dateFormat="dd MMM yyyy"
-                            className="bg-transparent border-none text-blue-700 text-md font-medium "
+                            className="text-md border-none bg-transparent font-medium text-blue-700"
                         />
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="25"
                             height="25"
                             viewBox="0 0 24 24"
-                            className="-rotate-90 mr-4"
+                            className="mr-4 -rotate-90"
                         >
                             <path
                                 fill="oklch(48.8% 0.243 264.376)"
@@ -334,52 +370,19 @@ export default function Attendance({
                 </div>
 
                 {/* ── Cards Grid ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
-                    {filteredInterns.length > 0 ? (
-                        filteredInterns.map((intern) => {
-                            const att =
-                                intern?.attendances?.length > 0
-                                    ? intern.attendances[0]
-                                    : null;
-                            return (
-                                <InternCard
-                                    key={intern.id}
-                                    intern={intern}
-                                    attendance={att}
-                                />
-                            );
-                        })
-                    ) : (
-                        <div className="col-span-full py-16 text-center">
-                            {interns.length === 0 ? (
-                                <p className="text-gray-400 text-lg font-medium">
-                                    Tidak ada intern terjadwal pada hari{" "}
-                                    <span className="font-bold capitalize">
-                                        {hariIni}
-                                    </span>
-                                    .
-                                </p>
-                            ) : (
-                                <p className="text-gray-400 text-lg font-medium">
-                                    Intern tidak ditemukan.
-                                </p>
-                            )}
-                        </div>
-                    )}
+                <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                    {renderInternList()}
                 </div>
             </div>
+
             {/* Modal muncul saat scanning ATAU ada feedback */}
             {modalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white rounded-xl shadow-lg p-8 max-w-md relative">
-                        {/* <h2 className="text-lg font-bold mb-4">
-                                Scan Sidik Jari
-                            </h2> */}
-
+                    <div className="relative max-w-md rounded-xl bg-white p-8 shadow-lg">
                         {/* Pesan scanning */}
                         {isScanning && (
-                            <div className="text-blue-600 flex flex-col gap-8 items-center animate-pulse mb-2">
-                                <div className="w-40 aspect-square flex justify-center items-center ">
+                            <div className="mb-2 flex animate-pulse flex-col items-center gap-8 text-blue-600">
+                                <div className="flex aspect-square w-40 items-center justify-center">
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="60"
@@ -442,7 +445,7 @@ export default function Attendance({
                             feedback &&
                             feedback.type === "error" && (
                                 <div className="flex flex-col items-center">
-                                    <div className="w-40 aspect-square flex justify-center items-center">
+                                    <div className="flex aspect-square w-40 items-center justify-center">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="70"
@@ -461,7 +464,7 @@ export default function Attendance({
                                             </g>
                                         </svg>
                                     </div>
-                                    <p className="text-red-700 font-semibold max-w-[25ch] text-center">
+                                    <p className="max-w-[25ch] text-center font-semibold text-red-700">
                                         {feedback.message}
                                     </p>
                                 </div>
@@ -471,7 +474,7 @@ export default function Attendance({
                             feedback &&
                             feedback.type === "success" && (
                                 <div className="flex flex-col items-center justify-center">
-                                    <div className="w-40 aspect-square flex justify-center items-center ">
+                                    <div className="flex aspect-square w-40 items-center justify-center">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="80"
@@ -490,16 +493,8 @@ export default function Attendance({
                                             </g>
                                         </svg>
                                     </div>
-                                    <p className="text-green-700 text-center font-semibold">
-                                        {feedback?.type === "success" &&
-                                        feedback?.message ? (
-                                            feedback.message
-                                        ) : (
-                                            <>
-                                                Kamu berhasil absen <br /> pada
-                                                jam sekian!
-                                            </>
-                                        )}
+                                    <p className="text-center font-semibold text-green-700">
+                                        {feedback.message}
                                     </p>
                                 </div>
                             )}

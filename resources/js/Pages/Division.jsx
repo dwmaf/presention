@@ -6,6 +6,26 @@ import Modal from "@/Components/Modal";
 import SearchBar from "@/Components/SearchBar";
 import { useToast } from "@/Components/ToastNotif";
 
+/**
+ * * Division Management Page
+ * * ----------------------------------------
+ * * Mengelola data divisi dan anggota (intern)
+ *
+ * ! Fitur:
+ * ! - CRUD divisi (create, update, delete)
+ * ! - Lihat detail divisi
+ * ! - Assign & remove anggota divisi
+ *
+ * @param {Object} auth
+ * * Data user login
+ *
+ * @param {Array} divisions
+ * * Data seluruh divisi + relasi intern
+ *
+ * @param {Array} allInterns
+ * * Semua intern (untuk assign ke divisi)
+ */
+
 // SVG puzzle untuk card divisi
 const PuzzleBig = () => (
     <svg
@@ -40,138 +60,130 @@ const PuzzleSmall = () => (
 );
 
 export default function Division({ auth, divisions, allInterns = [] }) {
-    const { flash } = usePage().props;
+    const { addToast } = useToast();
 
-    // State modal tambah/edit
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modal, setModal] = useState({
+        form: false,
+        delete: false,
+        detail: null,
+    });
+
     const [isEditMode, setIsEditMode] = useState(false);
-    const [currentDivision, setCurrentDivision] = useState(null);
-
-    // State modal detail
-    const [detailDivision, setDetailDivision] = useState(null);
-
-    // State modal hapus
-    const [confirmingDeletion, setConfirmingDeletion] = useState(false);
-    const [divisionToDelete, setDivisionToDelete] = useState(null);
+    const [selectedDivision, setSelectedDivision] = useState(null);
 
     // State panel tambah anggota
-    const [showAddMember, setShowAddMember] = useState(false);
     const [memberSearch, setMemberSearch] = useState("");
+    const [showAddMember, setShowAddMember] = useState(false);
 
-    const { data, setData, post, put, processing, errors, reset, clearErrors } =
-        useForm({
-            nama_divisi: "",
-            deskripsi: "",
-        });
+    const form = useForm({
+        nama_divisi: "",
+        deskripsi: "",
+    });
 
     const deleteForm = useForm({});
 
-    const { addToast } = useToast();
-
-    const openModal = (division = null) => {
-        setIsModalOpen(true);
+    /**
+     * ? Kenapa modal state dijadikan object?
+     * ? - Lebih scalable dibanding banyak useState terpisah
+     */
+    const openFormModal = (division = null) => {
+        setModal((prev) => ({ ...prev, form: true }));
         setIsEditMode(!!division);
-        setCurrentDivision(division);
-        setData({
-            nama_divisi: division ? division.nama_divisi : "",
-            deskripsi: division ? (division.deskripsi ?? "") : "",
+        setSelectedDivision(division);
+
+        form.setData({
+            nama_divisi: division?.nama_divisi ?? "",
+            deskripsi: division?.deskripsi ?? "",
         });
-        clearErrors();
+
+        form.clearErrors();
     };
 
-    const closeModal = () => {
-        setIsModalOpen(false);
-        setCurrentDivision(null);
-        reset();
+    const closeFormModal = () => {
+        setModal((prev) => ({ ...prev, form: false }));
+        setSelectedDivision(null);
+        form.reset();
     };
 
-    const confirmDeletion = (division) => {
-        setConfirmingDeletion(true);
-        setDivisionToDelete(division);
+    const openDeleteModal = (division) => {
+        setSelectedDivision(division);
+        setModal((prev) => ({ ...prev, delete: true }));
     };
 
-    const closeDeletionModal = () => {
-        setConfirmingDeletion(false);
-        setDivisionToDelete(null);
+    const closeDeleteModal = () => {
+        setModal((prev) => ({ ...prev, delete: false }));
+        setSelectedDivision(null);
     };
 
-    // Efek ini akan jalan setiap kali props 'divisions' berubah (misal setelah add/remove member)
+    /**
+     * ? Kenapa detail disimpan di state?
+     * ? - Agar bisa reactive saat data divisions berubah
+     */
     useEffect(() => {
-        if (detailDivision) {
-            // Cari data terbaru dari divisi yang sedang dibuka
-            const updatedDivision = divisions.find(
-                (d) => d.id === detailDivision.id,
-            );
+        if (!modal.detail) return;
 
-            // Jika ketemu, update state detailDivision agar UI modal langsung berubah
-            if (updatedDivision) {
-                setDetailDivision(updatedDivision);
-            }
+        const updated = divisions.find((d) => d.id === modal.detail.id);
+
+        if (updated) {
+            setModal((prev) => ({ ...prev, detail: updated }));
         }
-    }, [divisions, detailDivision]);
+    }, [divisions, modal.detail]);
 
+    /**
+     * ? Kenapa pakai useMemo?
+     * ? - Filtering bisa berat jika data besar
+     */
     const memberSuggestions = useMemo(() => {
-        if (!detailDivision) return [];
-        const memberIds = new Set(
-            (detailDivision.interns ?? []).map((i) => i.id),
-        );
+        if (!modal.detail) return [];
+
+        const memberIds = new Set(modal.detail.interns?.map((i) => i.id));
+
         return allInterns.filter(
             (i) =>
                 !memberIds.has(i.id) &&
                 i.name.toLowerCase().includes(memberSearch.toLowerCase()),
         );
-    }, [allInterns, detailDivision, memberSearch]);
+    }, [allInterns, modal.detail, memberSearch]);
 
     const submit = (e) => {
         e.preventDefault();
-        if (isEditMode) {
-            put(route("divisions.update", currentDivision.id), {
-                onSuccess: () => {
-                    closeModal();
-                    addToast("Divisi berhasil diupdate!", "success");
-                },
-                onError: () => {
-                    addToast("Gagal mengupdate divisi.", "error");
-                },
+
+        const action = isEditMode
+            ? form.put(route("divisions.update", selectedDivision.id))
+            : form.post(route("divisions.store"));
+
+        action
+            .then(() => {
+                closeFormModal();
+                addToast("Berhasil!", "success");
+            })
+            .catch(() => {
+                addToast("Terjadi kesalahan.", "error");
             });
-        } else {
-            post(route("divisions.store"), {
-                onSuccess: () => {
-                    closeModal();
-                    addToast("Divisi berhasil ditambahkan!", "success");
-                },
-                onError: () => {
-                    addToast("Gagal menambah divisi.", "error");
-                },
-            });
-        }
     };
 
     const deleteDivision = () => {
-        deleteForm.delete(route("divisions.destroy", divisionToDelete.id), {
+        deleteForm.delete(route("divisions.destroy", selectedDivision.id), {
             onSuccess: () => {
-                closeDeletionModal();
-                addToast("Divisi berhasil dihapus!", "success");
+                closeDeleteModal();
+                addToast("Divisi dihapus!", "success");
             },
             onError: () => {
-                addToast("Gagal menghapus divisi.", "error");
+                addToast("Gagal menghapus.", "error");
             },
         });
     };
 
     const assignIntern = (intern) => {
         router.post(
-            route("divisions.assignIntern", detailDivision.id),
+            route("divisions.assignIntern", modal.detail.id),
             { intern_id: intern.id },
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     setMemberSearch("");
                     setShowAddMember(false);
-                    addToast("Anggota berhasil ditambahkan!", "success");
-                },
-                onError: () => {
-                    addToast("Gagal menambah anggota.", "error");
+                    addToast("Anggota ditambahkan!", "success");
                 },
             },
         );
@@ -179,14 +191,11 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
     const removeIntern = (intern) => {
         router.delete(
-            route("divisions.removeIntern", [detailDivision.id, intern.id]),
+            route("divisions.removeIntern", [modal.detail.id, intern.id]),
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    addToast("Anggota berhasil dihapus!", "success");
-                },
-                onError: () => {
-                    addToast("Gagal menghapus anggota.", "error");
+                    addToast("Anggota dihapus!", "success");
                 },
             },
         );
@@ -196,7 +205,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
         <AuthenticatedLayout
             user={auth.user}
             header={
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">
+                <h2 className="text-xl font-semibold leading-tight text-gray-800">
                     Manajemen Divisi
                 </h2>
             }
@@ -205,33 +214,21 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
             <div className="flex">
                 <div className="py-10">
-                    <div className="max-w-7xl mx-auto pr-16">
-                        {/* Flash messages */}
-                        {/* {flash?.success && (
-                            <div className="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                                {flash.success}
-                            </div>
-                        )}
-                        {flash?.error && (
-                            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                                {flash.error}
-                            </div>
-                        )} */}
-
+                    <div className="mx-auto max-w-7xl pr-16">
                         {/* Header baris */}
-                        <div className="flex items-start justify-between mb-6">
+                        <div className="mb-6 flex items-start justify-between">
                             <div>
                                 <h1 className="text-2xl font-semibold">
                                     Manajemen Divisi
                                 </h1>
-                                <p className="text-sm text-gray-500 mt-1">
+                                <p className="mt-1 text-sm text-gray-500">
                                     Daftar divisi yang berperan dalam mendukung
                                     operasional dan pengembangan UPA PKK UNTAN.
                                 </p>
                             </div>
                             <button
                                 onClick={() => openModal()}
-                                className="flex items-center gap-2 bg-white border border-gray-200 shadow-sm rounded-xl px-4 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-gray-50 transition whitespace-nowrap"
+                                className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-gray-50"
                             >
                                 <PuzzleSmall />
                                 Tambah Divisi
@@ -239,28 +236,28 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                         </div>
 
                         {/* Cards Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+                        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
                             {divisions.map((division) => (
                                 <div
                                     key={division.id}
-                                    className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-3"
+                                    className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm"
                                 >
                                     {/* Top row: icon + badge */}
                                     <div className="flex items-start justify-between">
                                         <PuzzleBig />
-                                        <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
+                                        <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                                             {division.interns_count ?? 0}{" "}
                                             Anggota
                                         </span>
                                     </div>
 
                                     {/* Nama */}
-                                    <h3 className="text-xl font-bold text-gray-900 leading-snug">
+                                    <h3 className="text-xl font-bold leading-snug text-gray-900">
                                         {division.nama_divisi}
                                     </h3>
 
                                     {/* Deskripsi */}
-                                    <p className="text-xs text-gray-500 flex-1 line-clamp-3">
+                                    <p className="line-clamp-3 flex-1 text-xs text-gray-500">
                                         {division.deskripsi || (
                                             <span className="italic text-gray-300">
                                                 Belum ada deskripsi.
@@ -269,28 +266,33 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                     </p>
 
                                     {/* Tombol */}
-                                    <div className="flex gap-3 mt-2">
+                                    <div className="mt-2 flex gap-3">
                                         <button
-                                            onClick={() => {
-                                                setDetailDivision(division);
-                                                setShowAddMember(false);
-                                                setMemberSearch("");
-                                            }}
-                                            className="flex-1 border border-blue-600 text-blue-600 rounded-lg py-1.5 text-sm font-semibold hover:bg-blue-50 transition"
+                                            onClick={() =>
+                                                setModal((prev) => ({
+                                                    ...prev,
+                                                    detail: division,
+                                                }))
+                                            }
+                                            className="flex-1 rounded-lg border border-blue-600 py-1.5 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
                                         >
                                             Lihat Detail
                                         </button>
+
                                         <button
                                             onClick={() =>
-                                                confirmDeletion(division)
+                                                openDeleteModal(division)
                                             }
-                                            className="flex-2 border border-red-400 text-red-500 rounded-lg py-1.5 px-2.5 text-sm font-semibold hover:bg-red-50 transition"
+                                            className="flex-2 rounded-lg border border-red-400 px-2.5 py-1.5 text-sm font-semibold text-red-500 transition hover:bg-red-50"
                                         >
                                             Hapus
                                         </button>
+
                                         <button
-                                            onClick={() => openModal(division)}
-                                            className="border border-gray-100 rounded-lg hover:opacity-80 transition"
+                                            onClick={() =>
+                                                openFormModal(division)
+                                            }
+                                            className="rounded-lg border border-gray-100 transition hover:opacity-80"
                                         >
                                             <svg
                                                 width="40"
@@ -330,56 +332,56 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                 </div>
             </div>
 
-            {/* â”€â”€ Modal Tambah / Edit â”€â”€ */}
-            <Modal show={isModalOpen} onClose={closeModal}>
-                <form onSubmit={submit} className="p-6 w-[560px]">
-                    <div className="flex items-center gap-3 mb-5">
+            {/* Modal Tambah / Edit */}
+            <Modal show={modal.form} onClose={closeFormModal}>
+                <form onSubmit={submit} className="w-[560px] p-6">
+                    <div className="mb-5 flex items-center gap-3">
                         <PuzzleSmall />
                         <h2 className="text-lg font-bold text-gray-900">
                             {isEditMode ? "Edit Divisi" : "Tambah Divisi"}
                         </h2>
                     </div>
-                    <p className="text-sm text-gray-500 mb-5">
+                    <p className="mb-5 text-sm text-gray-500">
                         Isi data untuk menambahkan divisi baru.
                     </p>
 
                     <div className="mb-4">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
                             Nama Divisi
                         </label>
                         <input
                             type="text"
-                            value={data.nama_divisi}
+                            value={form.data.nama_divisi}
                             onChange={(e) =>
-                                setData("nama_divisi", e.target.value)
+                                form.setData("nama_divisi", e.target.value)
                             }
                             placeholder="Contoh: IT, HRD, dll"
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                         <InputError
-                            message={errors.nama_divisi}
+                            message={form.errors.nama_divisi}
                             className="mt-1"
                         />
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        <label className="mb-1 block text-sm font-semibold text-gray-700">
                             Deskripsi{" "}
-                            <span className="text-gray-400 font-normal">
+                            <span className="font-normal text-gray-400">
                                 (opsional)
                             </span>
                         </label>
                         <textarea
-                            value={data.deskripsi}
+                            value={form.data.deskripsi}
                             onChange={(e) =>
-                                setData("deskripsi", e.target.value)
+                                form.setData("deskripsi", e.target.value)
                             }
                             rows={3}
                             placeholder="Deskripsikan tugas dan tanggung jawab divisi ini..."
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 resize-none"
+                            className="w-full resize-none rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
                         />
                         <InputError
-                            message={errors.deskripsi}
+                            message={form.errors.deskripsi}
                             className="mt-1"
                         />
                     </div>
@@ -387,15 +389,16 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                     <div className="flex justify-end gap-2">
                         <button
                             type="button"
-                            onClick={closeModal}
-                            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+                            onClick={closeFormModal}
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                         >
                             Batal
                         </button>
+
                         <button
                             type="submit"
-                            disabled={processing}
-                            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+                            disabled={form.processing}
+                            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:opacity-50"
                         >
                             {isEditMode ? "Update" : "Simpan"}
                         </button>
@@ -403,36 +406,36 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                 </form>
             </Modal>
 
-            {/* â”€â”€ Modal Detail Divisi â”€â”€ */}
+            {/* Modal Detail Divisi */}
             <Modal
-                show={!!detailDivision}
-                onClose={() => setDetailDivision(null)}
+                show={!!modal.detail}
+                onClose={() => setModal((prev) => ({ ...prev, detail: null }))}
             >
-                {detailDivision && (
-                    <div className="p-6 flex flex-col h-[450px] w-[560px]">
+                {modal.detail && (
+                    <div className="flex h-[450px] w-[560px] flex-col p-6">
                         {/* Header */}
-                        <div className="flex items-center justify-between mb-1 shrink-0">
+                        <div className="mb-1 flex shrink-0 items-center justify-between">
                             <div className="flex items-center gap-3">
                                 <PuzzleSmall />
                                 <h2 className="text-lg font-bold text-gray-900">
-                                    {detailDivision.nama_divisi}
+                                    {modal.detail.nama_divisi}
                                 </h2>
                             </div>
-                            <span className="bg-gray-100 text-gray-600 text-xs font-semibold px-3 py-1 rounded-full">
-                                {detailDivision.interns_count ??
-                                    detailDivision.interns?.length ??
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
+                                {modal.detail.interns_count ??
+                                    modal.detail.interns?.length ??
                                     0}{" "}
                                 Anggota
                             </span>
                         </div>
-                        {detailDivision.deskripsi && (
-                            <p className="text-sm text-gray-500 mb-2 mt-1 shrink-0">
-                                {detailDivision.deskripsi}
+                        {modal.detail.deskripsi && (
+                            <p className="mb-2 mt-1 shrink-0 text-sm text-gray-500">
+                                {modal.detail.deskripsi}
                             </p>
                         )}
 
                         {/* Sub-header daftar anggota */}
-                        <div className="relative flex items-center justify-between mt-3 mb-4 shrink-0">
+                        <div className="relative mb-4 mt-3 flex shrink-0 items-center justify-between">
                             <p className="text-sm font-semibold text-gray-700">
                                 Daftar Anggota
                             </p>
@@ -445,7 +448,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
-                                    className="w-4 h-4"
+                                    className="h-4 w-4"
                                     viewBox="0 0 24 24"
                                     fill="currentColor"
                                 >
@@ -456,8 +459,8 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
                             {/* Dropdown panel search */}
                             {showAddMember && (
-                                <div className="absolute right-0 top-full mt-1 z-30 w-56 bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col overflow-hidden">
-                                    <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
+                                <div className="absolute right-0 top-full z-30 mt-1 flex w-56 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                                    <div className="flex items-center gap-1 border-b border-gray-100 bg-gray-50 px-3 py-2">
                                         <svg
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="14"
@@ -478,10 +481,10 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                 setMemberSearch(e.target.value)
                                             }
                                             placeholder="Cari nama intern..."
-                                            className="flex-1 bg-transparent text-xs outline-none placeholder-gray-400 border-0 focus:ring-0"
+                                            className="flex-1 border-0 bg-transparent text-xs placeholder-gray-400 outline-none focus:ring-0"
                                         />
                                     </div>
-                                    <ul className="max-h-40 overflow-y-auto custom-scrollbar">
+                                    <ul className="custom-scrollbar max-h-40 overflow-y-auto">
                                         {memberSuggestions.length > 0 ? (
                                             memberSuggestions.map((intern) => (
                                                 <li key={intern.id}>
@@ -489,7 +492,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                         onClick={() =>
                                                             assignIntern(intern)
                                                         }
-                                                        className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 transition text-left"
+                                                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition hover:bg-blue-50"
                                                     >
                                                         {intern.foto ? (
                                                             <img
@@ -497,10 +500,10 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                                 alt={
                                                                     intern.name
                                                                 }
-                                                                className="w-6 h-6 rounded-full object-cover object-top shrink-0"
+                                                                className="h-6 w-6 shrink-0 rounded-full object-cover object-top"
                                                             />
                                                         ) : (
-                                                            <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs shrink-0">
+                                                            <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-400">
                                                                 ?
                                                             </div>
                                                         )}
@@ -523,9 +526,9 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                         </div>
 
                         {/* Panel search tambah anggota + Tabel anggota — scrollable */}
-                        <div className="relative rounded-lg border border-gray-100 overflow-y-auto custom-scrollbar flex-1 min-h-0 mb-4">
+                        <div className="custom-scrollbar relative mb-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-gray-100">
                             <table className="w-full text-sm">
-                                <thead className="bg-gray-50 sticky top-0 z-10">
+                                <thead className="sticky top-0 z-10 bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-xs font-semibold text-gray-500">
                                             Profil
@@ -539,19 +542,19 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
-                                    {detailDivision.interns &&
-                                    detailDivision.interns.length > 0 ? (
-                                        detailDivision.interns.map((intern) => (
+                                    {modal.detail.interns &&
+                                    modal.detail.interns.length > 0 ? (
+                                        modal.detail.interns.map((intern) => (
                                             <tr key={intern.id}>
                                                 <td className="px-4 py-2">
                                                     {intern.foto ? (
                                                         <img
                                                             src={`/storage/${intern.foto}`}
                                                             alt={intern.name}
-                                                            className="w-8 h-8 rounded-full object-cover object-top"
+                                                            className="h-8 w-8 rounded-full object-cover object-top"
                                                         />
                                                     ) : (
-                                                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">
+                                                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-400">
                                                             ?
                                                         </div>
                                                     )}
@@ -564,11 +567,11 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                                         onClick={() =>
                                                             removeIntern(intern)
                                                         }
-                                                        className="text-red-400 hover:text-red-600 transition"
+                                                        className="text-red-400 transition hover:text-red-600"
                                                     >
                                                         <svg
                                                             xmlns="http://www.w3.org/2000/svg"
-                                                            className="w-4 h-4"
+                                                            className="h-4 w-4"
                                                             viewBox="0 0 24 24"
                                                             fill="currentColor"
                                                         >
@@ -592,14 +595,17 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                             </table>
                         </div>
 
-                        <div className="flex justify-end shrink-0">
+                        <div className="flex shrink-0 justify-end">
                             <button
                                 onClick={() => {
-                                    setDetailDivision(null);
+                                    setModal((prev) => ({
+                                        ...prev,
+                                        detail: null,
+                                    }));
                                     setShowAddMember(false);
                                     setMemberSearch("");
                                 }}
-                                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+                                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                             >
                                 Tutup
                             </button>
@@ -608,28 +614,28 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                 )}
             </Modal>
 
-            {/* â”€â”€ Modal Konfirmasi Hapus â”€â”€ */}
-            <Modal show={confirmingDeletion} onClose={closeDeletionModal}>
-                <div className="p-6 w-[560px]">
-                    <h2 className="text-lg font-bold text-gray-900 mb-2">
+            {/* Modal Konfirmasi Hapus */}
+            <Modal show={modal.delete} onClose={closeDeleteModal}>
+                <div className="w-[560px] p-6">
+                    <h2 className="mb-2 text-lg font-bold text-gray-900">
                         Hapus Divisi
                     </h2>
-                    <p className="text-sm text-gray-600 mb-6">
+                    <p className="mb-6 text-sm text-gray-600">
                         Apakah anda yakin ingin menghapus divisi{" "}
-                        <strong>{divisionToDelete?.nama_divisi}</strong>?
+                        <strong>{selectedDivision?.nama_divisi}</strong>?
                         Tindakan ini tidak dapat dibatalkan.
                     </p>
                     <div className="flex justify-end gap-2">
                         <button
-                            onClick={closeDeletionModal}
-                            className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+                            onClick={closeDeleteModal}
+                            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
                         >
                             Batal
                         </button>
                         <button
                             onClick={deleteDivision}
                             disabled={deleteForm.processing}
-                            className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition disabled:opacity-50"
+                            className="rounded-lg bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
                         >
                             Hapus
                         </button>

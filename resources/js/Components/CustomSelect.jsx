@@ -1,31 +1,65 @@
-import { useState, useRef, useEffect } from "react";
+/**
+ * * CustomSelect Component
+ * ----------------------------------------
+ * Komponen dropdown select custom berbasis React yang menggantikan native <select> bawaan browser.
+ * Dirancang untuk kontrol UI yang lebih fleksibel (styling, error state, behavior).
+ *
+ * ! Komponen ini bersifat controlled component:
+ *   nilai dikontrol oleh parent melalui props `value` dan `onChange`
+ *
+ * @param {any} value
+ * Nilai yang sedang terpilih (controlled state dari parent component).
+ *
+ * @param {(value: any) => void} onChange
+ * Callback function untuk mengupdate nilai ketika user memilih opsi baru.
+ *
+ * @param {{ value: any, label: string }[]} options
+ * Array data pilihan yang akan ditampilkan dalam dropdown.
+ * Setiap item harus memiliki struktur value & label.
+ *
+ * @param {string} [placeholder="Pilih..."]
+ * Teks default yang ditampilkan ketika belum ada pilihan.
+ *
+ * @param {boolean} [hasError]
+ * Menandai apakah input dalam keadaan error.
+ * Digunakan untuk mengubah styling border (validasi UI feedback).
+ *
+ * ! Internal State:
+ * - isOpen: mengatur status buka/tutup dropdown
+ *
+ * ! Ref:
+ * - selectContainerRef: digunakan untuk mendeteksi klik di luar komponen
+ *
+ * ! Behavior penting:
+ * - Dropdown akan tertutup saat user klik di luar komponen
+ * - Dropdown langsung tertutup setelah opsi dipilih
+ *
+ * ! Accessibility & UX:
+ * - Menggunakan button (bukan select native) untuk kontrol penuh styling
+ * - Memberikan visual feedback saat open state dan error state
+ */
+
+import { useState, useRef, useEffect, useMemo } from "react";
 
 export default function CustomSelect({
     value,
     onChange,
     options,
     placeholder = "Pilih...",
-    hasError,
+    hasError = false,
 }) {
-    /**
-     * * Buat ganti dari dropdown select bawaan browser
-     * @param value = nilai yang diambil saat user memilih
-     * @param onChange = callback function buat update value saat user memilih ulang
-     * @param options = data yang mau ditampilkan sebagai pilihan dropdown
-     * @param placeholder = teks default saat belum ada data pilihan
-     * @param hasError = tanda kalau field lagi invalid
-     */
-
     const selectContainerRef = useRef(null);
 
     // * Buat track buka/tutup dropdown (true/false)
     const [isOpen, setIsOpen] = useState(false);
 
-    const selectedOption = options.find((option) => option.value === value);
+    const selectedOption = useMemo(() => {
+        return options.find((option) => option.value === value);
+    }, [options, value]);
 
     // * Tutup dropdown saat klik bagian luar komponen
     useEffect(() => {
-        const closeDropdownOnOutsideClick = (event) => {
+        const handleOutsideClick = (event) => {
             if (
                 selectContainerRef.current &&
                 !selectContainerRef.current.contains(event.target)
@@ -38,13 +72,10 @@ export default function CustomSelect({
          * * mousedown dipakai biar mengurangi potensi konflik urutan event
          * * saat user berinteraksi cepat
          */
-        document.addEventListener("mousedown", closeDropdownOnOutsideClick);
+        document.addEventListener("mousedown", handleOutsideClick);
         return () =>
             // * cleanup untuk mengurangi potensi bug / perilaku ui yg aneh
-            document.removeEventListener(
-                "mousedown",
-                closeDropdownOnOutsideClick,
-            );
+            document.removeEventListener("mousedown", handleOutsideClick);
     }, []);
 
     const handleOptionSelect = (selectedValue) => {

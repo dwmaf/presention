@@ -1,80 +1,150 @@
+/**
+ * * InternCard Component
+ * * ----------------------------------------
+ * * Komponen card untuk menampilkan informasi ringkas intern (peserta magang)
+ * * Digunakan di:
+ * * - Halaman Intern (daftar karyawan)
+ * * - Halaman Attendance (absensi kehadiran)
+ *
+ * ! Komponen ini bersifat reusable dengan 2 mode:
+ * ! 1. Default Mode → menampilkan divisi & fingerprint
+ * ! 2. Attendance Mode → menampilkan status kehadiran
+ *
+ * ? Kenapa tidak dipisah jadi 2 komponen?
+ * ? Karena struktur UI sama, hanya berbeda pada bagian badge/status
+ * ? → Mengurangi duplikasi layout
+ *
+ * @param {Object} intern
+ * * Data utama intern
+ * * - name → nama lengkap
+ * * - division → data divisi (opsional)
+ * * - poin → jumlah poin (default: 0)
+ * * - foto → path foto profil
+ * * - fingerprint_data → status fingerprint
+ *
+ * @param {Function} onClick
+ * * Handler saat card diklik
+ * * Biasanya untuk membuka modal detail (InternDetail.jsx)
+ *
+ * @param {Object|undefined} attendance
+ * * Data kehadiran (opsional)
+ * * Jika ada → komponen masuk ke "attendance mode"
+ *
+ * * Struktur attendance:
+ * * - status → "hadir" | "alpha" | "izin" | "sakit"
+ * * - terlambat → jumlah menit keterlambatan
+ * * - check_out → status sudah pulang
+ *
+ * ! Behavior Rendering:
+ * ! - attendance undefined → tampilkan divisi + fingerprint
+ * ! - attendance null → "Tidak Hadir"
+ * ! - attendance.status !== "hadir" → tampilkan status (alpha/izin/sakit)
+ * ! - attendance.status === "hadir" → tampilkan:
+ * !    - Hadir
+ * !    - Telat / Tepat Waktu
+ * !    - Pulang (jika check_out)
+ *
+ * * UI Logic:
+ * * - Poin < 3 → merah (peringatan)
+ * * - Poin >= 3 → biru (normal)
+ * * - Fingerprint ada → hijau (valid)
+ * * - Fingerprint tidak ada → merah (invalid)
+ *
+ * TODO Improvement ideas:
+ * TODO - Pisahkan AttendanceBadge menjadi komponen sendiri
+ * TODO - Tambahkan fallback image (bukan "No Img")
+ * TODO - Pisahkan FingerprintBadge agar reusable
+ * TODO - Buat reusable <Badge /> component untuk semua status
+ */
+
+/**
+ * * Status label (dipisah agar scalable & tidak dibuat ulang setiap render)
+ */
+const STATUS_LABELS = {
+    alpha: { label: "Tidak Hadir", color: "bg-red-100 text-red-600" },
+    izin: { label: "Izin", color: "bg-amber-100 text-amber-600" },
+    sakit: { label: "Sakit", color: "bg-blue-100 text-blue-600" },
+};
+
+/**
+ * * Reusable Badge Component
+ * ? Kenapa dibuat?
+ * ? → Menghindari repetisi class Tailwind
+ */
+function Badge({ children, className = "" }) {
+    return (
+        <span
+            className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit ${className}`}
+        >
+            {children}
+        </span>
+    );
+}
+
+/**
+ * * Attendance Badge (dipisah dari komponen utama)
+ * ! Fokus hanya ke render status
+ */
+function AttendanceBadge({ attendance }) {
+    if (attendance === undefined) return null;
+
+    if (!attendance) {
+        return <Badge className="bg-red-100 text-red-600">Tidak Hadir</Badge>;
+    }
+
+    if (attendance.status !== "hadir") {
+        const config = STATUS_LABELS[attendance.status] || {
+            label: attendance.status,
+            color: "bg-gray-100 text-gray-600",
+        };
+
+        return <Badge className={config.color}>{config.label}</Badge>;
+    }
+
+    return (
+        <div className="flex flex-wrap gap-1">
+            <Badge className="bg-green-100 text-green-700">Hadir</Badge>
+
+            {attendance.terlambat ? (
+                <Badge className="bg-amber-100 text-amber-700">
+                    Telat {attendance.terlambat}m
+                </Badge>
+            ) : (
+                <Badge className="bg-blue-100 text-blue-700">Tepat Waktu</Badge>
+            )}
+
+            {attendance.check_out && (
+                <Badge className="bg-blue-100 text-blue-700">Pulang</Badge>
+            )}
+        </div>
+    );
+}
+
 export default function InternCard({ intern, onClick, attendance }) {
+    /**
+     * * Derived state (lebih jelas & aman)
+     */
     const poin = intern.poin ?? 0;
-    console.log(poin);
+    const hasFingerprint = !!intern.fingerprint_data;
+
+    /**
+     * * Styling logic dipisah agar readable
+     */
     const poinStyle =
         poin < 3 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
 
-    const fingerprint = intern.fingerprint_data;
-    const fingerStyle = fingerprint
+    const fingerprintStyle = hasFingerprint
         ? "bg-green-100 text-green-700"
         : "bg-red-100 text-red-700";
 
-    // Render badge status kehadiran jika prop `attendance` diberikan
-    const renderAttendanceBadge = () => {
-        if (attendance === undefined) return null;
-
-        // Kasus 1: Belum ada record sama sekali
-        if (!attendance) {
-            return (
-                <span className="bg-red-100 text-red-600 text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit">
-                    Tidak Hadir
-                </span>
-            );
-        }
-
-        // Kasus 2: Status selain 'hadir' (Alpha dari generator, Izin, atau Sakit)
-        if (attendance.status !== "hadir") {
-            const statusLabels = {
-                alpha: {
-                    label: "Tidak Hadir",
-                    color: "bg-red-100 text-red-600",
-                },
-                izin: { label: "Izin", color: "bg-amber-100 text-amber-600" },
-                sakit: { label: "Sakit", color: "bg-blue-100 text-blue-600" },
-            };
-            const config = statusLabels[attendance.status] || {
-                label: attendance.status,
-                color: "bg-gray-100 text-gray-600",
-            };
-
-            return (
-                <span
-                    className={`${config.color} text-[11px] font-bold px-2.5 py-0.5 rounded-full w-fit capitalize`}
-                >
-                    {config.label}
-                </span>
-            );
-        }
-
-        // Kasus 3: Status 'hadir' (sudah scan/dipresensi admin)
-        return (
-            <div className="flex flex-wrap gap-1">
-                <span className="bg-green-100 text-green-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                    Hadir
-                </span>
-                {attendance.terlambat ? (
-                    <span className="bg-amber-100 text-amber-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                        Telat {attendance.terlambat}m
-                    </span>
-                ) : (
-                    <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                        Tepat Waktu
-                    </span>
-                )}
-                {attendance.check_out && (
-                    <span className="bg-blue-100 text-blue-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">
-                        Pulang
-                    </span>
-                )}
-            </div>
-        );
-    };
+    const divisionName = intern.division?.nama_divisi ?? "-";
 
     return (
         <div
             onClick={onClick}
             className="bg-white w-fit space-y-2 rounded-lg shadow-lg pb-4 cursor-pointer hover:scale-[1.02] transition flex flex-col"
         >
+            {/* Image */}
             {intern.foto ? (
                 <img
                     className="w-41 h-41 object-cover aspect-square rounded-t-lg object-top"
@@ -82,29 +152,33 @@ export default function InternCard({ intern, onClick, attendance }) {
                     alt={intern.name}
                 />
             ) : (
-                <div>No Img</div>
+                <div className="w-41 h-41 flex items-center justify-center bg-gray-100 text-gray-400 rounded-t-lg">
+                    No Image
+                </div>
             )}
-            <div className="px-4 flex flex-col justify-center flex-1 ">
+
+            <div className="px-4 flex flex-col justify-center flex-1">
+                {/* Name */}
                 <p className="font-semibold text-lg flex items-center flex-1">
                     {intern.name}
                 </p>
-                {/* Tampilkan badge kehadiran jika prop attendance ada, selain itu tampilkan divisi */}
+
+                {/* Attendance / Division */}
                 {attendance !== undefined ? (
-                    <div className="mb-2">{renderAttendanceBadge()}</div>
+                    <div className="mb-2">
+                        <AttendanceBadge attendance={attendance} />
+                    </div>
                 ) : (
-                    <p className="font-medium mb-2 text-sm">
-                        {intern.division ? intern.division.nama_divisi : "-"}
-                    </p>
+                    <p className="font-medium mb-2 text-sm">{divisionName}</p>
                 )}
+
+                {/* Footer */}
                 <div className="flex gap-2">
-                    <p
-                        className={`${poinStyle} w-fit py-0.5 px-2 rounded-lg text-xs font-semibold`}
-                    >
-                        {poin} Poin
-                    </p>
+                    <Badge className={poinStyle}>{poin} Poin</Badge>
+
                     {attendance === undefined && (
                         <div
-                            className={`${fingerStyle} rounded-full flex items-center `}
+                            className={`rounded-full flex items-center px-0.5 ${fingerprintStyle}`}
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"

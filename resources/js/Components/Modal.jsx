@@ -5,6 +5,29 @@ import {
     TransitionChild,
 } from "@headlessui/react";
 
+/**
+ * * Modal Component
+ * * ----------------------------------------
+ * * Wrapper modal berbasis Headless UI (accessible + animated)
+ *
+ * ? Kenapa dibuat wrapper?
+ * ? - Menyatukan logic modal (show, close, animation)
+ * ? - Menghindari duplikasi config Headless UI
+ * ? - Mempermudah kontrol ukuran (width & height)
+ *
+ * ! Behavior:
+ * - Menampilkan modal dengan animasi (fade + scale)
+ * - Bisa ditutup dengan klik backdrop (jika closeable = true)
+ * - Mendukung ukuran dinamis (maxWidth & maxHeight)
+ * - Menggunakan children sebagai isi modal
+ *
+ * @param {ReactNode} children - Konten di dalam modal
+ * @param {boolean} show - Menentukan apakah modal ditampilkan
+ * @param {string} maxWidth - Ukuran lebar modal (sm | md | lg | xl | 2xl | 70% | 80% | fit)
+ * @param {string} maxHeight - Ukuran tinggi modal (auto | fit | full | 70%)
+ * @param {boolean} closeable - Apakah modal bisa ditutup dengan klik luar / ESC
+ * @param {Function} onClose - Callback saat modal ditutup
+ */
 export default function Modal({
     children,
     show = false,
@@ -43,9 +66,12 @@ export default function Modal({
             <Dialog
                 as="div"
                 id="modal"
-                className="fixed inset-0 z-50 flex transform items-center overflow-y-auto px-4 py-6 transition-all"
+                className="fixed inset-0 z-50 flex transform items-center justify-center overflow-y-auto px-4 py-6 transition-all"
                 onClose={close}
             >
+                {/*
+                 * * Backdrop Overlay
+                 */}
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0"
@@ -57,6 +83,9 @@ export default function Modal({
                     <div className="absolute inset-0 bg-gray-500/75" />
                 </TransitionChild>
 
+                {/*
+                 * * Modal Panel (Content)
+                 */}
                 <TransitionChild
                     enter="ease-out duration-300"
                     enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
