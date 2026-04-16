@@ -82,9 +82,3 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__ . '/auth.php';
-
-// utk tes fingerprint
-Route::get('/test-fingerprint', [TesKomparasiSidikJariController::class, 'index'])->name('test.fingerprint');
-// Dev Tools
-Route::get('/dev/fingerprints', [FingerprintDevController::class, 'index'])->name('dev.fingerprints');
-// Route::get('/dev/fingerprints/export', [FingerprintDevController::class, 'exportCsv'])->name('dev.fingerprints.export');
