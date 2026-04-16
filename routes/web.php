@@ -1,26 +1,16 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\FingerprintController;
-use App\Http\Controllers\TesPresensi\SidikJariController;
-use App\Http\Controllers\TesPresensi\KehadiranController;
+use App\Http\Controllers\SidikJariController;
 use App\Http\Controllers\AdminFingerprintController;
-use App\Http\Controllers\TesPresensi\FingerprintDevController;
 use App\Http\Controllers\DivisionController;
 use App\Http\Controllers\InternController;
 use App\Http\Controllers\AttendanceController;
-use App\Http\Controllers\TesKomparasiSidikJariController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
+
 
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
-    ]);
+    return redirect()->route('login');
 });
 
 
@@ -30,7 +20,6 @@ Route::post('/attendance', [AttendanceController::class, 'store'])->name('attend
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
-    // route profil bawaan package breeze tidak/belum diperlukan
     
 
     // --- ADMIN FINGERPRINT ENROLLMENT ---
@@ -57,23 +46,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/interns/{intern}/export-attendance', [InternController::class, 'exportAttendanceCsv'])->name('interns.exportAttendance');
 
     // untuk buka halaman untuk nambah fingerprint
-    Route::get('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'index'])->name('interns.fingerprint-enrollment');
-    Route::post('/interns/{intern}/fingerprint-enrollment', [FingerprintController::class, 'store'])->name('interns.fingerprint-enrollment.store');
-
-    //---------------------------------|
-    // Tes                             |
-    //---------------------------------|
-    // untuk buka halaman untuk nambah fingerprint
     Route::get('/interns/{intern}/create-fingerprint', [SidikJariController::class, 'index'])->name('interns.fingerprint.create');
 
-    // legacy routes (masih ada kalau kamu butuh)
-    Route::post('/interns/{intern}/store-fingerprint', [SidikJariController::class, 'store'])->name('interns.fingerprint.store');
-    Route::post('/interns/{intern}/store-second-fingerprint', [SidikJariController::class, 'storeSecond'])->name('interns.fingerprint.storeSecond');
-    Route::post('/interns/{intern}/store-fingerprint-slot', [SidikJariController::class, 'storeSlot'])->name('interns.fingerprint.storeSlot');
-
-    /**
-     * ✅ CHANGED: ROUTE BARU (Group + Reset DB)
-     */
     Route::post('/interns/{intern}/fingerprint/store-group', [SidikJariController::class, 'storeGroup'])
         ->name('interns.fingerprint.storeGroup');
 

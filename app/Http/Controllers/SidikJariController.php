@@ -1,20 +1,20 @@
 <?php
 
-namespace App\Http\Controllers\TesPresensi;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Intern;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
-class FingerprintGroupController extends Controller
+class SidikJariController extends Controller
 {
-    /**
-     * Simpan 3 template sekaligus untuk group:
-     * - primary -> fingerprint_data, second_fingerprint_data, fingerprint_data_3
-     * - backup  -> fingerprint_data_4, fingerprint_data_5, fingerprint_data_6
-     *
-     * ✅ RULE: tidak boleh nimpa. Kalau sudah ada isi, user harus reset dulu.
-     */
+    public function index(Intern $intern)
+    {
+        return Inertia::render('NambahSidikJari', [
+            'intern' => $intern
+        ]);
+    }
+
     public function storeGroup(Request $request, Intern $intern)
     {
         $data = $request->validate([
@@ -30,8 +30,12 @@ class FingerprintGroupController extends Controller
 
         $cols = $map[$data['group']];
 
-        // ✅ BLOCK overwrite: jangan nimpa kalau ada salah satu kolom sudah ada isinya
-        $already = !empty($intern->{$cols[0]}) || !empty($intern->{$cols[1]}) || !empty($intern->{$cols[2]});
+        // ✅ BLOCK overwrite: jangan nimpa kalau salah satu kolom group sudah ada isi
+        $already =
+            !empty($intern->{$cols[0]}) ||
+            !empty($intern->{$cols[1]}) ||
+            !empty($intern->{$cols[2]});
+
         if ($already) {
             return back()->withErrors([
                 'fingerprint' => 'Template sudah ada di database. Demi keamanan, sistem tidak menimpa. Silakan Reset DB dulu jika ingin daftar ulang.',
@@ -47,10 +51,6 @@ class FingerprintGroupController extends Controller
         return back()->with('success', 'Fingerprint group berhasil disimpan (3 template).');
     }
 
-    /**
-     * Reset / hapus fingerprint di DB untuk group tertentu.
-     * ✅ Ini yang kamu minta: reset database tanpa nimpa.
-     */
     public function resetGroup(Request $request, Intern $intern)
     {
         $data = $request->validate([
