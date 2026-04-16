@@ -127,24 +127,37 @@ export default function Attendance({
      * * Identify user dari fingerprint service
      */
     const identifyUser = async () => {
-        const res = await fetch(
-            import.meta.env.VITE_FINGERPRINT_API ||
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        try {
+            const res = await fetch(
+                import.meta.env.VITE_FINGERPRINT_API ||
                 "http://localhost:5000/identify",
-            {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ database: fingerprintPayload }),
-            },
-        );
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ database: fingerprintPayload }),
+                    signal: controller.signal,
+                },
+            );
 
-        const result = await res.json();
+            clearTimeout(timeoutId); // Hapus timer jika berhasil
+            const result = await res.json();
 
-        //! Jika tidak dikenali
-        if (!result.match) {
-            throw new Error("Sidik jari tidak dikenali");
+            //! Jika tidak dikenali
+            if (!result.match) {
+                throw new Error("Sidik jari tidak dikenali");
+            }
+
+            return result.user_id;
+        } catch (err) {
+            if (err.name === 'AbortError') {
+                throw new Error("Waktu scan habis (tidak ada jari dideteksi)");
+            }
+            throw err;
         }
 
-        return result.user_id;
     };
 
     /**
@@ -291,11 +304,10 @@ export default function Attendance({
                     <button
                         onClick={startScanAndVerify}
                         disabled={isScanning}
-                        className={`flex transform items-center gap-2 rounded-xl px-5 py-2.5 font-medium transition active:scale-95 ${
-                            isScanning
+                        className={`flex transform items-center gap-2 rounded-xl px-5 py-2.5 font-medium transition active:scale-95 ${isScanning
                                 ? "cursor-not-allowed bg-gray-300 text-gray-500"
                                 : "bg-blue-400 text-white hover:bg-blue-300"
-                        }`}
+                            }`}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
