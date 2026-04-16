@@ -148,18 +148,21 @@ export default function Division({ auth, divisions, allInterns = [] }) {
     const submit = (e) => {
         e.preventDefault();
 
-        const action = isEditMode
-            ? form.put(route("divisions.update", selectedDivision.id))
-            : form.post(route("divisions.store"));
-
-        action
-            .then(() => {
+        const options = {
+            onSuccess: () => {
                 closeFormModal();
                 addToast("Berhasil!", "success");
-            })
-            .catch(() => {
+            },
+            onError: () => {
                 addToast("Terjadi kesalahan.", "error");
-            });
+            },
+        };
+
+        if (isEditMode) {
+            form.put(route("divisions.update", selectedDivision.id), options);
+        } else {
+            form.post(route("divisions.store"), options);
+        }
     };
 
     const deleteDivision = () => {
@@ -227,7 +230,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                 </p>
                             </div>
                             <button
-                                onClick={() => openModal()}
+                                onClick={() => openFormModal()}
                                 className="flex items-center gap-2 whitespace-nowrap rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-gray-50"
                             >
                                 <PuzzleSmall />
@@ -543,7 +546,7 @@ export default function Division({ auth, divisions, allInterns = [] }) {
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
                                     {modal.detail.interns &&
-                                    modal.detail.interns.length > 0 ? (
+                                        modal.detail.interns.length > 0 ? (
                                         modal.detail.interns.map((intern) => (
                                             <tr key={intern.id}>
                                                 <td className="px-4 py-2">
