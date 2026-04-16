@@ -26,7 +26,7 @@
 
 export default function DownloadBtn({ onClick }) {
     return (
-        <button
+        <a
             href={onClick} // URL endpoint untuk download file
             className="flex items-center gap-2 rounded-md px-6 py-3 text-sm font-medium text-green-700 transition hover:bg-green-100"
         >
@@ -44,6 +44,6 @@ export default function DownloadBtn({ onClick }) {
             </svg>
             {/* Label */}
             Download CSV
-        </button>
+        </a>
     );
 }
