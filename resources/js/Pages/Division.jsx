@@ -167,9 +167,14 @@ export default function Division({ auth, divisions, allInterns = [] }) {
 
     const deleteDivision = () => {
         deleteForm.delete(route("divisions.destroy", selectedDivision.id), {
-            onSuccess: () => {
-                closeDeleteModal();
-                addToast("Divisi dihapus!", "success");
+            onSuccess: (page) => {
+                if (page.props.flash.error) {
+                    closeDeleteModal();
+                    addToast(page.props.flash.error, "error");
+                } else {
+                    closeDeleteModal();
+                    addToast("Divisi dihapus!", "success");
+                }
             },
             onError: () => {
                 addToast("Gagal menghapus.", "error");
