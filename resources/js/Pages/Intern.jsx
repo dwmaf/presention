@@ -393,10 +393,7 @@ export default function Intern({ auth, interns, divisions }) {
                 <InternFormModal
                     show={isFormOpen}
                     onClose={() => setIsFormOpen(false)}
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        console.log("Submit dari InternFormModal terpicu!");
-                    }}
+                    onSubmit={submit}
                     data={data}
                     setData={setData}
                     processing={processing}
