@@ -216,7 +216,7 @@ function Sidebar() {
                     ))}
                 </ul>
 
-                <ul className="mb-2 mt-auto">
+                <ul className="mb-2 mt-auto px-4">
                     {/* Logout */}
                     <SidebarItem
                         href={route("logout")}
