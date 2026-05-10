@@ -68,7 +68,7 @@ class AttendanceController extends Controller
         return Inertia::render('Attendance', [
             'interns'      => $interns,
             'selectedDate' => $selectedDate,
-            'adminFingerprints' => $adminFingerprints, 
+            'adminFingerprints' => $adminFingerprints,
             'hariIni'      => Carbon::parse($selectedDate)->locale('id')->isoFormat('dddd'),
             // Tambahkan fingerprint database untuk scanner (hanya untuk hari ini)
             'fingerprintDatabase' => ($selectedDate === $today) ? $interns->map(function ($i) {
@@ -242,39 +242,36 @@ class AttendanceController extends Controller
     public function store(Request $request)
     {
         // === LOGIKA AUTO RESET POIN (Lazy Trigger) ===
-        // Cek apakah hari ini tanggal 1
-        if (now()->day === 1) {
-            $flagName = 'reset_poin_' . now()->format('Y_m'); // Contoh: reset_poin_2024_03
+        $flagName = 'reset_poin_' . now()->format('Y_m'); // Contoh: reset_poin_2024_03
 
-            // Cek cepat apakah flag sudah ada di DB (supaya ga berat)
-            $isAlreadyDone = SystemLog::where('action_name', $flagName)->exists();
+        // Cek cepat apakah flag sudah ada di DB (supaya ga berat)
+        $isAlreadyDone = SystemLog::where('action_name', $flagName)->exists();
 
-            if (!$isAlreadyDone) {
-                // Gunakan Transaction agar aman dari Race Condition
-                DB::beginTransaction();
-                try {
-                    // Coba buat flag record baru
-                    // Jika user A dan user B masuk sini bebarengan, 
-                    // salah satu akan gagal create karena constraint UNIQUE di database
-                    SystemLog::create([
-                        'action_name' => $flagName,
-                        'executed_at' => now(),
-                    ]);
+        if (!$isAlreadyDone) {
+            // Gunakan Transaction agar aman dari Race Condition
+            DB::beginTransaction();
+            try {
+                // Coba buat flag record baru
+                // Jika user A dan user B masuk sini bebarengan, 
+                // salah satu akan gagal create karena constraint UNIQUE di database
+                SystemLog::create([
+                    'action_name' => $flagName,
+                    'executed_at' => now(),
+                ]);
 
-                    // Update massal poin jadi 5
-                    Intern::query()->update(['poin' => 5]);
+                // Update massal poin jadi 5
+                Intern::query()->update(['poin' => 5]);
 
-                    DB::commit();
-                } catch (\Exception $e) {
-                    // Jika error (biasanya karena Duplicate Entry violation/balapan), rollback.
-                    // Artinya reset sudah dilakukan oleh request lain milidetik sebelumnya.
-                    DB::rollBack();
-                }
+                DB::commit();
+            } catch (\Exception $e) {
+                // Jika error (biasanya karena Duplicate Entry violation/balapan), rollback.
+                // Artinya reset sudah dilakukan oleh request lain milidetik sebelumnya.
+                DB::rollBack();
             }
         }
         // === END LOGIKA AUTO RESET POIN ===
 
-        
+
         // Panggil generator data absen harian (Trigger)
         $this->generateDailyAttendances();
 
@@ -313,7 +310,7 @@ class AttendanceController extends Controller
                     $deadlineTime = $intern->{$cols['time']}; // Misal "09:00:00"
                 }
             }
-            
+
             // Logic Terlambat: Bandingkan jam sekarang vs deadline
             // Jika jam sekarang > deadline, maka late.
             $isLate = ($now->format('H:i:s') > $deadlineTime);
@@ -337,9 +334,9 @@ class AttendanceController extends Controller
             }
 
             // LOGIKA BARU: Safety net agar poin tidak pernah kurang dari 0
-            if ($intern->poin < 0) {
-                $intern->update(['poin' => 0]);
-            }
+            // if ($intern->poin < 0) {
+            //     $intern->update(['poin' => 0]);
+            // }
 
             if (!$attendance) {
                 Attendance::create([
@@ -436,9 +433,7 @@ class AttendanceController extends Controller
             foreach ($internsTanpaPresensi as $i) {
                 // LOGIKA BARU: Kurangi 2 poin, tapi jangan sampai minus
                 // Menggunakan max(0, hitungan) memastikan nilai minimal adalah 0
-                $poinBaru = max(0, $i->poin - 2);
-                
-                $i->update(['poin' => $poinBaru]);
+                $i->decrement('poin', 2);
 
                 $data[] = [
                     'intern_id' => $i->id,

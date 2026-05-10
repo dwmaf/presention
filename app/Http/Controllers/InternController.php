@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\SystemLog;
+use Illuminate\Support\Facades\DB;
 use App\Models\Intern;
 use App\Models\Division;
 use Illuminate\Http\Request;
@@ -129,8 +131,8 @@ class InternController extends Controller
         $validatedData = $request->validate([
             'senin.checked' => 'boolean',
             'senin.time'    => 'required_if:senin.checked,true',
-            
-            'selasa.checked'=> 'boolean',
+
+            'selasa.checked' => 'boolean',
             'selasa.time'   => 'required_if:selasa.checked,true',
 
             'rabu.checked'  => 'boolean',
@@ -150,13 +152,13 @@ class InternController extends Controller
 
             'toleransi_selasa'      => $request->input('selasa.checked') ?? false,
             'toleransi_selasa_time' => $request->input('selasa.time') ?? '08:30:00',
-            
+
             'toleransi_rabu'      => $request->input('rabu.checked') ?? false,
             'toleransi_rabu_time' => $request->input('rabu.time') ?? '08:30:00',
-            
+
             'toleransi_kamis'      => $request->input('kamis.checked') ?? false,
             'toleransi_kamis_time' => $request->input('kamis.time') ?? '08:30:00',
-            
+
             'toleransi_jumat'      => $request->input('jumat.checked') ?? false,
             'toleransi_jumat_time' => $request->input('jumat.time') ?? '08:30:00',
         ]);
@@ -236,9 +238,24 @@ class InternController extends Controller
 
     public function resetPoints()
     {
-        // Update semua data intern, set poin jadi 5
-        Intern::query()->update(['poin' => 5]);
+        $flagName = 'reset_poin_' . now()->format('Y_m');
 
-        return redirect()->back()->with('success', 'Poin semua karyawan berhasil direset ke 5.');
+        DB::beginTransaction();
+        try {
+            // Update semua data intern, set poin jadi 5
+            Intern::query()->update(['poin' => 5]);
+
+            // Catat log agar sistem otomatis tidak melakukan reset lagi bulan ini
+            SystemLog::firstOrCreate(
+                ['action_name' => $flagName],
+                ['executed_at' => now()]
+            );
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Poin semua karyawan berhasil direset ke 5.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Gagal mereset poin: ' . $e->getMessage());
+        }
     }
 }
