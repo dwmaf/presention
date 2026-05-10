@@ -133,7 +133,7 @@ export default function Attendance({
         try {
             const res = await fetch(
                 import.meta.env.VITE_FINGERPRINT_API ||
-                "http://localhost:5000/identify",
+                    "http://localhost:5000/identify",
                 {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -152,12 +152,12 @@ export default function Attendance({
 
             return result.user_id;
         } catch (err) {
-            if (err.name === 'AbortError') {
+            if (err.name === "AbortError") {
                 throw new Error("Waktu scan habis (tidak ada jari dideteksi)");
             }
-            throw err;
+            // Jika error BUKAN AbortError, kemungkinan besar service mati
+            throw new Error("Scan gagal! Silahkan coba lagi");
         }
-
     };
 
     /**
@@ -206,7 +206,7 @@ export default function Attendance({
             const message =
                 err?.response?.data?.message ||
                 err.message ||
-                "Gagal mencatat presensi";
+                "Gagal mencatat presensi! Silahkan coba lagi";
 
             setFeedback({ type: "error", message });
         } finally {
@@ -304,10 +304,11 @@ export default function Attendance({
                     <button
                         onClick={startScanAndVerify}
                         disabled={isScanning}
-                        className={`flex transform items-center gap-2 rounded-xl px-5 py-2.5 font-medium transition active:scale-95 ${isScanning
+                        className={`flex transform items-center gap-2 rounded-xl px-5 py-2.5 font-medium transition active:scale-95 ${
+                            isScanning
                                 ? "cursor-not-allowed bg-gray-300 text-gray-500"
                                 : "bg-blue-400 text-white hover:bg-blue-300"
-                            }`}
+                        }`}
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"

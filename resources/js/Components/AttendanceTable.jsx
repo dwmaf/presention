@@ -146,7 +146,8 @@ export default function AttendanceTable({
             {/* Pagination */}
             <div className="mt-4 flex items-center justify-between">
                 <p className="items-center text-gray-500">
-                    Menampilkan {endIndex} dari {attendances.length}
+                    Menampilkan {currentAttendances.length} dari{" "}
+                    {attendances.length}
                 </p>
 
                 <div className="flex gap-2">
