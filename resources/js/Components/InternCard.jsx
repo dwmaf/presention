@@ -124,7 +124,8 @@ export default function InternCard({ intern, onClick, attendance }) {
     /**
      * * Derived state (lebih jelas & aman)
      */
-    const poin = intern.poin ?? 0;
+    const rawPoin = intern.poin ?? 0;
+    const poin = rawPoin < 0 ? 0 : rawPoin;
     const hasFingerprint = !!intern.fingerprint_data;
 
     /**

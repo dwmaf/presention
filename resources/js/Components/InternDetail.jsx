@@ -100,7 +100,7 @@ export default function InternDetail({ intern, divisions }) {
         rabu: intern?.rabu || false,
         kamis: intern?.kamis || false,
         jumat: intern?.jumat || false,
-        poin: intern?.poin ?? 5,
+        poin: (intern?.poin ?? 5) < 0 ? 0 : (intern?.poin ?? 5),
     });
 
     /**
@@ -147,7 +147,8 @@ export default function InternDetail({ intern, divisions }) {
      * - renderJadwal → transform data → display
      */
 
-    const poin = intern.poin ?? 0;
+    const rawPoin = intern.poin ?? 0;
+    const poin = rawPoin < 0 ? 0 : rawPoin;
     const poinStyle =
         poin < 3 ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800";
 
