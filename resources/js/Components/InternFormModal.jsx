@@ -169,10 +169,13 @@ export default function InternFormModal({
                                         Setiap Hari
                                     </span>
                                 </label>
-                            </div>
-
-                            {["senin", "selasa", "rabu", "kamis", "jumat"].map(
-                                (day) => (
+                                {[
+                                    "senin",
+                                    "selasa",
+                                    "rabu",
+                                    "kamis",
+                                    "jumat",
+                                ].map((day) => (
                                     <label
                                         key={day}
                                         className="flex cursor-pointer items-center gap-2 rounded-md border border-gray-200 px-3 py-2"
@@ -185,12 +188,12 @@ export default function InternFormModal({
                                             }
                                             className="cursor-pointer rounded-sm focus:ring-transparent"
                                         />
-                                        <span className="text-sm text-gray-700">
-                                            Senin
+                                        <span className="text-sm capitalize text-gray-700">
+                                            {day}
                                         </span>
                                     </label>
-                                ),
-                            )}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
