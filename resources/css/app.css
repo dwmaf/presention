@@ -14,6 +14,8 @@
 @import "@fontsource-variable/dm-sans";
 @import "@fontsource-variable/raleway";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
     --font-sans: "DM Sans Variable", sans-serif;
     --font-heading: "Raleway Variable", sans-serif;

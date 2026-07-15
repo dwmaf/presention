@@ -1,0 +1,549 @@
+/**
+ * ============================================================================
+ * Component   : InternDetail
+ * Layer       : UI (Component)
+ *
+ * Description:
+ * Menampilkan detail profil karyawan, riwayat absensi, grafik/statistik,
+ * serta kontrol edit foto, toleransi, status, dan hapus karyawan.
+ * ============================================================================
+ */
+
+import { router } from "@inertiajs/react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+    CalendarDaysIcon,
+    ClockIcon,
+    FingerprintIcon,
+    TrashIcon,
+    EditIcon,
+    DownloadIcon,
+    SparklesIcon,
+    UserIcon,
+} from "lucide-react";
+
+// @ts-ignore
+import AttendanceTable from "@/components/AttendanceTable";
+import InternForm from "./InternForm";
+import CheckOutForm from "@/components/CheckoutForm";
+import ToleransiModal from "@/components/ToleransiModal";
+// @ts-ignore
+import EditStatusForm from "@/components/EditStatusForm";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+import type {
+    Division,
+    Attendance,
+    InternData,
+} from "@/features/interns/types/intern";
+
+import { useInternPhoto } from "../hooks/useInternPhoto";
+import { useInternAttendance } from "../hooks/useInternAttendance";
+import { useInternForm } from "../hooks/useInternForm";
+import { useInternActions } from "../hooks/useInternActions";
+
+interface InternDetailProps {
+    intern: InternData;
+    divisions: Division[];
+}
+
+const EditStatusFormFixed = EditStatusForm as unknown as React.ComponentType<{
+    show: boolean;
+    position?: "top" | "bottom";
+    selectedStatus: string;
+    setSelectedStatus: (status: string) => void;
+    onSave: (status: string) => void;
+    onCancel: () => void;
+    getStyle: (status: string) => string;
+    getLabel: (status: string) => string;
+}>;
+
+const ATTENDANCE_STYLE: Record<string, string> = {
+    hadir: "bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400 border-green-200",
+    izin: "bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200",
+    sakit: "bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200",
+    alpha: "bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400 border-red-200",
+};
+
+const ATTENDANCE_LABEL: Record<string, string> = {
+    hadir: "Hadir",
+    izin: "Izin",
+    sakit: "Sakit",
+    alpha: "Alpha",
+};
+
+const getAttendanceStyle = (status: string) =>
+    ATTENDANCE_STYLE[status] || "bg-gray-100 text-gray-700";
+
+const getAttendanceLabel = (status: string) =>
+    ATTENDANCE_LABEL[status] || "Tidak ada";
+
+const AttendanceTableFixed = AttendanceTable as unknown as React.ComponentType<{
+    attendances: Attendance[];
+    renderCheckOut: (
+        attendance: Attendance,
+        indexInPage: number,
+        totalInPage: number,
+    ) => React.ReactNode;
+    renderStatus: (
+        attendance: Attendance,
+        indexInPage: number,
+        totalInPage: number,
+    ) => React.ReactNode;
+}>;
+
+/**
+ * Komponen detail profil karyawan magang.
+ *
+ * @param props Properti komponen.
+ * @returns Komponen detail karyawan magang.
+ */
+export default function InternDetail({ intern, divisions }: InternDetailProps) {
+    if (!intern) return null;
+
+    // * Panggil hooks terpisah
+    const { uploading, handlePhotoClick, handlePhotoChange } = useInternPhoto({
+        internId: intern.id,
+    });
+
+    const {
+        showStatusForm,
+        currentAttendanceId,
+        selectedStatus,
+        setSelectedStatus,
+        showCheckOutForm,
+        editingCheckOutId,
+        checkOutValue,
+        setCheckOutValue,
+        confirmingCheckOutDeletion,
+        setConfirmingCheckOutDeletion,
+        handleToggleStatusForm,
+        handleSaveStatus,
+        handleCancelStatusUpdate,
+        handleToggleCheckOutForm,
+        handleSaveCheckOut,
+        handleCancelCheckOutUpdate,
+        handleDeleteCheckOut,
+    } = useInternAttendance();
+
+    const {
+        showForm,
+        setShowForm,
+        data,
+        setData,
+        errors,
+        handleSubmit,
+        handleCloseForm,
+    } = useInternForm({ intern });
+
+    const {
+        showToleransiModal,
+        setShowToleransiModal,
+        confirmingDeletion,
+        setConfirmingDeletion,
+        handleSaveToleransi,
+        handleDeleteIntern,
+    } = useInternActions({ internId: intern.id });
+
+    // ── Derived States ─────────────────────────────────────────
+    const rawPoin = intern.poin ?? 0;
+    const poin = rawPoin < 0 ? 0 : rawPoin;
+    const poinStyle =
+        poin < 3
+            ? "bg-destructive/10 text-destructive border-destructive/20"
+            : "bg-primary/10 text-primary border-primary/20";
+
+    const fingerStyle = intern.fingerprint_data
+        ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30"
+        : "bg-destructive/10 text-destructive border-destructive/20";
+
+    const renderJadwal = () => {
+        const days: string[] = [];
+        if (intern.senin) days.push("Senin");
+        if (intern.selasa) days.push("Selasa");
+        if (intern.rabu) days.push("Rabu");
+        if (intern.kamis) days.push("Kamis");
+        if (intern.jumat) days.push("Jumat");
+
+        if (days.length === 5) return "Setiap hari";
+        return days.length > 0 ? days.join(", ") : "Belum ada jadwal";
+    };
+
+    const renderCheckOut = (
+        attendance: Attendance,
+        indexInPage: number,
+        totalInPage: number,
+    ) => {
+        const position =
+            indexInPage >= totalInPage - (totalInPage > 4 ? totalInPage - 3 : 0)
+                ? "top"
+                : "bottom";
+
+        return (
+            <div className="relative">
+                <button
+                    onClick={() =>
+                        handleToggleCheckOutForm(
+                            attendance.id,
+                            attendance.check_out,
+                        )
+                    }
+                    className="hover:bg-muted cursor-pointer rounded px-2 py-1 text-sm font-medium"
+                >
+                    {attendance.check_out
+                        ? attendance.check_out.slice(0, 5)
+                        : "-"}
+                </button>
+
+                {!confirmingCheckOutDeletion && (
+                    <CheckOutForm
+                        show={
+                            showCheckOutForm &&
+                            editingCheckOutId === attendance.id
+                        }
+                        position={position}
+                        value={checkOutValue}
+                        setValue={setCheckOutValue}
+                        onSave={handleSaveCheckOut}
+                        onDelete={() => setConfirmingCheckOutDeletion(true)}
+                        onCancel={handleCancelCheckOutUpdate}
+                    />
+                )}
+            </div>
+        );
+    };
+
+    const renderStatus = (
+        attendance: Attendance,
+        indexInPage: number,
+        totalInPage: number,
+    ) => {
+        const position = indexInPage >= 3 ? "top" : "bottom";
+
+        return (
+            <div className="relative">
+                <Badge
+                    variant="outline"
+                    onClick={() =>
+                        handleToggleStatusForm(attendance.id, attendance.status)
+                    }
+                    className={`cursor-pointer font-medium transition hover:brightness-95 ${getAttendanceStyle(attendance.status)}`}
+                >
+                    {getAttendanceLabel(attendance.status)}
+                </Badge>
+
+                <EditStatusFormFixed
+                    show={
+                        showStatusForm && currentAttendanceId === attendance.id
+                    }
+                    position={position}
+                    selectedStatus={selectedStatus}
+                    setSelectedStatus={setSelectedStatus}
+                    onSave={handleSaveStatus}
+                    onCancel={handleCancelStatusUpdate}
+                    getStyle={getAttendanceStyle}
+                    getLabel={getAttendanceLabel}
+                />
+            </div>
+        );
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex flex-col gap-6 border-b pb-6 md:flex-row md:items-start md:justify-between">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    <div
+                        className="group border-border bg-muted relative flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-xl border shadow-sm"
+                        onClick={handlePhotoClick}
+                    >
+                        {intern.foto ? (
+                            <>
+                                <img
+                                    src={`/storage/${intern.foto}`}
+                                    alt={intern.name}
+                                    className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 hover:opacity-100">
+                                    <span className="text-xs font-semibold text-white">
+                                        {uploading
+                                            ? "Mengupload..."
+                                            : "Ubah Foto"}
+                                    </span>
+                                </div>
+                            </>
+                        ) : (
+                            <div className="text-muted-foreground flex flex-col items-center gap-1 p-3 text-center">
+                                <UserIcon className="h-8 w-8" />
+                                <span className="text-xs font-semibold">
+                                    {uploading
+                                        ? "Mengupload..."
+                                        : "Upload Foto"}
+                                </span>
+                            </div>
+                        )}
+                        <input
+                            id="photo-upload"
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png"
+                            className="hidden"
+                            onChange={handlePhotoChange}
+                            disabled={uploading}
+                        />
+                    </div>
+
+                    <div className="space-y-2.5">
+                        <div>
+                            <h2 className="text-xl font-bold tracking-tight">
+                                {intern.name}
+                            </h2>
+                            <p className="text-primary text-sm font-semibold">
+                                {intern.division?.nama_divisi || "-"}
+                            </p>
+                        </div>
+
+                        <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                            <span className="flex items-center gap-1.5 font-medium">
+                                <CalendarDaysIcon className="h-4 w-4" />
+                                {renderJadwal()}
+                            </span>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setShowToleransiModal(true)}
+                                className="text-muted-foreground hover:text-foreground h-7 px-2 font-medium"
+                            >
+                                <ClockIcon className="mr-1 h-4 w-4" />
+                                Toleransi Terlambat
+                            </Button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <Badge variant="outline" className={poinStyle}>
+                                {poin} Poin
+                            </Badge>
+
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                    router.visit(
+                                        `/interns/${intern.id}/create-fingerprint`,
+                                    )
+                                }
+                                className={`flex h-7 items-center gap-1.5 rounded-full border px-2 ${fingerStyle}`}
+                            >
+                                <FingerprintIcon className="h-3.5 w-3.5" />
+                                <span className="text-xs font-semibold">
+                                    {intern.fingerprint_data
+                                        ? "Terdaftar"
+                                        : "Belum Terdaftar"}
+                                </span>
+                            </Button>
+
+                            <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => setShowForm(!showForm)}
+                                className="h-7 text-xs font-semibold"
+                            >
+                                <EditIcon className="mr-1 h-3 w-3" />
+                                Edit Info
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="w-full min-w-[240px] space-y-4 md:w-auto">
+                    <div className="border-border bg-card grid grid-cols-2 gap-4 rounded-xl border p-4">
+                        <div>
+                            <p className="text-muted-foreground text-xs">
+                                Total Kehadiran
+                            </p>
+                            <p className="text-base font-semibold">
+                                {intern.total_kehadiran || 0} hari
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground text-xs">
+                                Total Jam Kerja
+                            </p>
+                            <p className="text-base font-semibold">
+                                {intern.total_jam || 0} jam
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground text-xs">
+                                Rata-rata Masuk
+                            </p>
+                            <p className="text-base font-semibold">
+                                {intern.avg_jam_masuk || "-"}
+                            </p>
+                        </div>
+                        <div>
+                            <p className="text-muted-foreground text-xs">
+                                Rata-rata Pulang
+                            </p>
+                            <p className="text-base font-semibold">
+                                {intern.avg_jam_pulang || "-"}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="border-border bg-card/50 flex justify-between rounded-lg border px-4 py-2 text-xs font-semibold">
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <SparklesIcon className="h-3.5 w-3.5 fill-emerald-500/20" />
+                            Hadir: {intern.total_kehadiran || 0}
+                        </span>
+                        <span className="flex items-center gap-1 border-r border-l px-4 text-amber-600 dark:text-amber-400">
+                            <SparklesIcon className="h-3.5 w-3.5 fill-amber-500/20" />
+                            Izin: {intern.total_izin || 0}
+                        </span>
+                        <span className="text-destructive flex items-center gap-1">
+                            <SparklesIcon className="fill-destructive/20 h-3.5 w-3.5" />
+                            Alpha: {intern.total_alpha || 0}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <InternForm
+                show={showForm}
+                setShow={setShowForm}
+                data={data}
+                setData={setData}
+                errors={errors}
+                divisions={divisions}
+                onSubmit={handleSubmit}
+                onCancel={handleCloseForm}
+            />
+
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold tracking-tight">
+                        Riwayat Kehadiran
+                    </h3>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                                router.visit(
+                                    `/interns/${intern.id}/export-attendance`,
+                                )
+                            }
+                            className="flex items-center gap-1"
+                        >
+                            <DownloadIcon className="h-4 w-4" />
+                            Ekspor Data
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => setConfirmingDeletion(true)}
+                            className="flex items-center gap-1"
+                        >
+                            <TrashIcon className="h-4 w-4" />
+                            Hapus Intern
+                        </Button>
+                    </div>
+                </div>
+
+                <AttendanceTableFixed
+                    attendances={intern.attendances || []}
+                    renderCheckOut={(
+                        att: Attendance,
+                        idx: number,
+                        tot: number,
+                    ) => renderCheckOut(att, idx, tot)}
+                    renderStatus={(att: Attendance, idx: number, tot: number) =>
+                        renderStatus(att, idx, tot)
+                    }
+                />
+            </div>
+
+            <ToleransiModal
+                show={showToleransiModal}
+                intern={intern}
+                onClose={() => setShowToleransiModal(false)}
+                onSave={handleSaveToleransi}
+            />
+
+            <AlertDialog
+                open={confirmingDeletion}
+                onOpenChange={setConfirmingDeletion}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Data Karyawan</AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-3 pt-2">
+                            <p className="text-foreground font-semibold">
+                                Apakah Anda yakin ingin menghapus data &quot;
+                                {intern.name}&quot;?
+                            </p>
+                            <p className="text-destructive bg-destructive/10 border-destructive/20 rounded-lg border p-2.5 font-medium">
+                                Peringatan: Seluruh riwayat absensi, akumulasi
+                                poin, dan foto akan dihapus selamanya dari
+                                sistem.
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                                Silakan ekspor/unduh data kehadiran terlebih
+                                dahulu jika Anda membutuhkannya untuk cadangan.
+                            </p>
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteIntern}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        >
+                            Hapus Permanen
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+                open={confirmingCheckOutDeletion}
+                onOpenChange={setConfirmingCheckOutDeletion}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Jam Pulang</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Apakah Anda yakin ingin menghapus catatan jam pulang
+                            untuk baris kehadiran ini? Tindakan ini tidak dapat
+                            dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel
+                            onClick={() => {
+                                setConfirmingCheckOutDeletion(false);
+                            }}
+                        >
+                            Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteCheckOut}
+                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        >
+                            Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+    );
+}

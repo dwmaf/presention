@@ -1,9 +1,9 @@
-import InputLabel from "./InputLabel";
-import TextInput from "./TextInput";
-import InputError from "./InputError";
-import CustomSelect from "./CustomSelect";
-import PrimaryButton from "./PrimaryButton";
-import SecondaryButton from "./SecondaryButton";
+import InputLabel from "../../../components/InputLabel";
+import TextInput from "../../../components/TextInput";
+import InputError from "../../../components/InputError";
+import CustomSelect from "../../../components/CustomSelect";
+import PrimaryButton from "../../../components/PrimaryButton";
+import SecondaryButton from "../../../components/SecondaryButton";
 
 /**
  * * Konfigurasi hari (single source of truth)
