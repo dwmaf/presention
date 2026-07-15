@@ -1,79 +1,50 @@
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible"
-import {
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuAction,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
-} from "@/components/ui/sidebar"
-import { ChevronRightIcon } from "lucide-react"
+/**
+ * ============================================================================
+ * Component   : NavMain
+ * Layer       : Feature (Sidebar)
+ *
+ * Description:
+ * Menampilkan daftar menu navigasi utama datar (tanpa dropdown) dengan
+ * dukungan status aktif dan SPA routing via Inertia Link.
+ * ============================================================================
+ */
 
-export function NavMain({
-  items,
-}: {
-  items: {
-    title: string
-    url: string
-    icon: React.ReactNode
-    isActive?: boolean
-    items?: {
-      title: string
-      url: string
-    }[]
-  }[]
-}) {
-  return (
-    <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
-      <SidebarMenu>
-        {items.map((item) => (
-          <Collapsible
-            key={item.title}
-            defaultOpen={item.isActive}
-            render={<SidebarMenuItem />}
-          >
-            <SidebarMenuButton
-              tooltip={item.title}
-              render={<a href={item.url} />}
-            >
-              {item.icon}
-              <span>{item.title}</span>
-            </SidebarMenuButton>
-            {item.items?.length ? (
-              <>
-                <CollapsibleTrigger
-                  render={
-                    <SidebarMenuAction className="aria-expanded:rotate-90" />
-                  }
-                >
-                  <ChevronRightIcon
-                  />
-                  <span className="sr-only">Toggle</span>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarMenuSub>
-                    {item.items?.map((subItem) => (
-                      <SidebarMenuSubItem key={subItem.title}>
-                        <SidebarMenuSubButton render={<a href={subItem.url} />}>
-                          <span>{subItem.title}</span>
-                        </SidebarMenuSubButton>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                </CollapsibleContent>
-              </>
-            ) : null}
-          </Collapsible>
-        ))}
-      </SidebarMenu>
-    </SidebarGroup>
-  )
+import type { ReactNode } from "react";
+import { Link } from "@inertiajs/react";
+import {
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from "@/components/ui/sidebar";
+
+interface NavItem {
+    title: string;
+    url: string;
+    icon: ReactNode;
+    isActive?: boolean;
+}
+
+export function NavMain({ items }: { items: NavItem[] }) {
+    return (
+        <SidebarGroup>
+            <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+            <SidebarMenu>
+                {items.map((item) => (
+                    <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                            size="md"
+                            tooltip={item.title}
+                            render={<Link href={item.url} />}
+                            isActive={item.isActive}
+                        >
+                            {item.icon}
+                            <span>{item.title}</span>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                ))}
+            </SidebarMenu>
+        </SidebarGroup>
+    );
 }

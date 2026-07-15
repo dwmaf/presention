@@ -1,8 +1,16 @@
-import * as React from "react";
+/**
+ * ============================================================================
+ * Component   : AppSidebar
+ * Layer       : Feature (Sidebar)
+ *
+ * Description:
+ * Komponen utama penyusun sidebar. Mengintegrasikan header "Sistem Absensi",
+ * isi menu NavMain, dan footer NavUser.
+ * ============================================================================
+ */
 
+import * as React from "react";
 import { NavMain } from "@/features/sidebar/nav-main";
-import { NavProjects } from "@/features/sidebar/nav-projects";
-import { NavSecondary } from "@/features/sidebar/nav-secondary";
 import { NavUser } from "@/features/sidebar/nav-user";
 import {
     Sidebar,
@@ -14,170 +22,78 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import {
-    TerminalSquareIcon,
-    BotIcon,
-    BookOpenIcon,
-    Settings2Icon,
-    LifeBuoyIcon,
-    SendIcon,
-    FrameIcon,
-    PieChartIcon,
-    MapIcon,
-    TerminalIcon,
+    LayoutDashboardIcon,
+    UsersIcon,
+    LayersIcon,
+    CalendarCheckIcon,
 } from "lucide-react";
+import { CalendarDaysIcon } from "@/components/icons/calendar-days";
 
-const data = {
-    user: {
-        name: "shadcn",
-        email: "m@example.com",
-        avatar: "/avatars/shadcn.jpg",
-    },
-    navMain: [
-        {
-            title: "Playground",
-            url: "#",
-            icon: <TerminalSquareIcon />,
-            isActive: true,
-            items: [
-                {
-                    title: "History",
-                    url: "#",
-                },
-                {
-                    title: "Starred",
-                    url: "#",
-                },
-                {
-                    title: "Settings",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Models",
-            url: "#",
-            icon: <BotIcon />,
-            items: [
-                {
-                    title: "Genesis",
-                    url: "#",
-                },
-                {
-                    title: "Explorer",
-                    url: "#",
-                },
-                {
-                    title: "Quantum",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Documentation",
-            url: "#",
-            icon: <BookOpenIcon />,
-            items: [
-                {
-                    title: "Introduction",
-                    url: "#",
-                },
-                {
-                    title: "Get Started",
-                    url: "#",
-                },
-                {
-                    title: "Tutorials",
-                    url: "#",
-                },
-                {
-                    title: "Changelog",
-                    url: "#",
-                },
-            ],
-        },
-        {
-            title: "Settings",
-            url: "#",
-            icon: <Settings2Icon />,
-            items: [
-                {
-                    title: "General",
-                    url: "#",
-                },
-                {
-                    title: "Team",
-                    url: "#",
-                },
-                {
-                    title: "Billing",
-                    url: "#",
-                },
-                {
-                    title: "Limits",
-                    url: "#",
-                },
-            ],
-        },
-    ],
-    navSecondary: [
-        {
-            title: "Support",
-            url: "#",
-            icon: <LifeBuoyIcon />,
-        },
-        {
-            title: "Feedback",
-            url: "#",
-            icon: <SendIcon />,
-        },
-    ],
-    projects: [
-        {
-            name: "Design Engineering",
-            url: "#",
-            icon: <FrameIcon />,
-        },
-        {
-            name: "Sales & Marketing",
-            url: "#",
-            icon: <PieChartIcon />,
-        },
-        {
-            name: "Travel",
-            url: "#",
-            icon: <MapIcon />,
-        },
-    ],
-};
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+    const user = {
+        name: "UPA PKK",
+        email: "Administrator",
+        avatar: "/foto/upa-pkk-logo.jpg.jpeg",
+    };
+
+    const navMain = [
+        {
+            title: "Data Absensi",
+            url: route("dashboard"),
+            icon: <LayoutDashboardIcon />,
+            isActive: route().current("dashboard"),
+        },
+        {
+            title: "Daftar Karyawan",
+            url: route("interns.index"),
+            icon: <UsersIcon />,
+            isActive: route().current("interns.*"),
+        },
+        {
+            title: "Divisi",
+            url: route("divisions.index"),
+            icon: <LayersIcon />,
+            isActive: route().current("divisions.*"),
+        },
+        {
+            title: "Absensi Harian",
+            url: route("attendance.index"),
+            icon: <CalendarCheckIcon />,
+            isActive: route().current("attendance.*"),
+        },
+    ];
+
     return (
-        <Sidebar variant="inset" {...props}>
+        <Sidebar variant="sidebar" collapsible="icon" {...props}>
+            {/* Header: Sistem Absensi */}
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" render={<a href="#" />}>
                             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                                <TerminalIcon className="size-4" />
+                                <CalendarDaysIcon size={18} />
                             </div>
                             <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-medium">
-                                    Acme Inc
+                                <span className="truncate font-semibold">
+                                    Sistem Absensi
                                 </span>
-                                <span className="truncate text-xs">
-                                    Enterprise
+                                <span className="text-muted-foreground truncate text-xs">
+                                    UPA PKK
                                 </span>
                             </div>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarHeader>
+
+            {/* Content: List Menu */}
             <SidebarContent>
-                <NavMain items={data.navMain} />
-                <NavProjects projects={data.projects} />
-                <NavSecondary items={data.navSecondary} className="mt-auto" />
+                <NavMain items={navMain} />
             </SidebarContent>
+
+            {/* Footer: Detail Admin & Dropdown */}
             <SidebarFooter>
-                <NavUser user={data.user} />
+                <NavUser user={user} />
             </SidebarFooter>
         </Sidebar>
     );
