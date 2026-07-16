@@ -1,57 +1,85 @@
-import { AppSidebar } from "@/features/sidebar/app-sidebar";
-import {
-    Breadcrumb,
-    BreadcrumbItem,
-    BreadcrumbLink,
-    BreadcrumbList,
-    BreadcrumbPage,
-    BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import {
-    SidebarInset,
-    SidebarProvider,
-    SidebarTrigger,
-} from "@/components/ui/sidebar";
+/**
+ * ============================================================================
+ * Page        : Dashboard
+ * Layer       : Page (View Assembly)
+ *
+ * Description:
+ * Halaman utama ringkasan absensi karyawan. Mengintegrasikan filter tanggal,
+ * tombol unduh, bar pencarian, dan tabel data absensi.
+ * ============================================================================
+ */
 
-export default function Page() {
+import { Head } from "@inertiajs/react";
+import RangeDatePicker from "@/components/RangeDatePicker";
+import SearchBar from "@/components/SearchBar";
+import DownloadBtn from "@/components/DownloadBtn";
+
+import type { InternAttendanceSummary } from "@/features/interns/types/intern";
+import { useAttendanceDashboard } from "@/features/dashboard/hooks/useAttendanceDashboard";
+import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
+import { InternAttendanceSummaryTable } from "@/features/dashboard/components/InternAttendanceSummaryTable";
+
+interface DashboardProps {
+    interns?: InternAttendanceSummary[];
+    startDate?: string;
+    endDate?: string;
+}
+
+/**
+ * Komponen halaman Dashboard Absensi Karyawan.
+ *
+ * @param props Properti halaman dari controller.
+ * @returns Halaman dashboard absensi.
+ */
+export default function Dashboard({
+    interns = [],
+    startDate,
+    endDate,
+}: DashboardProps) {
+    const {
+        searchTerm,
+        setSearchTerm,
+        dateRange,
+        handleDateRangeChange,
+        handleDownload,
+        filteredInterns,
+    } = useAttendanceDashboard({ interns, startDate, endDate });
+
     return (
-        <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset>
-                <header className="flex h-16 shrink-0 items-center gap-2">
-                    <div className="flex items-center gap-2 px-4">
-                        <SidebarTrigger className="-ml-1" />
-                        <Separator
-                            orientation="vertical"
-                            className="mr-2 data-vertical:h-4 data-vertical:self-auto"
-                        />
-                        <Breadcrumb>
-                            <BreadcrumbList>
-                                <BreadcrumbItem className="hidden md:block">
-                                    <BreadcrumbLink href="#">
-                                        Build Your Application
-                                    </BreadcrumbLink>
-                                </BreadcrumbItem>
-                                <BreadcrumbSeparator className="hidden md:block" />
-                                <BreadcrumbItem>
-                                    <BreadcrumbPage>
-                                        Data Fetching
-                                    </BreadcrumbPage>
-                                </BreadcrumbItem>
-                            </BreadcrumbList>
-                        </Breadcrumb>
+        <AuthenticatedLayout>
+            <Head title="Data Absensi" />
+
+            <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                    {/* ── Title ── */}
+                    <div className="space-y-1">
+                        <h1 className="text-3xl font-bold tracking-tight">
+                            Absensi Harian
+                        </h1>
+                        <p className="text-sm text-gray-500">
+                            Laporan rekapitulasi kehadiran dan total jam kerja
+                            karyawan magang.
+                        </p>
                     </div>
-                </header>
-                <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-                    <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
-                        <div className="bg-muted/50 aspect-video rounded-xl" />
+
+                    <div className="flex items-center gap-2">
+                        <div className="w-full sm:w-auto">
+                            <RangeDatePicker
+                                value={dateRange}
+                                onChange={handleDateRangeChange}
+                            />
+                        </div>
+
+                        <DownloadBtn onClick={handleDownload} />
                     </div>
-                    <div className="bg-muted/50 min-h-screen flex-1 rounded-xl md:min-h-min" />
                 </div>
-            </SidebarInset>
-        </SidebarProvider>
+
+                {/* ── Tabel Ringkasan Absensi ── */}
+                <InternAttendanceSummaryTable
+                    interns={filteredInterns}
+                    originalLength={interns.length}
+                />
+            </div>
+        </AuthenticatedLayout>
     );
 }

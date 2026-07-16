@@ -43,7 +43,7 @@ export interface DatePickerWithRangeProps {
  * @param props Properti komponen.
  * @returns Komponen date range picker.
  */
-export function DatePickerWithRange({
+export default function DatePickerWithRange({
     value,
     onChange,
     placeholder = "Pilih rentang tanggal",

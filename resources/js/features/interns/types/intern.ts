@@ -57,3 +57,17 @@ export interface InternData {
     total_alpha?: number;
     attendances?: Attendance[];
 }
+
+/**
+ * Ringkasan absensi karyawan untuk dashboard.
+ */
+export interface InternAttendanceSummary {
+    id: number;
+    name: string;
+    foto?: string | null;
+    division?: Division;
+    jumlah_hadir: number;
+    jumlah_izin: number;
+    jumlah_alpha: number;
+    total_jam: number;
+}
