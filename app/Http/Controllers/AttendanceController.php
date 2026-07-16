@@ -15,16 +15,16 @@ class AttendanceController extends Controller
 {
     public function index(Request $request)
     {
-        // Ambil filter tanggal dari request, jika kosong gunakan hari ini
+        // ? Ambil filter tanggal tunggal dari request, jika kosong gunakan hari ini
         $selectedDate = $request->input('date', Carbon::today()->toDateString());
         $today = Carbon::today()->toDateString();
 
-        // Picu pembuatan record 'alpha' otomatis jika hari ini adalah hari kerja
+        // ? Picu pembuatan record 'alpha' otomatis jika hari ini adalah hari kerja
         if ($selectedDate === $today) {
             $this->generateDailyAttendances();
         }
 
-        // Tentukan kolom jadwal berdasarkan hari dari tanggal yang dipilih
+        // ? Tentukan kolom jadwal berdasarkan hari dari tanggal yang dipilih
         $hariMap = [
             'Monday'    => 'senin',
             'Tuesday'   => 'selasa',
@@ -35,7 +35,7 @@ class AttendanceController extends Controller
         $hariInggris = Carbon::parse($selectedDate)->format('l');
         $kolomJadwal = $hariMap[$hariInggris] ?? null;
 
-        // Query intern: filter berdasarkan jadwal hari masuk
+        // ? Query intern: filter berdasarkan jadwal hari masuk
         $query = Intern::with(['division', 'attendances' => function ($q) use ($selectedDate) {
             $q->where('date', $selectedDate);
         }])->where('is_active', true);
@@ -43,22 +43,21 @@ class AttendanceController extends Controller
         if ($kolomJadwal) {
             $query->where($kolomJadwal, true);
         } else {
-            // Jika Sabtu/Minggu, tampilkan kosong (atau sesuaikan kebutuhan)
+            // ? Jika Sabtu/Minggu, tampilkan kosong
             $query->whereRaw('1 = 0');
         }
 
         $interns = $query->get();
 
-        // [TAMBAHAN BARU] Ambil data sidik jari semua Admin (User)
+        // Ambil data sidik jari semua Admin (User)
         $users = User::all();
         $adminFingerprints = [];
         foreach ($users as $user) {
-            // Cek ke-6 slot jari, jika ada isinya, masukkan ke list
             for ($i = 1; $i <= 6; $i++) {
                 $col = 'fingerprint_' . $i;
                 if (!empty($user->$col)) {
                     $adminFingerprints[] = [
-                        'id' => $user->id, // ID Admin
+                        'id' => $user->id,
                         'fmd' => $user->$col
                     ];
                 }
@@ -66,11 +65,10 @@ class AttendanceController extends Controller
         }
 
         return Inertia::render('Attendance', [
-            'interns'      => $interns,
-            'selectedDate' => $selectedDate,
-            'adminFingerprints' => $adminFingerprints,
-            'hariIni'      => Carbon::parse($selectedDate)->locale('id')->isoFormat('dddd'),
-            // Tambahkan fingerprint database untuk scanner (hanya untuk hari ini)
+            'interns'             => $interns,
+            'selectedDate'        => $selectedDate,
+            'adminFingerprints'   => $adminFingerprints,
+            'hariIni'             => Carbon::parse($selectedDate)->locale('id')->isoFormat('dddd'),
             'fingerprintDatabase' => ($selectedDate === $today) ? $interns->map(function ($i) {
                 return [
                     'id' => (string)$i->id,
@@ -82,7 +80,7 @@ class AttendanceController extends Controller
                     'fmd_6' => $i->fingerprint_data_6,
                     'name' => $i->name
                 ];
-            }) : []
+            })->toArray() : []
         ]);
     }
 
