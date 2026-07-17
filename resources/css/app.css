@@ -89,6 +89,15 @@ body {
     scrollbar-color: #3b82f6 #f1f5f9;
 }
 
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+    display: none;
+}
+.scrollbar-none {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+
 @layer base {
     :root {
         --background: oklch(1 0 0);

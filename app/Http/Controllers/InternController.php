@@ -258,4 +258,17 @@ class InternController extends Controller
             return redirect()->back()->with('error', 'Gagal mereset poin: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Mengaktifkan atau menonaktifkan status karyawan magang.
+     */
+    public function toggleActive(Intern $intern)
+    {
+        $intern->update([
+            'is_active' => !$intern->is_active
+        ]);
+
+        $status = $intern->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        return redirect()->back()->with('success', "Status karyawan berhasil {$status}.");
+    }
 }

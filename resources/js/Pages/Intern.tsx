@@ -9,16 +9,23 @@
  * ============================================================================
  */
 
-import { Head, useForm } from "@inertiajs/react";
+import { Head, router, useForm } from "@inertiajs/react";
 import { useState, useEffect } from "react";
 
 import InternCard from "@/features/interns/components/InternCard";
 import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
-import { RotateCcwIcon, UserPlusIcon } from "lucide-react";
+import {
+    DownloadIcon,
+    PowerIcon,
+    RotateCcwIcon,
+    TrashIcon,
+    UserPlusIcon,
+} from "lucide-react";
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -28,6 +35,17 @@ import InternDeleteModal from "@/features/interns/components/InternDeleteModal";
 import InternResetModal from "@/features/interns/components/InternResetModal";
 
 import type { Division, InternData } from "@/features/interns/types/intern";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 interface Auth {
     user: {
@@ -80,6 +98,32 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
 
     const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [backToTop, setBackToTop] = useState<boolean>(false);
+
+    const [isToggleActiveOpen, setIsToggleActiveOpen] =
+        useState<boolean>(false);
+    const [isTogglingActive, setIsTogglingActive] = useState<boolean>(false);
+
+    const toggleActive = () => {
+        if (currentIntern) {
+            setIsTogglingActive(true);
+            router.put(
+                `/interns/${currentIntern.id}/toggle-active`,
+                {},
+                {
+                    onSuccess: () => {
+                        setIsToggleActiveOpen(false);
+                        toast.success("Status keaktifan berhasil diperbarui!");
+                    },
+                    onError: () => {
+                        toast.error("Gagal memperbarui status keaktifan.");
+                    },
+                    onFinish: () => {
+                        setIsTogglingActive(false);
+                    },
+                },
+            );
+        }
+    };
 
     // * Form state untuk create/update
     const { data, setData, post, processing, errors, reset, clearErrors } =
@@ -199,6 +243,13 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
         );
     });
 
+    const activeInterns = filteredInterns.filter(
+        (intern) => intern.is_active !== false,
+    );
+    const inactiveInterns = filteredInterns.filter(
+        (intern) => intern.is_active === false,
+    );
+
     const today = new Date();
     const isFirstDate = today.getDate() === 1;
 
@@ -263,24 +314,65 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                         )}
                     </div>
 
-                    <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        {filteredInterns.map((intern) => (
-                            <InternCard
-                                key={intern.id}
-                                intern={intern}
-                                onClick={() => {
-                                    setCurrentIntern(intern);
-                                    setIsDetailOpen(true);
-                                }}
-                            />
-                        ))}
+                    {/* Section Karyawan Aktif */}
+                    <div className="space-y-3">
+                        <h2 className="text-md flex items-center gap-2 font-bold tracking-tight text-gray-800">
+                            <span>Karyawan Aktif</span>
 
-                        {filteredInterns.length === 0 && (
-                            <div className="text-muted-foreground bg-card col-span-full rounded-lg border px-6 py-12 text-center">
-                                Tidak ada data Karyawan.
-                            </div>
-                        )}
+                            <span className="flex items-center justify-center rounded-full bg-emerald-100 px-2 pb-1 text-xs font-semibold text-emerald-800">
+                                {activeInterns.length}
+                            </span>
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                            {activeInterns.map((intern) => (
+                                <InternCard
+                                    key={intern.id}
+                                    intern={intern}
+                                    onClick={() => {
+                                        setCurrentIntern(intern);
+                                        setIsDetailOpen(true);
+                                    }}
+                                />
+                            ))}
+
+                            {activeInterns.length === 0 && (
+                                <div className="text-muted-foreground bg-card col-span-full rounded-lg border px-6 py-12 text-center text-sm">
+                                    Tidak ada karyawan aktif yang cocok dengan
+                                    pencarian.
+                                </div>
+                            )}
+                        </div>
                     </div>
+
+                    {/* Section Karyawan Nonaktif */}
+                    {inactiveInterns.length > 0 && (
+                        <div className="mt-6 space-y-3 border-t border-gray-100 pt-6">
+                            <h2 className="text-md flex items-center gap-2 font-bold tracking-tight text-gray-400">
+                                <span>Karyawan Nonaktif</span>
+                                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-500">
+                                    {inactiveInterns.length}
+                                </span>
+                            </h2>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                                {inactiveInterns.map((intern) => (
+                                    <div
+                                        key={intern.id}
+                                        className="opacity-50 grayscale transition duration-200 hover:opacity-100 hover:grayscale-0"
+                                    >
+                                        <InternCard
+                                            intern={intern}
+                                            onClick={() => {
+                                                setCurrentIntern(intern);
+                                                setIsDetailOpen(true);
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {backToTop && (
@@ -307,12 +399,62 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                 )}
 
                 <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-                    <DialogContent className="custom-scrollbar max-h-[90vh] max-w-[95vw] overflow-y-auto md:max-w-4xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-xl font-bold">
-                                Detail Karyawan
-                            </DialogTitle>
+                    <DialogContent className="scrollbar-none custom-scrollbar max-h-[90%] max-w-[95vw] overflow-y-auto md:max-w-6xl">
+                        <DialogHeader className="flex flex-col gap-4 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="space-y-1">
+                                <DialogTitle className="text-2xl font-bold tracking-tighter">
+                                    Detail Karyawan
+                                </DialogTitle>
+
+                                <DialogDescription>
+                                    Informasi detail profil, jam kerja, poin,
+                                    dan riwayat absensi karyawan.
+                                </DialogDescription>
+                            </div>
+
+                            {currentIntern && (
+                                <div className="flex shrink-0 gap-2">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            window.location.href = `/interns/${currentIntern.id}/export-attendance`;
+                                        }}
+                                        className="flex items-center gap-1 border border-gray-200 bg-white"
+                                    >
+                                        <DownloadIcon className="h-4 w-4" />
+                                        Ekspor Data
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setIsToggleActiveOpen(true)
+                                        }
+                                        className="flex items-center gap-1 border border-gray-200 bg-white"
+                                    >
+                                        <PowerIcon
+                                            className={`h-4 w-4 ${currentIntern.is_active ? "text-rose-500" : "text-emerald-500"}`}
+                                        />
+                                        {currentIntern.is_active
+                                            ? "Nonaktifkan"
+                                            : "Aktifkan"}
+                                    </Button>
+                                    <Button
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() =>
+                                            confirmDelete(currentIntern)
+                                        }
+                                        className="flex items-center gap-1"
+                                    >
+                                        <TrashIcon className="h-4 w-4" />
+                                        Hapus Karyawan
+                                    </Button>
+                                </div>
+                            )}
                         </DialogHeader>
+
                         {currentIntern && (
                             <InternDetail
                                 intern={currentIntern}
@@ -345,6 +487,41 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                     onDelete={deleteIntern}
                     processing={deleteForm.processing}
                 />
+
+                {/* Modal Konfirmasi Toggle Keaktifan */}
+                <AlertDialog
+                    open={isToggleActiveOpen}
+                    onOpenChange={setIsToggleActiveOpen}
+                >
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                {currentIntern?.is_active
+                                    ? "Nonaktifkan Karyawan?"
+                                    : "Aktifkan Karyawan?"}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {currentIntern?.is_active
+                                    ? "Karyawan magang ini tidak akan dicatat kehadirannya selama berstatus nonaktif."
+                                    : "Karyawan magang ini akan kembali aktif dan masuk dalam pencatatan kehadiran."}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel className="border border-gray-200 bg-white">
+                                Batal
+                            </AlertDialogCancel>
+
+                            <AlertDialogAction
+                                onClick={toggleActive}
+                                disabled={isTogglingActive}
+                            >
+                                {isTogglingActive
+                                    ? "Memproses..."
+                                    : "Konfirmasi"}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
 
                 <InternResetModal
                     show={isResetOpen}

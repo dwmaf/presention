@@ -56,6 +56,7 @@ export interface InternData {
     total_izin?: number;
     total_alpha?: number;
     attendances?: Attendance[];
+    is_active?: boolean;
 }
 
 /**

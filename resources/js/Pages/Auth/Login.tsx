@@ -245,7 +245,7 @@ export default function Login({ status }: LoginProps) {
                 {/* Teks Promosi pada Banner */}
                 <div className="absolute right-10 bottom-10 left-10 z-10 space-y-2 text-white">
                     <h2 className="text-2xl font-bold tracking-tight">
-                        Sistem Presensi UPA PKK
+                        Printation | Sistem Presensi UPA PKK
                     </h2>
 
                     <p className="text-sm text-gray-200">

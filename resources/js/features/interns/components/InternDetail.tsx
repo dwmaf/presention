@@ -21,6 +21,7 @@ import {
     DownloadIcon,
     SparklesIcon,
     UserIcon,
+    PowerIcon,
 } from "lucide-react";
 
 // @ts-ignore
@@ -51,6 +52,12 @@ import { useInternPhoto } from "../hooks/useInternPhoto";
 import { useInternAttendance } from "../hooks/useInternAttendance";
 import { useInternForm } from "../hooks/useInternForm";
 import { useInternActions } from "../hooks/useInternActions";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 interface InternDetailProps {
     intern: InternData;
@@ -87,20 +94,6 @@ const getAttendanceStyle = (status: string) =>
 
 const getAttendanceLabel = (status: string) =>
     ATTENDANCE_LABEL[status] || "Tidak ada";
-
-const AttendanceTableFixed = AttendanceTable as unknown as React.ComponentType<{
-    attendances: Attendance[];
-    renderCheckOut: (
-        attendance: Attendance,
-        indexInPage: number,
-        totalInPage: number,
-    ) => React.ReactNode;
-    renderStatus: (
-        attendance: Attendance,
-        indexInPage: number,
-        totalInPage: number,
-    ) => React.ReactNode;
-}>;
 
 /**
  * Komponen detail profil karyawan magang.
@@ -151,8 +144,11 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         setShowToleransiModal,
         confirmingDeletion,
         setConfirmingDeletion,
+        confirmingToggleActive,
+        setConfirmingToggleActive,
         handleSaveToleransi,
         handleDeleteIntern,
+        handleToggleActive,
     } = useInternActions({ internId: intern.id });
 
     // ── Derived States ─────────────────────────────────────────
@@ -160,12 +156,12 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
     const poin = rawPoin < 0 ? 0 : rawPoin;
     const poinStyle =
         poin < 3
-            ? "bg-destructive/10 text-destructive border-destructive/20"
-            : "bg-primary/10 text-primary border-primary/20";
+            ? "bg-destructive/10 text-destructive"
+            : "bg-primary/10 text-primary";
 
     const fingerStyle = intern.fingerprint_data
-        ? "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/30"
-        : "bg-destructive/10 text-destructive border-destructive/20";
+        ? "bg-emerald-100 text-emerald-700"
+        : "bg-destructive/10 text-destructive";
 
     const renderJadwal = () => {
         const days: string[] = [];
@@ -233,7 +229,6 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         return (
             <div className="relative">
                 <Badge
-                    variant="outline"
                     onClick={() =>
                         handleToggleStatusForm(attendance.id, attendance.status)
                     }
@@ -260,7 +255,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
     return (
         <div className="space-y-6">
-            <div className="flex flex-col gap-6 border-b pb-6 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div
                         className="group border-border bg-muted relative flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-xl border shadow-sm"
@@ -284,6 +279,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         ) : (
                             <div className="text-muted-foreground flex flex-col items-center gap-1 p-3 text-center">
                                 <UserIcon className="h-8 w-8" />
+
                                 <span className="text-xs font-semibold">
                                     {uploading
                                         ? "Mengupload..."
@@ -303,11 +299,24 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
                     <div className="space-y-2.5">
                         <div>
-                            <h2 className="text-xl font-bold tracking-tight">
-                                {intern.name}
-                            </h2>
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-xl font-bold tracking-tight">
+                                    {intern.name}
+                                </h2>
+
+                                <Badge
+                                    className={`h-5 text-xs font-semibold ${
+                                        intern.is_active
+                                            ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+                                            : "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                    }`}
+                                >
+                                    {intern.is_active ? "Aktif" : "Nonaktif"}
+                                </Badge>
+                            </div>
                             <p className="text-primary text-sm font-semibold">
-                                {intern.division?.nama_divisi || "-"}
+                                {intern.division?.nama_divisi ||
+                                    "Belum ada divisi"}
                             </p>
                         </div>
 
@@ -329,9 +338,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         </div>
 
                         <div className="flex items-center gap-2">
-                            <Badge variant="outline" className={poinStyle}>
-                                {poin} Poin
-                            </Badge>
+                            <Badge className={poinStyle}>{poin} Poin</Badge>
 
                             <Button
                                 variant="ghost"
@@ -374,6 +381,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                 {intern.total_kehadiran || 0} hari
                             </p>
                         </div>
+
                         <div>
                             <p className="text-muted-foreground text-xs">
                                 Total Jam Kerja
@@ -382,9 +390,10 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                 {intern.total_jam || 0} jam
                             </p>
                         </div>
+
                         <div>
                             <p className="text-muted-foreground text-xs">
-                                Rata-rata Masuk
+                                Rata-rata Jam Masuk
                             </p>
                             <p className="text-base font-semibold">
                                 {intern.avg_jam_masuk || "-"}
@@ -392,82 +401,68 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         </div>
                         <div>
                             <p className="text-muted-foreground text-xs">
-                                Rata-rata Pulang
+                                Rata-rata Jam Pulang
                             </p>
                             <p className="text-base font-semibold">
                                 {intern.avg_jam_pulang || "-"}
                             </p>
                         </div>
                     </div>
-
-                    <div className="border-border bg-card/50 flex justify-between rounded-lg border px-4 py-2 text-xs font-semibold">
-                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <SparklesIcon className="h-3.5 w-3.5 fill-emerald-500/20" />
-                            Hadir: {intern.total_kehadiran || 0}
-                        </span>
-                        <span className="flex items-center gap-1 border-r border-l px-4 text-amber-600 dark:text-amber-400">
-                            <SparklesIcon className="h-3.5 w-3.5 fill-amber-500/20" />
-                            Izin: {intern.total_izin || 0}
-                        </span>
-                        <span className="text-destructive flex items-center gap-1">
-                            <SparklesIcon className="fill-destructive/20 h-3.5 w-3.5" />
-                            Alpha: {intern.total_alpha || 0}
-                        </span>
-                    </div>
                 </div>
             </div>
 
-            <InternForm
-                show={showForm}
-                setShow={setShowForm}
-                data={data}
-                setData={setData}
-                errors={errors}
-                divisions={divisions}
-                onSubmit={handleSubmit}
-                onCancel={handleCloseForm}
-            />
+            <Dialog open={showForm} onOpenChange={setShowForm}>
+                <DialogContent className="no-scrollbar max-h-[90vh] max-w-[95vw] overflow-y-auto sm:max-w-lg md:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold tracking-tight">
+                            Edit Informasi Karyawan
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <InternForm
+                        show={showForm}
+                        setShow={setShowForm}
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        divisions={divisions}
+                        onSubmit={(e) => handleSubmit(e as unknown as Event)}
+                        onCancel={handleCloseForm}
+                    />
+                </DialogContent>
+            </Dialog>
 
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <h3 className="text-lg font-bold tracking-tight">
                         Riwayat Kehadiran
                     </h3>
-                    <div className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                                router.visit(
-                                    `/interns/${intern.id}/export-attendance`,
-                                )
-                            }
-                            className="flex items-center gap-1"
-                        >
-                            <DownloadIcon className="h-4 w-4" />
-                            Ekspor Data
-                        </Button>
-                        <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => setConfirmingDeletion(true)}
-                            className="flex items-center gap-1"
-                        >
-                            <TrashIcon className="h-4 w-4" />
-                            Hapus Intern
-                        </Button>
+
+                    <div className="border-border bg-card/50 flex shrink-0 justify-between gap-4 rounded-lg border px-4 py-2 text-xs font-semibold">
+                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <SparklesIcon className="h-3.5 w-3.5 fill-emerald-500/20" />
+                            Hadir: {intern.total_kehadiran || 0}
+                        </span>
+
+                        <span className="flex items-center gap-1 border-r border-l px-4 text-amber-600 dark:text-amber-400">
+                            <SparklesIcon className="h-3.5 w-3.5 fill-amber-500/20" />
+                            Izin: {intern.total_izin || 0}
+                        </span>
+
+                        <span className="text-destructive flex items-center gap-1">
+                            <SparklesIcon className="fill-destructive/20 h-3.5 w-3.5" />
+                            Alpha: {intern.total_alpha || 0}
+                        </span>
                     </div>
                 </div>
 
-                <AttendanceTableFixed
+                <AttendanceTable
                     attendances={intern.attendances || []}
-                    renderCheckOut={(
-                        att: Attendance,
-                        idx: number,
-                        tot: number,
-                    ) => renderCheckOut(att, idx, tot)}
-                    renderStatus={(att: Attendance, idx: number, tot: number) =>
-                        renderStatus(att, idx, tot)
+                    renderCheckOut={(att, idx, tot) =>
+                        renderCheckOut(att as Attendance, idx, tot)
+                    }
+                    renderStatus={(att, idx, tot) =>
+                        renderStatus(att as Attendance, idx, tot)
                     }
                 />
             </div>
@@ -486,6 +481,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Data Karyawan</AlertDialogTitle>
+
                         <AlertDialogDescription className="space-y-3 pt-2">
                             <p className="text-foreground font-semibold">
                                 Apakah Anda yakin ingin menghapus data &quot;
@@ -502,8 +498,10 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             </p>
                         </AlertDialogDescription>
                     </AlertDialogHeader>
+
                     <AlertDialogFooter>
                         <AlertDialogCancel>Batal</AlertDialogCancel>
+
                         <AlertDialogAction
                             onClick={handleDeleteIntern}
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
@@ -521,12 +519,14 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Hapus Jam Pulang</AlertDialogTitle>
+
                         <AlertDialogDescription>
                             Apakah Anda yakin ingin menghapus catatan jam pulang
                             untuk baris kehadiran ini? Tindakan ini tidak dapat
                             dibatalkan.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
+
                     <AlertDialogFooter>
                         <AlertDialogCancel
                             onClick={() => {
@@ -535,6 +535,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         >
                             Batal
                         </AlertDialogCancel>
+
                         <AlertDialogAction
                             onClick={handleDeleteCheckOut}
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"

@@ -58,12 +58,35 @@ export function useInternActions({ internId }: UseInternActionsProps) {
         });
     };
 
+    const [confirmingToggleActive, setConfirmingToggleActive] =
+        useState<boolean>(false);
+
+    const handleToggleActive = () => {
+        router.put(
+            `/interns/${internId}/toggle-active`,
+            {},
+            {
+                onSuccess: () => {
+                    setConfirmingToggleActive(false);
+                    toast.success("Status keaktifan berhasil diperbarui!");
+                },
+                onError: () => {
+                    setConfirmingToggleActive(false);
+                    toast.error("Gagal mengubah status keaktifan.");
+                },
+            },
+        );
+    };
+
     return {
         showToleransiModal,
         setShowToleransiModal,
         confirmingDeletion,
         setConfirmingDeletion,
+        confirmingToggleActive,
+        setConfirmingToggleActive,
         handleSaveToleransi,
         handleDeleteIntern,
+        handleToggleActive,
     };
 }

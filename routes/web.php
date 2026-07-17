@@ -20,7 +20,7 @@ Route::post('/attendance', [AttendanceController::class, 'store'])->name('attend
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [AttendanceController::class, 'dashboard'])->name('dashboard');
     Route::get('/dashboard/export', [AttendanceController::class, 'exportDashboardCsv'])->name('dashboard.export');
-    
+
 
     // --- ADMIN FINGERPRINT ENROLLMENT ---
     Route::get('/profile/fingerprint', [AdminFingerprintController::class, 'index'])->name('profile.fingerprint');
@@ -53,6 +53,8 @@ Route::middleware('auth')->group(function () {
 
     Route::delete('/interns/{intern}/fingerprint/reset-group', [SidikJariController::class, 'resetGroup'])
         ->name('interns.fingerprint.resetGroup');
+
+    Route::put('/interns/{intern}/toggle-active', [InternController::class, 'toggleActive'])->name('interns.toggleActive');
 });
 
 require __DIR__ . '/auth.php';
