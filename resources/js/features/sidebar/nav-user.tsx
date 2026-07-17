@@ -53,8 +53,9 @@ export function NavUser({ user }: UserProps) {
                     >
                         <Avatar>
                             <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>UP</AvatarFallback>
+                            <AvatarFallback>UPA</AvatarFallback>
                         </Avatar>
+
                         <div className="grid flex-1 text-left text-sm leading-tight">
                             <span className="truncate font-semibold">
                                 {user.name}
@@ -63,12 +64,14 @@ export function NavUser({ user }: UserProps) {
                                 {user.email}
                             </span>
                         </div>
+
                         <ChevronsUpDownIcon className="ml-auto size-4" />
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent
-                        className="min-w-56 rounded-lg"
-                        side={isMobile ? "bottom" : "right"}
-                        align="end"
+                        className="min-w-(--anchor-width) rounded-lg"
+                        side="bottom"
+                        align="start"
                         sideOffset={4}
                     >
                         <DropdownMenuGroup>
@@ -79,7 +82,7 @@ export function NavUser({ user }: UserProps) {
                                             src={user.avatar}
                                             alt={user.name}
                                         />
-                                        <AvatarFallback>UP</AvatarFallback>
+                                        <AvatarFallback>UPA</AvatarFallback>
                                     </Avatar>
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">
@@ -101,9 +104,12 @@ export function NavUser({ user }: UserProps) {
                             <BadgeCheckIcon />
                             Kelola Biometrik
                         </DropdownMenuItem>
+
                         <DropdownMenuSeparator />
+
                         <DropdownMenuItem
                             onClick={() => router.post(route("logout"))}
+                            variant="destructive"
                             className="text-destructive focus:text-destructive cursor-pointer"
                         >
                             <LogOutIcon />

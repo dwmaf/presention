@@ -53,7 +53,7 @@ export default function AuthenticatedLayout({
                     </div>
                 </header>
 
-                <main className="min-h-screen flex-1 bg-white p-4 md:p-8">
+                <main className="min-h-screen flex-1 bg-gray-50 p-4 md:p-8">
                     {children}
                 </main>
             </div>

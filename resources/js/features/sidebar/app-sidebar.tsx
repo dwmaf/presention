@@ -64,7 +64,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ];
 
     return (
-        <Sidebar variant="sidebar" collapsible="icon" {...props}>
+        <Sidebar
+            variant="sidebar"
+            collapsible="icon"
+            {...props}
+            className="[&>[data-slot=sidebar-inner]]:bg-white"
+        >
             {/* Header: Sistem Absensi */}
             <SidebarHeader>
                 <SidebarMenu>
@@ -73,12 +78,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                                 <CalendarDaysIcon size={18} />
                             </div>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
-                                <span className="truncate font-semibold">
-                                    Sistem Absensi
+
+                            <div className="grid flex-1 text-left text-sm">
+                                <span className="text-lg font-semibold tracking-tighter">
+                                    Presention
                                 </span>
                                 <span className="text-muted-foreground truncate text-xs">
-                                    UPA PKK
+                                    Sistem Absensi UPA PKK
                                 </span>
                             </div>
                         </SidebarMenuButton>
