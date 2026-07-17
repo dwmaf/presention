@@ -10,7 +10,7 @@ class SidikJariController extends Controller
 {
     public function index(Intern $intern)
     {
-        return Inertia::render('NambahSidikJari', [
+        return Inertia::render('FingerprintEnrollment', [
             'intern' => $intern
         ]);
     }
