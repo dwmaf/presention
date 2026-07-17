@@ -11,7 +11,6 @@
 
 import { Head } from "@inertiajs/react";
 import RangeDatePicker from "@/components/RangeDatePicker";
-import SearchBar from "@/components/SearchBar";
 import DownloadBtn from "@/components/DownloadBtn";
 
 import type { InternAttendanceSummary } from "@/features/interns/types/intern";
