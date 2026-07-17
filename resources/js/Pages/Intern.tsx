@@ -506,6 +506,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                                     : "Karyawan magang ini akan kembali aktif dan masuk dalam pencatatan kehadiran."}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
+
                         <AlertDialogFooter>
                             <AlertDialogCancel className="border border-gray-200 bg-white">
                                 Batal
