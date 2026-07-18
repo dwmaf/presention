@@ -143,7 +143,7 @@ class Batch2Seeder extends Seeder
                 'poin' => 5,
             ],
             [
-                'name' => 'Gian Aryanta Putra',
+                'name' => 'Gian Aryanta Putra Lingga',
                 'division_id' => $divSoftwareDev->id,
                 'foto' => 'batch2/Gian Aryanta Putra.png',
                 'is_active' => true,
@@ -203,7 +203,7 @@ class Batch2Seeder extends Seeder
                 'poin' => 5,
             ],
             [
-                'name' => 'Mujahidah Mutiara R',
+                'name' => 'Mujahidah Mutiara Rabbani',
                 'division_id' => $divSocMed->id,
                 'foto' => 'batch2/Mujahidah Mutiara R.png',
                 'is_active' => true,
@@ -250,18 +250,7 @@ class Batch2Seeder extends Seeder
                 'jumat' => false,
                 'poin' => 5,
             ],
-            [
-                'name' => 'Oktria Lulu Kataru',
-                'division_id' => $divDataManage->id,
-                'foto' => 'batch2/Oktria Lulu Kataru.png',
-                'is_active' => true,
-                'senin' => true,
-                'selasa' => true,
-                'rabu' => true,
-                'kamis' => true,
-                'jumat' => true,
-                'poin' => 5,
-            ],
+
             [
                 'name' => 'Rafli Pratama',
                 'division_id' => $divSoftwareDev->id,
@@ -287,19 +276,7 @@ class Batch2Seeder extends Seeder
                 'poin' => 5,
             ],
             [
-                'name' => 'Rayhan Nuerjamman',
-                'division_id' => $divSoftwareDev->id,
-                'foto' => 'batch2/Rayhan Nuerjamman.png',
-                'is_active' => true,
-                'senin' => true,
-                'selasa' => false,
-                'rabu' => true,
-                'kamis' => false,
-                'jumat' => false,
-                'poin' => 5,
-            ],
-            [
-                'name' => 'Reisya Nayla',
+                'name' => 'Reisa Nayla',
                 'division_id' => $divDataManage->id,
                 'foto' => 'batch2/Reisya Nayla.png',
                 'is_active' => true,
@@ -323,7 +300,7 @@ class Batch2Seeder extends Seeder
                 'poin' => 5,
             ],
             [
-                'name' => 'Siti Aisyah Amalia',
+                'name' => 'Siti Aisyah Amaliah',
                 'division_id' => $divDataManage->id,
                 'foto' => 'batch2/Siti Aisyah Amalia.png',
                 'is_active' => true,
@@ -371,7 +348,7 @@ class Batch2Seeder extends Seeder
                 'poin' => 5,
             ],
             [
-                'name' => 'Wanda Maulidya',
+                'name' => 'Wanda Maulidy',
                 'division_id' => $divSocMed->id,
                 'foto' => 'batch2/Wanda Maulidya.png',
                 'is_active' => true,
@@ -384,18 +361,53 @@ class Batch2Seeder extends Seeder
             ],
         ];
 
-        // 3. Update foto untuk karyawan lama yang lanjut ke Batch 2
+        // 3. Update foto, jadwal, dan divisi untuk karyawan lama yang lanjut ke Batch 2
         $oldInterns = [
-            'Abimanyu Ridho Ramadhani',
-            'Berlian Auraly Kastyanos',
-            'Fandri Gea',
-            'Lusia Odiliana Menge',
-            'Melisa Vikayana',
-            'Syariffullah'
+            [
+                'name' => 'Abimanyu Ridho Ramadhani',
+                'division_id' => $divSoftwareDev->id,
+                'senin' => true, 'selasa' => false, 'rabu' => true, 'kamis' => false, 'jumat' => false,
+            ],
+            [
+                'name' => 'Berlian Auraly Kastyanos',
+                'division_id' => $divSocMed->id,
+                'senin' => false, 'selasa' => false, 'rabu' => false, 'kamis' => false, 'jumat' => false,
+            ],
+            [
+                'name' => 'Fandri Gea',
+                'division_id' => $divDataManage->id,
+                'senin' => true, 'selasa' => true, 'rabu' => true, 'kamis' => true, 'jumat' => true,
+            ],
+            [
+                'name' => 'Lusia Odiliana Menge',
+                'division_id' => $divSocMed->id,
+                'senin' => false, 'selasa' => false, 'rabu' => false, 'kamis' => false, 'jumat' => false,
+            ],
+            [
+                'name' => 'Melisa Vikayana',
+                'division_id' => $divSocMed->id,
+                'senin' => false, 'selasa' => false, 'rabu' => true, 'kamis' => false, 'jumat' => true,
+            ],
+            [
+                'name' => 'Syariffullah',
+                'division_id' => $divSoftwareDev->id,
+                'senin' => false, 'selasa' => false, 'rabu' => true, 'kamis' => false, 'jumat' => true,
+            ],
+            [
+                'name' => 'Rayhan NuerJamman',
+                'division_id' => $divSoftwareDev->id,
+                'senin' => true, 'selasa' => false, 'rabu' => true, 'kamis' => false, 'jumat' => false,
+            ]
         ];
 
-        foreach ($oldInterns as $name) {
-            Intern::where('name', $name)->update(['foto' => 'batch2/' . $name . '.png']);
+        foreach ($oldInterns as $data) {
+            $name = $data['name'];
+            unset($data['name']);
+            
+            // Masukkan data tambahan yang pasti diupdate
+            $data['foto'] = 'batch2/' . $name . '.png';
+
+            Intern::where('name', $name)->update($data);
         }
 
         foreach ($newInterns as $intern) {
@@ -405,5 +417,13 @@ class Batch2Seeder extends Seeder
                 $intern
             );
         }
+
+        // 4. Nonaktifkan semua karyawan yang BUKAN anak baru dan BUKAN anak lama yang lanjut
+        $activeNames = array_merge(
+            array_column($newInterns, 'name'), 
+            array_column($oldInterns, 'name')
+        );
+
+        Intern::whereNotIn('name', $activeNames)->update(['is_active' => false]);
     }
 }
