@@ -8,7 +8,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import {
     Pagination,
     PaginationContent,
@@ -36,8 +35,8 @@ export interface AttendanceTableProps {
         index: number,
         total: number,
     ) => React.ReactNode;
-    renderCheckOut: (
-        record: any,
+    renderActions: (
+        record: AttendanceRecord,
         index: number,
         total: number,
     ) => React.ReactNode;
@@ -53,7 +52,7 @@ export default function AttendanceTable({
     attendances = [],
     itemsPerPage = 7,
     renderStatus,
-    renderCheckOut,
+    renderActions,
 }: AttendanceTableProps) {
     const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -89,6 +88,9 @@ export default function AttendanceTable({
                             <TableHead className="px-4 font-semibold">
                                 Status
                             </TableHead>
+                            <TableHead className="px-4 text-center font-semibold">
+                                Aksi
+                            </TableHead>
                         </TableRow>
                     </TableHeader>
 
@@ -123,14 +125,19 @@ export default function AttendanceTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="px-4 py-3">
-                                        {renderCheckOut(
+                                        {attendance.check_out
+                                            ? attendance.check_out.slice(0, 5)
+                                            : "-"}
+                                    </TableCell>
+                                    <TableCell className="px-4 py-3">
+                                        {renderStatus(
                                             attendance,
                                             index,
                                             currentAttendances.length,
                                         )}
                                     </TableCell>
-                                    <TableCell className="px-4 py-3">
-                                        {renderStatus(
+                                    <TableCell className="px-4 py-3 text-center">
+                                        {renderActions(
                                             attendance,
                                             index,
                                             currentAttendances.length,
@@ -141,7 +148,7 @@ export default function AttendanceTable({
                         ) : (
                             <TableRow>
                                 <TableCell
-                                    colSpan={5}
+                                    colSpan={6}
                                     className="text-muted-foreground h-24 text-center"
                                 >
                                     Belum ada data kehadiran.

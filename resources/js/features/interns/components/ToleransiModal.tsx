@@ -19,9 +19,9 @@ import {
     DialogFooter,
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import TimePicker from "../../../components/TimePicker";
 
 const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
 type DayType = (typeof DAYS)[number];
@@ -126,6 +126,7 @@ export default function ToleransiModal({
                     <DialogTitle className="text-xl font-bold tracking-tight">
                         Pilih Hari Toleransi Terlambat
                     </DialogTitle>
+
                     <DialogDescription className="text-xs">
                         Pilih hari di mana toleransi keterlambatan
                         diperbolehkan, beserta jam batas keterlambatan.
@@ -152,17 +153,12 @@ export default function ToleransiModal({
                                 </Label>
                             </div>
 
-                            <Input
-                                type="time"
-                                min="07:00"
-                                max="17:00"
-                                step="60"
+                            <TimePicker
                                 value={toleransiDays[day].time}
-                                onChange={(e) =>
-                                    changeTime(day, e.target.value)
-                                }
+                                onChange={(value) => changeTime(day, value)}
                                 disabled={!toleransiDays[day].checked}
-                                className="h-8 w-24 bg-white px-2 text-sm"
+                                className="h-8 w-24"
+                                placeholder="HH:MM"
                             />
                         </div>
                     ))}

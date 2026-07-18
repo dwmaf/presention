@@ -4,147 +4,93 @@
  * Layer       : Feature (Hook)
  *
  * Description:
- * Mengelola edit status absensi dan jam pulang karyawan.
+ * Mengelola state dan aksi perubahan kehadiran (status dan jam pulang)
+ * karyawan magang secara bersamaan.
  * ============================================================================
  */
 
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
+import type { Attendance } from "../types/intern";
 
 /**
- * Hook kustom untuk manajemen status absensi harian karyawan.
+ * Hook pengelola status presensi harian karyawan.
  *
- * @returns State edit absensi dan fungsi handler pembaruan data.
+ * @returns State dan fungsi kontrol modal kehadiran.
  */
 export function useInternAttendance() {
-    const [showStatusForm, setShowStatusForm] = useState<boolean>(false);
-    const [currentAttendanceId, setCurrentAttendanceId] = useState<
-        number | null
-    >(null);
-    const [selectedStatus, setSelectedStatus] = useState<string>("");
-
-    const [showCheckOutForm, setShowCheckOutForm] = useState<boolean>(false);
-    const [editingCheckOutId, setEditingCheckOutId] = useState<number | null>(
-        null,
-    );
+    const [showEditModal, setShowEditModal] = useState<boolean>(false);
+    const [editingAttendance, setEditingAttendance] =
+        useState<Attendance | null>(null);
+    const [selectedStatus, setSelectedStatus] = useState<string>("hadir");
     const [checkOutValue, setCheckOutValue] = useState<string>("");
-
     const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] =
         useState<boolean>(false);
+    const [isSaving, setIsSaving] = useState<boolean>(false);
 
-    const handleToggleStatusForm = (
-        attendanceId: number,
-        currentStatus: string,
-    ) => {
-        if (showStatusForm && currentAttendanceId === attendanceId) {
-            setShowStatusForm(false);
-            setCurrentAttendanceId(null);
-            setSelectedStatus("");
-        } else {
-            setShowStatusForm(true);
-            setCurrentAttendanceId(attendanceId);
-            setSelectedStatus(currentStatus);
-        }
+    // * Buka modal dan inisialisasi input dengan data baris terpilih
+    const handleOpenEditModal = (attendance: Attendance) => {
+        setEditingAttendance(attendance);
+        setSelectedStatus(attendance.status);
+        setCheckOutValue(
+            attendance.check_out ? attendance.check_out.slice(0, 5) : "",
+        );
+        setShowEditModal(true);
     };
 
-    const handleSaveStatus = (status: string) => {
-        if (currentAttendanceId) {
-            router.put(
-                `/attendances/${currentAttendanceId}/status`,
-                { status },
-                {
-                    onSuccess: () => {
-                        setShowStatusForm(false);
-                        setSelectedStatus("");
-                        setCurrentAttendanceId(null);
-                        toast.success("Status kehadiran berhasil diubah!");
-                    },
-                    onError: (err) => {
-                        toast.error(
-                            "Gagal mengubah status: " +
-                                Object.values(err).join(", "),
-                        );
-                    },
+    // * Simpan pembaruan status dan jam pulang sekaligus secara berurutan menggunakan router Inertia
+    const handleSaveAttendance = (status: string, checkOut: string | null) => {
+        if (!editingAttendance) return;
+        setIsSaving(true);
+
+        // ? 1. Update status kehadiran
+        router.put(
+            `/attendances/${editingAttendance.id}/status`,
+            { status },
+            {
+                onSuccess: () => {
+                    // ? 2. Setelah status sukses, update jam pulang
+                    router.put(
+                        `/attendances/${editingAttendance.id}/check-out`,
+                        { check_out: checkOut || null },
+                        {
+                            onSuccess: () => {
+                                toast.success("Kehadiran berhasil diperbarui!");
+                                setShowEditModal(false);
+                                setEditingAttendance(null);
+                            },
+                            onError: () => {
+                                toast.error("Gagal memperbarui jam pulang.");
+                            },
+                            onFinish: () => {
+                                setIsSaving(false);
+                            },
+                        },
+                    );
                 },
-            );
-        }
-    };
-
-    const handleCancelStatusUpdate = () => {
-        setShowStatusForm(false);
-        setSelectedStatus("");
-        setCurrentAttendanceId(null);
-    };
-
-    const handleToggleCheckOutForm = (
-        attendanceId: number,
-        currentCheckOut?: string | null,
-    ) => {
-        if (showCheckOutForm && editingCheckOutId === attendanceId) {
-            setShowCheckOutForm(false);
-            setEditingCheckOutId(null);
-            setCheckOutValue("");
-        } else {
-            setShowCheckOutForm(true);
-            setEditingCheckOutId(attendanceId);
-            setCheckOutValue(
-                currentCheckOut ? currentCheckOut.slice(0, 5) : "",
-            );
-        }
-    };
-
-    const handleSaveCheckOut = (value: string) => {
-        if (editingCheckOutId) {
-            router.put(
-                `/attendances/${editingCheckOutId}/check-out`,
-                { check_out: value },
-                {
-                    onSuccess: () => {
-                        setShowCheckOutForm(false);
-                        setEditingCheckOutId(null);
-                        setCheckOutValue("");
-                        toast.success("Jam pulang berhasil diubah!");
-                    },
-                    onError: (err) => {
-                        toast.error(
-                            "Gagal mengubah jam pulang: " +
-                                Object.values(err).join(", "),
-                        );
-                    },
+                onError: () => {
+                    toast.error("Gagal memperbarui status kehadiran.");
+                    setIsSaving(false);
                 },
-            );
-        }
+            },
+        );
     };
 
-    const handleCancelCheckOutUpdate = () => {
-        setShowCheckOutForm(false);
-        setEditingCheckOutId(null);
-        setCheckOutValue("");
-    };
-
+    // * Hapus catatan jam pulang
     const handleDeleteCheckOut = () => {
-        if (editingCheckOutId) {
+        if (editingAttendance) {
             router.put(
-                `/attendances/${editingCheckOutId}/check-out`,
+                `/attendances/${editingAttendance.id}/check-out`,
                 { check_out: null },
                 {
                     onSuccess: () => {
-                        setShowCheckOutForm(false);
-                        setEditingCheckOutId(null);
-                        setCheckOutValue("");
                         setConfirmingCheckOutDeletion(false);
+                        setEditingAttendance(null);
                         toast.success("Jam pulang berhasil dihapus!");
                     },
-                    onError: (err) => {
-                        toast.error(
-                            "Gagal menghapus jam pulang: " +
-                                Object.values(err).join(", "),
-                        );
-                        setShowCheckOutForm(false);
-                        setEditingCheckOutId(null);
-                        setCheckOutValue("");
-                        setConfirmingCheckOutDeletion(false);
+                    onError: () => {
+                        toast.error("Gagal menghapus jam pulang.");
                     },
                 },
             );
@@ -152,22 +98,19 @@ export function useInternAttendance() {
     };
 
     return {
-        showStatusForm,
-        currentAttendanceId,
+        showEditModal,
+        setShowEditModal,
+        editingAttendance,
+        setEditingAttendance,
         selectedStatus,
         setSelectedStatus,
-        showCheckOutForm,
-        editingCheckOutId,
         checkOutValue,
         setCheckOutValue,
         confirmingCheckOutDeletion,
         setConfirmingCheckOutDeletion,
-        handleToggleStatusForm,
-        handleSaveStatus,
-        handleCancelStatusUpdate,
-        handleToggleCheckOutForm,
-        handleSaveCheckOut,
-        handleCancelCheckOutUpdate,
+        handleOpenEditModal,
+        handleSaveAttendance,
         handleDeleteCheckOut,
+        isSaving,
     };
 }

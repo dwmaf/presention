@@ -16,21 +16,18 @@ import {
     CalendarDaysIcon,
     ClockIcon,
     FingerprintIcon,
-    TrashIcon,
     EditIcon,
-    DownloadIcon,
     SparklesIcon,
     UserIcon,
-    PowerIcon,
+    Trash2,
+    MoreHorizontal,
+    Edit2,
 } from "lucide-react";
 
 // @ts-ignore
 import AttendanceTable from "@/components/AttendanceTable";
 import InternForm from "./InternForm";
-import CheckOutForm from "@/components/CheckoutForm";
-import ToleransiModal from "@/components/ToleransiModal";
-// @ts-ignore
-import EditStatusForm from "@/components/EditStatusForm";
+import ToleransiModal from "@/features/interns/components/ToleransiModal";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -41,6 +38,19 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+    DropdownMenu,
+    DropdownMenuTrigger,
+    DropdownMenuContent,
+    DropdownMenuItem,
+} from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 import type {
     Division,
@@ -53,27 +63,18 @@ import { useInternAttendance } from "../hooks/useInternAttendance";
 import { useInternForm } from "../hooks/useInternForm";
 import { useInternActions } from "../hooks/useInternActions";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import TimePicker from "@/components/TimePicker";
 
 interface InternDetailProps {
     intern: InternData;
     divisions: Division[];
 }
-
-const EditStatusFormFixed = EditStatusForm as unknown as React.ComponentType<{
-    show: boolean;
-    position?: "top" | "bottom";
-    selectedStatus: string;
-    setSelectedStatus: (status: string) => void;
-    onSave: (status: string) => void;
-    onCancel: () => void;
-    getStyle: (status: string) => string;
-    getLabel: (status: string) => string;
-}>;
 
 const ATTENDANCE_STYLE: Record<string, string> = {
     hadir: "bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400 border-green-200",
@@ -110,23 +111,20 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
     });
 
     const {
-        showStatusForm,
-        currentAttendanceId,
+        showEditModal,
+        setShowEditModal,
+        editingAttendance,
+        setEditingAttendance,
         selectedStatus,
         setSelectedStatus,
-        showCheckOutForm,
-        editingCheckOutId,
         checkOutValue,
         setCheckOutValue,
         confirmingCheckOutDeletion,
         setConfirmingCheckOutDeletion,
-        handleToggleStatusForm,
-        handleSaveStatus,
-        handleCancelStatusUpdate,
-        handleToggleCheckOutForm,
-        handleSaveCheckOut,
-        handleCancelCheckOutUpdate,
+        handleOpenEditModal,
+        handleSaveAttendance,
         handleDeleteCheckOut,
+        isSaving,
     } = useInternAttendance();
 
     const {
@@ -144,11 +142,8 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         setShowToleransiModal,
         confirmingDeletion,
         setConfirmingDeletion,
-        confirmingToggleActive,
-        setConfirmingToggleActive,
         handleSaveToleransi,
         handleDeleteIntern,
-        handleToggleActive,
     } = useInternActions({ internId: intern.id });
 
     // ── Derived States ─────────────────────────────────────────
@@ -175,82 +170,73 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         return days.length > 0 ? days.join(", ") : "Belum ada jadwal";
     };
 
-    const renderCheckOut = (
-        attendance: Attendance,
-        indexInPage: number,
-        totalInPage: number,
-    ) => {
-        const position =
-            indexInPage >= totalInPage - (totalInPage > 4 ? totalInPage - 3 : 0)
-                ? "top"
-                : "bottom";
-
+    // ? Menampilkan status secara statis (tanpa klik inline)
+    const renderStatus = (attendance: Attendance) => {
         return (
-            <div className="relative">
-                <button
-                    onClick={() =>
-                        handleToggleCheckOutForm(
-                            attendance.id,
-                            attendance.check_out,
-                        )
-                    }
-                    className="hover:bg-muted cursor-pointer rounded px-2 py-1 text-sm font-medium"
-                >
-                    {attendance.check_out
-                        ? attendance.check_out.slice(0, 5)
-                        : "-"}
-                </button>
+            <Badge
+                className={`font-medium ${getAttendanceStyle(attendance.status)}`}
+            >
+                {getAttendanceLabel(attendance.status)}
+            </Badge>
+        );
+    };
 
-                {!confirmingCheckOutDeletion && (
-                    <CheckOutForm
-                        show={
-                            showCheckOutForm &&
-                            editingCheckOutId === attendance.id
+    // ? Menampilkan menu aksi dengan 2 pilihan: Edit dan Hapus
+    const renderActions = (attendance: Attendance) => {
+        return (
+            <div className="relative inline-block text-left">
+                <DropdownMenu>
+                    <DropdownMenuTrigger
+                        render={
+                            <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-8 w-8 cursor-pointer p-0"
+                            >
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
                         }
-                        position={position}
-                        value={checkOutValue}
-                        setValue={setCheckOutValue}
-                        onSave={handleSaveCheckOut}
-                        onDelete={() => setConfirmingCheckOutDeletion(true)}
-                        onCancel={handleCancelCheckOutUpdate}
                     />
-                )}
+                    <DropdownMenuContent align="end" className="w-40 bg-white">
+                        <DropdownMenuItem
+                            onClick={() => handleOpenEditModal(attendance)}
+                            className="cursor-pointer"
+                        >
+                            <Edit2 className="h-4 w-4" />
+                            Edit Kehadiran
+                        </DropdownMenuItem>
+
+                        {attendance.check_out && (
+                            <DropdownMenuItem
+                                onClick={() => {
+                                    setEditingAttendance(attendance);
+                                    setConfirmingCheckOutDeletion(true);
+                                }}
+                                variant="destructive"
+                                className="cursor-pointer"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                                Hapus Kehadiran
+                            </DropdownMenuItem>
+                        )}
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         );
     };
 
-    const renderStatus = (
-        attendance: Attendance,
-        indexInPage: number,
-        totalInPage: number,
-    ) => {
-        const position = indexInPage >= 3 ? "top" : "bottom";
-
-        return (
-            <div className="relative">
-                <Badge
-                    onClick={() =>
-                        handleToggleStatusForm(attendance.id, attendance.status)
-                    }
-                    className={`cursor-pointer font-medium transition hover:brightness-95 ${getAttendanceStyle(attendance.status)}`}
-                >
-                    {getAttendanceLabel(attendance.status)}
-                </Badge>
-
-                <EditStatusFormFixed
-                    show={
-                        showStatusForm && currentAttendanceId === attendance.id
-                    }
-                    position={position}
-                    selectedStatus={selectedStatus}
-                    setSelectedStatus={setSelectedStatus}
-                    onSave={handleSaveStatus}
-                    onCancel={handleCancelStatusUpdate}
-                    getStyle={getAttendanceStyle}
-                    getLabel={getAttendanceLabel}
-                />
-            </div>
-        );
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return "";
+        try {
+            const parsedDate = new Date(dateString);
+            return parsedDate.toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+            });
+        } catch {
+            return dateString;
+        }
     };
 
     return (
@@ -458,12 +444,8 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
                 <AttendanceTable
                     attendances={intern.attendances || []}
-                    renderCheckOut={(att, idx, tot) =>
-                        renderCheckOut(att as Attendance, idx, tot)
-                    }
-                    renderStatus={(att, idx, tot) =>
-                        renderStatus(att as Attendance, idx, tot)
-                    }
+                    renderActions={(att) => renderActions(att as Attendance)}
+                    renderStatus={(att) => renderStatus(att as Attendance)}
                 />
             </div>
 
@@ -473,6 +455,91 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 onClose={() => setShowToleransiModal(false)}
                 onSave={handleSaveToleransi}
             />
+
+            {/* Modal Dialog Edit Kehadiran Terpadu (Status & Jam Pulang) */}
+            <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+                <DialogContent className="max-w-[400px] bg-white p-6">
+                    <DialogHeader>
+                        <DialogTitle className="text-lg font-bold text-gray-900">
+                            Edit Kehadiran{" "}
+                            {editingAttendance &&
+                                `(${formatDate((editingAttendance as unknown as { date: string }).date)})`}
+                        </DialogTitle>
+
+                        <DialogDescription className="text-muted-foreground text-sm">
+                            Ubah status dan jam pulang karyawan magang.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form
+                        onSubmit={(e) => {
+                            e.preventDefault();
+                            handleSaveAttendance(selectedStatus, checkOutValue);
+                        }}
+                        className="space-y-4"
+                    >
+                        <div className="space-y-1.5">
+                            <label className="mb-1 block text-sm font-semibold text-gray-700">
+                                Status Kehadiran
+                            </label>
+                            <Select
+                                value={selectedStatus}
+                                onValueChange={(value) => {
+                                    if (value !== null) {
+                                        setSelectedStatus(value);
+                                    }
+                                }}
+                            >
+                                <SelectTrigger className="w-full bg-white">
+                                    <SelectValue
+                                        placeholder="Pilih status"
+                                        className="capitalize"
+                                    />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white">
+                                    <SelectItem value="hadir">Hadir</SelectItem>
+                                    <SelectItem value="izin">Izin</SelectItem>
+                                    <SelectItem value="sakit">Sakit</SelectItem>
+                                    <SelectItem value="alpha">Alpha</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label className="block text-sm font-semibold text-gray-700">
+                                Jam Pulang
+                            </label>
+
+                            <TimePicker
+                                value={checkOutValue}
+                                onChange={setCheckOutValue}
+                                disabled={isSaving}
+                                placeholder="Pilih jam pulang"
+                            />
+                        </div>
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowEditModal(false)}
+                                disabled={isSaving}
+                                className="border-gray-200 font-semibold text-gray-700"
+                            >
+                                Batal
+                            </Button>
+
+                            <Button
+                                type="submit"
+                                disabled={isSaving}
+                                className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
+                            >
+                                {isSaving ? "Menyimpan..." : "Simpan"}
+                            </Button>
+                        </div>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             <AlertDialog
                 open={confirmingDeletion}
@@ -487,6 +554,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                 Apakah Anda yakin ingin menghapus data &quot;
                                 {intern.name}&quot;?
                             </p>
+
                             <p className="text-destructive bg-destructive/10 border-destructive/20 rounded-lg border p-2.5 font-medium">
                                 Peringatan: Seluruh riwayat absensi, akumulasi
                                 poin, dan foto akan dihapus selamanya dari
