@@ -12,6 +12,19 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
+// * Representasi model data anak magang (Intern)
+export interface Intern {
+    id: number;
+    name: string;
+    fingerprint_data?: string | null;
+    second_fingerprint_data?: string | null;
+    fingerprint_data_3?: string | null;
+    fingerprint_data_4?: string | null;
+    fingerprint_data_5?: string | null;
+    fingerprint_data_6?: string | null;
+    [key: string]: unknown;
+}
+
 export interface FingerprintGroup {
     id: "primary" | "backup";
     title: string;

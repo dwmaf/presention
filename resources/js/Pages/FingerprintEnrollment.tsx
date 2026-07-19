@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { Head, Link } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import { useFingerprintEnrollment } from "@/hooks/useFingerPrintEnrollment";
 import type { Intern } from "@/hooks/useFingerPrintEnrollment";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
+import { useMemo } from "react";
 
 /**
  * Properti untuk halaman pendaftaran sidik jari.
@@ -44,21 +45,101 @@ export interface FingerprintEnrollmentProps {
  * @returns Elemen halaman pendaftaran sidik jari.
  */
 export default function FingerprintEnrollment({
-    auth,
     intern,
 }: FingerprintEnrollmentProps) {
+    const primaryForm = useForm({
+        group: "primary" as const,
+        samples: [] as string[],
+    });
+
+    const backupForm = useForm({
+        group: "backup" as const,
+        samples: [] as string[],
+    });
+
+    const forms = {
+        primary: primaryForm,
+        backup: backupForm,
+    };
+
+    const dbKeysPrimary = useMemo(
+        () =>
+            [
+                "fingerprint_data",
+                "second_fingerprint_data",
+                "fingerprint_data_3",
+            ] as const,
+        [],
+    );
+    const dbKeysBackup = useMemo(
+        () =>
+            [
+                "fingerprint_data_4",
+                "fingerprint_data_5",
+                "fingerprint_data_6",
+            ] as const,
+        [],
+    );
+
     const {
         groups,
         activeGroup,
         state,
-        forms,
         startNextCapture,
-        submitGroup,
-        resetDbGroup,
         resetLocal,
         groupHasDb,
         groupDbCount,
-    } = useFingerprintEnrollment(intern);
+        handleSaveSuccess,
+        handleSaveError,
+        handleResetSuccess,
+        handleResetError,
+    } = useFingerprintEnrollment({
+        data: intern,
+        primaryKeys: dbKeysPrimary,
+        backupKeys: dbKeysBackup,
+    });
+
+    const submitGroup = (
+        e: React.FormEvent<HTMLFormElement>,
+        groupId: "primary" | "backup",
+    ): void => {
+        e.preventDefault();
+        const samples = state[groupId].samples;
+        const currentForm = forms[groupId];
+
+        currentForm.transform((data) => ({ ...data, samples }));
+        currentForm.post(route("interns.fingerprint.storeGroup", intern.id), {
+            onSuccess: () => handleSaveSuccess(groupId),
+            onError: (errors) => {
+                const msg = errors?.fingerprint || "Gagal menyimpan.";
+                handleSaveError(groupId, msg);
+            },
+        });
+    };
+
+    const resetDbGroup = (groupId: "primary" | "backup"): void => {
+        if (
+            !confirm(
+                "Yakin ingin mereset data jari magang ini? Anda harus scan ulang.",
+            )
+        )
+            return;
+
+        const currentForm = forms[groupId];
+        currentForm.delete(route("interns.fingerprint.resetGroup", intern.id), {
+            onSuccess: () => {
+                resetLocal(groupId);
+                handleResetSuccess(groupId);
+            },
+            onError: (errors) => {
+                const msg =
+                    errors?.group ||
+                    errors?.fingerprint ||
+                    "Gagal reset database.";
+                handleResetError(groupId, msg);
+            },
+        });
+    };
 
     return (
         <AuthenticatedLayout>
@@ -67,13 +148,15 @@ export default function FingerprintEnrollment({
             <div>
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-8 flex items-start justify-between">
-                        <div>
-                            <h2 className="mb-2 text-3xl font-semibold text-gray-800">
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-bold tracking-tighter">
                                 Pendaftaran Sidik Jari
                             </h2>
-                            <p className="mb-2 text-lg font-bold text-indigo-600">
+
+                            <p className="text-primary text-lg font-semibold tracking-tight">
                                 {intern.name}
                             </p>
+
                             <p className="flex items-center gap-2 text-sm font-medium text-red-600">
                                 <span className="animate-pulse">●</span>{" "}
                                 Pastikan FingerprintBridge.exe berjalan sebelum
@@ -150,6 +233,7 @@ export default function FingerprintEnrollment({
                                                     {st.samples.length}/3
                                                 </span>
                                             </div>
+
                                             <div>
                                                 <span className="font-semibold text-gray-700">
                                                     Data Tersimpan :

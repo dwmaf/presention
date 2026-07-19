@@ -10,7 +10,7 @@
  */
 
 import React, { useMemo } from "react";
-import { Head, useForm } from "@inertiajs/react";
+import { Head, Link, useForm } from "@inertiajs/react";
 import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
 import { useFingerprintEnrollment } from "@/hooks/useFingerPrintEnrollment";
 
@@ -126,27 +126,46 @@ export default function AdminFingerprintEnrollment({
         <AuthenticatedLayout>
             <Head title="Admin Fingerprint" />
 
-            <div className="py-12">
+            <div>
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
                     <div className="mb-8 flex items-start justify-between">
-                        <div>
-                            <h2 className="mb-2 text-3xl font-semibold text-gray-800">
+                        <div className="space-y-2">
+                            <h2 className="text-3xl font-bold tracking-tighter">
                                 Setup Sidik Jari Admin
                             </h2>
+
                             <p className="text-gray-600">
                                 Kelola akses login Admin menggunakan scan jari.
                             </p>
-                            <p className="mt-2 flex items-center gap-2 text-sm font-medium text-blue-600">
+
+                            <p className="flex items-center gap-2 text-sm font-medium text-red-600">
                                 <span className="animate-pulse">●</span>{" "}
-                                Pastikan FingerprintBridge.exe Aktif
+                                Pastikan FingerprintBridge.exe berjalan sebelum
+                                memulai scan
                             </p>
                         </div>
-                        <button
-                            onClick={() => window.history.back()}
-                            className="text-gray-500 underline hover:text-gray-700"
+                        <Link
+                            href={route("interns.index")}
+                            className="flex items-center gap-2 font-semibold text-blue-700 hover:underline"
                         >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="18"
+                                height="18"
+                                viewBox="0 0 24 24"
+                                style={{ transform: "rotate(-90deg)" }}
+                            >
+                                <path
+                                    fill="none"
+                                    stroke="oklch(48.8% 0.243 264.376)"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M12 5v14m6-8l-6-6m-6 6l6-6"
+                                />
+                            </svg>
                             Kembali
-                        </button>
+                        </Link>
                     </div>
 
                     <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
@@ -219,6 +238,7 @@ export default function AdminFingerprintEnrollment({
                                                 {g.title}
                                             </h4>
                                         </div>
+
                                         <p className="mb-3 text-sm text-gray-500">
                                             {g.subtitle}
                                         </p>
