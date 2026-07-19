@@ -4,33 +4,13 @@
  * Layer       : Hooks
  *
  * Description:
- * Hook kustom pendaftaran sidik jari. Menggunakan penyempitan tipe (type narrowing)
- * untuk menghindari error pemanggilan metode pada union generic Inertia.
+ * Hook kustom untuk mengelola proses pendaftaran sidik jari.
+ * Terbuka dan dapat digunakan kembali untuk Admin maupun Magang.
  * ============================================================================
  */
 
 import { useMemo, useState } from "react";
-import { useForm } from "@inertiajs/react";
 import { toast } from "sonner";
-
-declare global {
-    function route(
-        name: string,
-        params?: number | string | Record<string, unknown>,
-    ): string;
-}
-
-export interface Intern {
-    id: number;
-    name: string;
-    fingerprint_data?: string | null;
-    second_fingerprint_data?: string | null;
-    fingerprint_data_3?: string | null;
-    fingerprint_data_4?: string | null;
-    fingerprint_data_5?: string | null;
-    fingerprint_data_6?: string | null;
-    [key: string]: unknown;
-}
 
 export interface FingerprintGroup {
     id: "primary" | "backup";
@@ -55,13 +35,25 @@ interface EnrollResponse {
     message?: string;
 }
 
+export interface UseFingerprintOptions {
+    /** Data objek target yang berisi status sidik jari (misal: Intern atau fingerStatus) */
+    data: Record<string, any>;
+    /** Kolom database untuk grup utama */
+    primaryKeys: readonly string[];
+    /** Kolom database untuk grup cadangan */
+    backupKeys: readonly string[];
+}
+
 /**
- * Hook kustom untuk mengelola pendaftaran sidik jari.
+ * Mengelola state capture sidik jari lokal dan komunikasi hardware.
  *
- * @param intern Data anak magang.
- * @returns State dan aksi pendaftaran.
+ * @param options Konfigurasi hook.
  */
-export function useFingerprintEnrollment(intern: Intern) {
+export function useFingerprintEnrollment({
+    data,
+    primaryKeys,
+    backupKeys,
+}: UseFingerprintOptions) {
     const groups: readonly FingerprintGroup[] = useMemo(
         () => [
             {
@@ -69,32 +61,26 @@ export function useFingerprintEnrollment(intern: Intern) {
                 title: "Fingerprint Utama",
                 subtitle:
                     "Scan 3x. Setiap scan geser sedikit posisi jari agar area terbaca merata (seperti daftar fingerprint di HP).",
-                dbKeys: [
-                    "fingerprint_data",
-                    "second_fingerprint_data",
-                    "fingerprint_data_3",
-                ],
+                dbKeys: primaryKeys,
             },
             {
                 id: "backup",
                 title: "Fingerprint Cadangan",
                 subtitle:
                     "Scan 3x untuk cadangan (boleh jari berbeda). Jika ingin mendaftar ulang, klik Reset Scan terlebih dahulu.",
-                dbKeys: [
-                    "fingerprint_data_4",
-                    "fingerprint_data_5",
-                    "fingerprint_data_6",
-                ],
+                dbKeys: backupKeys,
             },
         ],
-        [],
+        [primaryKeys, backupKeys],
     );
 
+    // * Memeriksa apakah database sudah memiliki data sidik jari
     const groupHasDb = (g: FingerprintGroup): boolean =>
-        g.dbKeys.some((k) => !!intern?.[k]);
+        g.dbKeys.some((k) => !!data?.[k]);
 
+    // * Menghitung jumlah data sidik jari yang tersimpan di database
     const groupDbCount = (g: FingerprintGroup): number =>
-        g.dbKeys.reduce((acc, k) => (intern?.[k] ? acc + 1 : acc), 0);
+        g.dbKeys.reduce((acc, k) => (data?.[k] ? acc + 1 : acc), 0);
 
     const [activeGroup, setActiveGroup] = useState<"primary" | "backup" | null>(
         null,
@@ -117,16 +103,7 @@ export function useFingerprintEnrollment(intern: Intern) {
         return init;
     });
 
-    const primaryForm = useForm({
-        group: "primary" as const,
-        samples: [] as string[],
-    });
-
-    const backupForm = useForm({
-        group: "backup" as const,
-        samples: [] as string[],
-    });
-
+    // * Mereset state scan lokal untuk satu grup
     const resetLocal = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
@@ -138,15 +115,9 @@ export function useFingerprintEnrollment(intern: Intern) {
                 status: "Local scan di-reset. Silakan scan 3x lagi.",
             },
         }));
-
-        // ? Discriminator untuk menghindari error pemanggilan setData pada union generic
-        if (groupId === "primary") {
-            primaryForm.setData("samples", []);
-        } else {
-            backupForm.setData("samples", []);
-        }
     };
 
+    // * Menghubungi daemon hardware C# untuk menangkap sidik jari berikutnya
     const startNextCapture = async (
         groupId: "primary" | "backup",
     ): Promise<void> => {
@@ -243,24 +214,23 @@ export function useFingerprintEnrollment(intern: Intern) {
         }
     };
 
+    // * Mengubah status UI ke berhasil simpan
     const handleSaveSuccess = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
             [groupId]: {
                 ...prev[groupId],
-                status: "✓ Berhasil disimpan ke database! (Tidak menimpa data lama).",
+                status: "✓ Berhasil disimpan ke database!",
             },
         }));
         toast.success("Berhasil menyimpan sidik jari!");
     };
 
+    // * Mengubah status UI ke error simpan
     const handleSaveError = (
         groupId: "primary" | "backup",
-        errors: Record<string, string>,
+        msg: string,
     ): void => {
-        const msg =
-            errors?.fingerprint ||
-            "Gagal menyimpan. Cek validasi / pastikan Reset Scan jika sudah ada data.";
         setState((prev) => ({
             ...prev,
             [groupId]: {
@@ -271,47 +241,7 @@ export function useFingerprintEnrollment(intern: Intern) {
         toast.error("Gagal menyimpan sidik jari: " + msg);
     };
 
-    const submitGroup = (
-        e: React.FormEvent<HTMLFormElement>,
-        groupId: "primary" | "backup",
-    ): void => {
-        e.preventDefault();
-
-        const samples = state[groupId].samples;
-        if (!samples || samples.length < 3) {
-            setState((prev) => ({
-                ...prev,
-                [groupId]: {
-                    ...prev[groupId],
-                    status: "Belum lengkap. Harus 3/3 scan dulu sebelum simpan.",
-                },
-            }));
-            toast.error("Scan belum lengkap. Harus 3/3 sebelum simpan.");
-            return;
-        }
-
-        // ? Discriminator pemanggilan transform & post pada form generic
-        if (groupId === "primary") {
-            primaryForm.transform((data) => ({ ...data, samples }));
-            primaryForm.post(
-                route("interns.fingerprint.storeGroup", intern.id),
-                {
-                    onSuccess: () => handleSaveSuccess(groupId),
-                    onError: (errors) => handleSaveError(groupId, errors),
-                },
-            );
-        } else {
-            backupForm.transform((data) => ({ ...data, samples }));
-            backupForm.post(
-                route("interns.fingerprint.storeGroup", intern.id),
-                {
-                    onSuccess: () => handleSaveSuccess(groupId),
-                    onError: (errors) => handleSaveError(groupId, errors),
-                },
-            );
-        }
-    };
-
+    // * Mengubah status UI ke berhasil reset
     const handleResetSuccess = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
@@ -326,12 +256,11 @@ export function useFingerprintEnrollment(intern: Intern) {
         toast.success("Berhasil reset database sidik jari!");
     };
 
+    // * Mengubah status UI ke error reset
     const handleResetError = (
         groupId: "primary" | "backup",
-        errors: Record<string, string>,
+        msg: string,
     ): void => {
-        const msg =
-            errors?.group || errors?.fingerprint || "Gagal reset Database.";
         setState((prev) => ({
             ...prev,
             [groupId]: {
@@ -342,40 +271,17 @@ export function useFingerprintEnrollment(intern: Intern) {
         toast.error("Gagal reset database: " + msg);
     };
 
-    const resetDbGroup = (groupId: "primary" | "backup"): void => {
-        // ? Discriminator pemanggilan delete pada form generic
-        if (groupId === "primary") {
-            primaryForm.delete(
-                route("interns.fingerprint.resetGroup", intern.id),
-                {
-                    onSuccess: () => handleResetSuccess(groupId),
-                    onError: (errors) => handleResetError(groupId, errors),
-                },
-            );
-        } else {
-            backupForm.delete(
-                route("interns.fingerprint.resetGroup", intern.id),
-                {
-                    onSuccess: () => handleResetSuccess(groupId),
-                    onError: (errors) => handleResetError(groupId, errors),
-                },
-            );
-        }
-    };
-
     return {
         groups,
         activeGroup,
         state,
-        forms: {
-            primary: primaryForm,
-            backup: backupForm,
-        },
         startNextCapture,
-        submitGroup,
-        resetDbGroup,
         resetLocal,
         groupHasDb,
         groupDbCount,
+        handleSaveSuccess,
+        handleSaveError,
+        handleResetSuccess,
+        handleResetError,
     };
 }

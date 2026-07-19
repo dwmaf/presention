@@ -8,12 +8,17 @@ use Illuminate\Support\Facades\Auth;
 
 class AdminFingerprintController extends Controller
 {
+    // ? Pemetaan grup sidik jari ke kolom database di satu tempat
+    private const FINGERPRINT_MAP = [
+        'primary' => ['fingerprint_1', 'fingerprint_2', 'fingerprint_3'],
+        'backup'  => ['fingerprint_4', 'fingerprint_5', 'fingerprint_6'],
+    ];
+
     public function index()
     {
         $user = Auth::user();
 
-        // Kirim status jari mana saja yang sudah terdaftar (True/False)
-        // Kita tidak perlu kirim FMD stringnya ke frontend demi keamanan/bandwidth
+        // * Memeriksa status keterdaftaran sidik jari admin
         $status = [
             'fingerprint_1' => !empty($user->fingerprint_1),
             'fingerprint_2' => !empty($user->fingerprint_2),
@@ -29,7 +34,6 @@ class AdminFingerprintController extends Controller
         ]);
     }
 
-    // ✅ NEW: Simpan 3 template sekaligus untuk group admin
     public function storeGroup(Request $request)
     {
         $data = $request->validate([
@@ -38,16 +42,11 @@ class AdminFingerprintController extends Controller
             'samples.*' => ['required', 'string'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
+        $cols = self::FINGERPRINT_MAP[$data['group']];
 
-        $map = [
-            'primary' => ['fingerprint_1', 'fingerprint_2', 'fingerprint_3'],
-            'backup'  => ['fingerprint_4', 'fingerprint_5', 'fingerprint_6'],
-        ];
-
-        $cols = $map[$data['group']];
-
-        // Cek apakah sudah ada isinya (mencegah overwrite tanpa reset)
+        // * Cek duplikasi untuk mencegah overwrite tanpa reset
         $already =
             !empty($user->{$cols[0]}) ||
             !empty($user->{$cols[1]}) ||
@@ -68,21 +67,15 @@ class AdminFingerprintController extends Controller
         return back()->with('success', 'Sidik jari Admin berhasil disimpan.');
     }
 
-    // ✅ NEW: Reset DB untuk group admin
     public function resetGroup(Request $request)
     {
         $data = $request->validate([
             'group' => ['required', 'in:primary,backup'],
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
-
-        $map = [
-            'primary' => ['fingerprint_1', 'fingerprint_2', 'fingerprint_3'],
-            'backup'  => ['fingerprint_4', 'fingerprint_5', 'fingerprint_6'],
-        ];
-
-        $cols = $map[$data['group']];
+        $cols = self::FINGERPRINT_MAP[$data['group']];
 
         $user->update([
             $cols[0] => null,
