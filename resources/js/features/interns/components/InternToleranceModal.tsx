@@ -22,38 +22,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import TimePicker from "../../../components/TimePicker";
+import { Loader2Icon, SaveIcon } from "lucide-react";
 
 const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
 type DayType = (typeof DAYS)[number];
 
-export interface ToleransiDayConfig {
+export interface InternToleranceConfig {
     checked: boolean;
     time: string;
 }
 
-export type ToleransiState = Record<DayType, ToleransiDayConfig>;
+export type InternToleranceState = Record<DayType, InternToleranceConfig>;
 
-/**
- * Struktur model data intern yang dibutuhkan oleh ToleransiModal.
- */
-export interface ToleransiIntern {
-    toleransi_senin?: boolean | number | null;
-    toleransi_selasa?: boolean | number | null;
-    toleransi_rabu?: boolean | number | null;
-    toleransi_kamis?: boolean | number | null;
-    toleransi_jumat?: boolean | number | null;
-    toleransi_senin_time?: string | null;
-    toleransi_selasa_time?: string | null;
-    toleransi_rabu_time?: string | null;
-    toleransi_kamis_time?: string | null;
-    toleransi_jumat_time?: string | null;
-}
-
-export interface ToleransiModalProps {
+export interface InternToleranceModalProps {
     show: boolean;
     intern: unknown;
     onClose: () => void;
-    onSave: (data: ToleransiState) => void;
+    onSave: (data: InternToleranceState) => void;
+    processing?: boolean;
 }
 
 /**
@@ -62,14 +48,15 @@ export interface ToleransiModalProps {
  * @param props Properti komponen.
  * @returns Dialog modal toleransi.
  */
-export default function ToleransiModal({
+export default function InternToleranceModal({
     show,
     intern,
     onClose,
     onSave,
-}: ToleransiModalProps) {
-    const createInitialState = (): ToleransiState => {
-        const state = {} as ToleransiState;
+    processing,
+}: InternToleranceModalProps) {
+    const createInitialState = (): InternToleranceState => {
+        const state = {} as InternToleranceState;
 
         // ? Cast safely inside the hook to read dynamic keys from database
         const internData = intern as Record<string, unknown> | null;
@@ -89,7 +76,7 @@ export default function ToleransiModal({
     };
 
     const [toleransiDays, setToleransiDays] =
-        useState<ToleransiState>(createInitialState);
+        useState<InternToleranceState>(createInitialState);
 
     useEffect(() => {
         setToleransiDays(createInitialState());
@@ -127,7 +114,7 @@ export default function ToleransiModal({
                         Pilih Hari Toleransi Terlambat
                     </DialogTitle>
 
-                    <DialogDescription className="text-xs">
+                    <DialogDescription className="text-sm">
                         Pilih hari di mana toleransi keterlambatan
                         diperbolehkan, beserta jam batas keterlambatan.
                     </DialogDescription>
@@ -177,9 +164,20 @@ export default function ToleransiModal({
                     <Button
                         type="button"
                         onClick={handleSubmit}
+                        disabled={processing}
                         className="flex-1"
                     >
-                        Simpan
+                        {processing ? (
+                            <>
+                                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                                Menyimpan...
+                            </>
+                        ) : (
+                            <>
+                                <SaveIcon className="mr-2 h-4 w-4" />
+                                Simpan
+                            </>
+                        )}
                     </Button>
                 </DialogFooter>
             </DialogContent>

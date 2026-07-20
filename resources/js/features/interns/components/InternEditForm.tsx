@@ -24,6 +24,7 @@ import {
 // @ts-ignore
 import InputError from "@/components/InputError";
 import type { Division } from "@/features/interns/types/intern";
+import { Loader2Icon, SaveIcon } from "lucide-react";
 
 const DAYS = [
     { key: "senin", label: "Senin" },
@@ -62,6 +63,7 @@ export interface InternFormProps<T extends BaseInternFormData> {
     divisions: Division[];
     onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
     onCancel: () => void;
+    processing?: boolean;
 }
 
 /**
@@ -70,7 +72,7 @@ export interface InternFormProps<T extends BaseInternFormData> {
  * @param props Properti komponen.
  * @returns Elemen form input karyawan.
  */
-export default function InternForm<T extends BaseInternFormData>({
+export default function InternEditForm<T extends BaseInternFormData>({
     show,
     data,
     setData,
@@ -78,6 +80,7 @@ export default function InternForm<T extends BaseInternFormData>({
     divisions,
     onSubmit,
     onCancel,
+    processing = false,
 }: InternFormProps<T>) {
     if (!show) return null;
 
@@ -236,8 +239,22 @@ export default function InternForm<T extends BaseInternFormData>({
                     Batal
                 </Button>
 
-                <Button type="submit" className="w-flex-1">
-                    Simpan
+                <Button
+                    type="submit"
+                    disabled={processing}
+                    className="w-flex-1"
+                >
+                    {processing ? (
+                        <>
+                            <Loader2Icon className="size-4 animate-spin" />
+                            Menyimpan...
+                        </>
+                    ) : (
+                        <>
+                            <SaveIcon className="size-4" />
+                            Simpan
+                        </>
+                    )}
                 </Button>
             </div>
         </form>

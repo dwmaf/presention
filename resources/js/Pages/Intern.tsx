@@ -17,6 +17,7 @@ import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
 import { Button } from "@/components/ui/button";
 import {
     DownloadIcon,
+    Loader2Icon,
     PowerIcon,
     RotateCcwIcon,
     TrashIcon,
@@ -30,7 +31,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import InternDetail from "@/features/interns/components/InternDetail";
-import InternFormModal from "@/features/interns/components/InternFormModal";
+import InternAddModal from "@/features/interns/components/InternAddModal";
 import InternDeleteModal from "@/features/interns/components/InternDeleteModal";
 import InternResetModal from "@/features/interns/components/InternResetModal";
 
@@ -82,13 +83,12 @@ const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
  * @param props Properti halaman.
  * @returns Halaman daftar karyawan.
  */
-export default function Intern({ auth, interns, divisions }: InternProps) {
+export default function Intern({ interns, divisions }: InternProps) {
     const [search, setSearch] = useState<string>("");
     const [currentIntern, setCurrentIntern] = useState<InternData | null>(null);
 
     // * State untuk kontrol modal
     const [isFormOpen, setIsFormOpen] = useState<boolean>(false);
-    const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState<boolean>(false);
     const [internToDelete, setInternToDelete] = useState<InternData | null>(
@@ -156,7 +156,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
         });
 
     const deleteForm = useForm({});
-    const { post: postReset } = useForm();
+    const { post: postReset, processing: isResetting } = useForm();
 
     // * Sinkronkan currentIntern dengan data state terbaru dari server
     useEffect(() => {
@@ -169,31 +169,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
     // * Buka modal pembuatan data baru
     const openCreate = () => {
         reset();
-        setIsEditMode(false);
         setCurrentIntern(null);
-        setPhotoPreview(null);
-        setIsFormOpen(true);
-        clearErrors();
-    };
-
-    // * Buka modal edit data
-    const openEdit = (intern: InternData) => {
-        setIsEditMode(true);
-        setCurrentIntern(intern);
-
-        setData({
-            name: intern.name,
-            division_id: String(intern.division_id) || "",
-            poin: intern.poin ?? 5,
-            foto: null,
-            senin: intern.senin,
-            selasa: intern.selasa,
-            rabu: intern.rabu,
-            kamis: intern.kamis,
-            jumat: intern.jumat,
-            _method: "put",
-        });
-
         setPhotoPreview(null);
         setIsFormOpen(true);
         clearErrors();
@@ -203,16 +179,12 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
     const submit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        const url = isEditMode
-            ? route("interns.update", currentIntern?.id)
-            : route("interns.store");
-
-        post(url, {
-            onSuccess: () => setIsFormOpen(false),
-            onFinish: () => {
-                if (!isEditMode) {
-                    reset();
-                }
+        post(route("interns.store"), {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsFormOpen(false);
+                reset();
+                setPhotoPreview(null);
             },
         });
     };
@@ -227,7 +199,14 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
     const deleteIntern = () => {
         if (internToDelete) {
             deleteForm.delete(route("interns.destroy", internToDelete.id), {
-                onSuccess: () => setIsDeleteOpen(false),
+                onSuccess: () => {
+                    setIsDeleteOpen(false);
+                    setIsDetailOpen(false);
+                    toast.success("Karyawan berhasil dihapus.");
+                },
+                onError: () => {
+                    toast.error("Gagal menghapus karyawan.");
+                },
             });
         }
     };
@@ -435,11 +414,12 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                                         onClick={() => {
                                             window.location.href = `/interns/${currentIntern.id}/export-attendance`;
                                         }}
-                                        className="flex items-center gap-1 border border-gray-200 bg-white"
+                                        className="flex items-center gap-1 border border-gray-200 bg-white focus-visible:ring-0"
                                     >
                                         <DownloadIcon className="h-4 w-4" />
-                                        Ekspor Data
+                                        Ekspor Data Kehadiran
                                     </Button>
+
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -479,7 +459,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                     </DialogContent>
                 </Dialog>
 
-                <InternFormModal
+                <InternAddModal
                     show={isFormOpen}
                     onClose={() => setIsFormOpen(false)}
                     onSubmit={submit}
@@ -487,7 +467,6 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                     setData={setData}
                     processing={processing}
                     errors={errors}
-                    isEditMode={isEditMode}
                     divisions={divisions}
                     photoPreview={photoPreview}
                     setPhotoPreview={setPhotoPreview}
@@ -501,6 +480,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                     onClose={() => setIsDeleteOpen(false)}
                     onDelete={deleteIntern}
                     processing={deleteForm.processing}
+                    internName={currentIntern?.name}
                 />
 
                 {/* Modal Konfirmasi Toggle Keaktifan */}
@@ -510,15 +490,16 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                 >
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>
+                            <AlertDialogTitle className="text-xl font-bold">
                                 {currentIntern?.is_active
                                     ? "Nonaktifkan Karyawan?"
                                     : "Aktifkan Karyawan?"}
                             </AlertDialogTitle>
-                            <AlertDialogDescription>
+
+                            <AlertDialogDescription className="text-sm">
                                 {currentIntern?.is_active
-                                    ? "Karyawan magang ini tidak akan dicatat kehadirannya selama berstatus nonaktif."
-                                    : "Karyawan magang ini akan kembali aktif dan masuk dalam pencatatan kehadiran."}
+                                    ? `Karyawan ${currentIntern?.name} tidak akan dicatat kehadirannya selama berstatus nonaktif.`
+                                    : `Karyawan ${currentIntern?.name} akan kembali aktif dan masuk dalam pencatatan kehadiran.`}
                             </AlertDialogDescription>
                         </AlertDialogHeader>
 
@@ -531,9 +512,17 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                                 onClick={toggleActive}
                                 disabled={isTogglingActive}
                             >
-                                {isTogglingActive
-                                    ? "Memproses..."
-                                    : "Konfirmasi"}
+                                {isTogglingActive ? (
+                                    <>
+                                        <Loader2Icon className="size-4 animate-spin" />
+                                        Memproses...
+                                    </>
+                                ) : (
+                                    <>
+                                        <PowerIcon className="size-4" />
+                                        Ya, Lanjutkan
+                                    </>
+                                )}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -544,6 +533,7 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
                     onClose={() => setIsResetOpen(false)}
                     onConfirm={resetPoints}
                     isFirstDate={isFirstDate}
+                    processing={isResetting}
                 />
             </div>
         </AuthenticatedLayout>

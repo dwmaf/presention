@@ -23,15 +23,17 @@ interface UseInternActionsProps {
  * @returns State modal aksi dan fungsi pengirim mutasi API.
  */
 export function useInternActions({ internId }: UseInternActionsProps) {
-    const [showToleransiModal, setShowToleransiModal] =
+    const [showToleranceModal, setShowToleranceModal] =
         useState<boolean>(false);
     const [confirmingDeletion, setConfirmingDeletion] =
         useState<boolean>(false);
+    const [isSavingTolerance, setIsSavingTolerance] = useState<boolean>(false);
 
-    const handleSaveToleransi = (toleransiDays: any) => {
+    const handleSaveTolerance = (toleransiDays: any) => {
+        setIsSavingTolerance(true);
         router.put(`/interns/${internId}/update-toleransi`, toleransiDays, {
             onSuccess: () => {
-                setShowToleransiModal(false);
+                setShowToleranceModal(false);
                 toast.success("Toleransi keterlambatan berhasil diubah!");
                 router.reload();
             },
@@ -41,6 +43,7 @@ export function useInternActions({ internId }: UseInternActionsProps) {
                         Object.values(err).join(", "),
                 );
             },
+            onFinish: () => setIsSavingTolerance(false),
         });
     };
 
@@ -79,14 +82,15 @@ export function useInternActions({ internId }: UseInternActionsProps) {
     };
 
     return {
-        showToleransiModal,
-        setShowToleransiModal,
+        showToleranceModal,
+        setShowToleranceModal,
         confirmingDeletion,
         setConfirmingDeletion,
         confirmingToggleActive,
         setConfirmingToggleActive,
-        handleSaveToleransi,
+        handleSaveTolerance,
         handleDeleteIntern,
         handleToggleActive,
+        isSavingTolerance,
     };
 }

@@ -20,13 +20,14 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { AlertTriangleIcon } from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, RotateCcwIcon } from "lucide-react";
 
 interface InternResetModalProps {
     show: boolean;
     onClose: () => void;
     onConfirm: () => void;
     isFirstDate: boolean;
+    processing?: boolean;
 }
 
 export default function InternResetModal({
@@ -34,15 +35,17 @@ export default function InternResetModal({
     onClose,
     onConfirm,
     isFirstDate,
+    processing = false,
 }: InternResetModalProps) {
     return (
         <AlertDialog open={show} onOpenChange={(open) => !open && onClose()}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle className="text-foreground flex items-center gap-2 text-lg font-semibold">
+                    <AlertDialogTitle className="text-foreground flex items-center gap-2 text-xl font-bold">
                         <AlertTriangleIcon className="h-5.5 w-5.5 shrink-0 text-orange-500" />
                         Konfirmasi Reset Poin
                     </AlertDialogTitle>
+
                     <AlertDialogDescription className="text-muted-foreground pt-2 text-sm">
                         {isFirstDate ? (
                             "Apakah Anda yakin ingin mereset poin semua karyawan menjadi 5?"
@@ -60,18 +63,30 @@ export default function InternResetModal({
                         )}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
-                <AlertDialogFooter className="mt-4">
+
+                <AlertDialogFooter>
                     <AlertDialogCancel onClick={onClose}>
                         Batal
                     </AlertDialogCancel>
+
                     <AlertDialogAction
                         onClick={(e) => {
                             e.preventDefault();
                             onConfirm();
                         }}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        variant="destructive"
                     >
-                        Reset Semua Poin
+                        {processing ? (
+                            <>
+                                <Loader2Icon className="size-4 animate-spin" />
+                                Mereset...
+                            </>
+                        ) : (
+                            <>
+                                <RotateCcwIcon className="size-4" />
+                                Ya, Reset Semua Poin
+                            </>
+                        )}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

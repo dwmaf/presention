@@ -10,6 +10,7 @@
 
 import { useState } from "react";
 import { router, useForm } from "@inertiajs/react";
+import { toast } from "sonner";
 
 interface InternData {
     id: number;
@@ -33,10 +34,10 @@ interface UseInternFormProps {
  * @param props Properti hook.
  * @returns Form Inertia state, error, dan handler submit/cancel.
  */
-export function useInternForm({ intern }: UseInternFormProps) {
+export function useInternEditForm({ intern }: UseInternFormProps) {
     const [showForm, setShowForm] = useState<boolean>(false);
 
-    const { data, setData, errors, reset } = useForm({
+    const { data, setData, errors, reset, put, processing } = useForm({
         name: intern?.name || "",
         division_id: String(intern?.division_id || ""),
         senin: intern?.senin || false,
@@ -49,8 +50,14 @@ export function useInternForm({ intern }: UseInternFormProps) {
 
     const handleSubmit = (e: Event) => {
         e.preventDefault();
-        router.put(`/interns/${intern.id}`, data, {
-            onSuccess: () => setShowForm(false),
+        put(`/interns/${intern.id}`, {
+            onSuccess: () => {
+                setShowForm(false);
+                toast.success("Data karyawan berhasil diperbarui.");
+            },
+            onError: () => {
+                toast.error("Gagal memperbarui data karyawan.");
+            },
         });
     };
 
@@ -67,5 +74,6 @@ export function useInternForm({ intern }: UseInternFormProps) {
         errors,
         handleSubmit,
         handleCloseForm,
+        processing,
     };
 }

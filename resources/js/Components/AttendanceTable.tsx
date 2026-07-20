@@ -76,18 +76,23 @@ export default function AttendanceTable({
                             <TableHead className="px-4 font-semibold">
                                 Tanggal
                             </TableHead>
+
                             <TableHead className="px-4 font-semibold">
                                 Hari
                             </TableHead>
+
                             <TableHead className="px-4 font-semibold">
                                 Jam Masuk
                             </TableHead>
+
                             <TableHead className="px-4 font-semibold">
                                 Jam Pulang
                             </TableHead>
+
                             <TableHead className="px-4 font-semibold">
                                 Status
                             </TableHead>
+
                             <TableHead className="px-4 text-center font-semibold">
                                 Aksi
                             </TableHead>
@@ -104,9 +109,11 @@ export default function AttendanceTable({
                                     <TableCell className="px-4 py-3">
                                         {attendance.date}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3">
                                         {attendance.hari}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3">
                                         <div className="flex items-center gap-2">
                                             <span>
@@ -117,18 +124,21 @@ export default function AttendanceTable({
                                                       )
                                                     : "-"}
                                             </span>
+
                                             {attendance.terlambat ? (
-                                                <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-600/10">
+                                                <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
                                                     (+{attendance.terlambat}m)
                                                 </span>
                                             ) : null}
                                         </div>
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3">
                                         {attendance.check_out
                                             ? attendance.check_out.slice(0, 5)
                                             : "-"}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3">
                                         {renderStatus(
                                             attendance,
@@ -136,6 +146,7 @@ export default function AttendanceTable({
                                             currentAttendances.length,
                                         )}
                                     </TableCell>
+
                                     <TableCell className="px-4 py-3 text-center">
                                         {renderActions(
                                             attendance,

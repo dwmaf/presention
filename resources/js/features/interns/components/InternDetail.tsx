@@ -22,12 +22,16 @@ import {
     Trash2,
     MoreHorizontal,
     Edit2,
+    UploadIcon,
+    Loader2Icon,
+    SaveIcon,
+    TrashIcon,
 } from "lucide-react";
 
 // @ts-ignore
 import AttendanceTable from "@/components/AttendanceTable";
-import InternForm from "./InternForm";
-import ToleransiModal from "@/features/interns/components/ToleransiModal";
+import InternEditForm from "./InternEditForm";
+import InternToleranceModal from "@/features/interns/components/InternToleranceModal";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -60,7 +64,7 @@ import type {
 
 import { useInternPhoto } from "../hooks/useInternPhoto";
 import { useInternAttendance } from "../hooks/useInternAttendance";
-import { useInternForm } from "../hooks/useInternForm";
+import { useInternEditForm } from "../hooks/useInternEditForm";
 import { useInternActions } from "../hooks/useInternActions";
 import {
     Select,
@@ -70,6 +74,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import TimePicker from "@/components/TimePicker";
+import { Label } from "@/components/ui/label";
 
 interface InternDetailProps {
     intern: InternData;
@@ -77,10 +82,10 @@ interface InternDetailProps {
 }
 
 const ATTENDANCE_STYLE: Record<string, string> = {
-    hadir: "bg-green-100 text-green-700 dark:bg-green-950/20 dark:text-green-400 border-green-200",
-    izin: "bg-amber-100 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-200",
-    sakit: "bg-blue-100 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200",
-    alpha: "bg-red-100 text-red-700 dark:bg-red-950/20 dark:text-red-400 border-red-200",
+    hadir: "bg-green-100 text-green-700",
+    izin: "bg-amber-100 text-amber-700",
+    sakit: "bg-blue-100 text-blue-700",
+    alpha: "bg-red-100 text-red-700",
 };
 
 const ATTENDANCE_LABEL: Record<string, string> = {
@@ -135,15 +140,17 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         errors,
         handleSubmit,
         handleCloseForm,
-    } = useInternForm({ intern });
+        processing,
+    } = useInternEditForm({ intern });
 
     const {
-        showToleransiModal,
-        setShowToleransiModal,
+        showToleranceModal,
+        setShowToleranceModal,
         confirmingDeletion,
         setConfirmingDeletion,
-        handleSaveToleransi,
+        handleSaveTolerance,
         handleDeleteIntern,
+        isSavingTolerance,
     } = useInternActions({ internId: intern.id });
 
     // ── Derived States ─────────────────────────────────────────
@@ -191,7 +198,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             <Button
                                 variant="ghost"
                                 size="icon-sm"
-                                className="h-8 w-8 cursor-pointer p-0"
+                                className="size-8 cursor-pointer p-0"
                             >
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -244,7 +251,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div
-                        className="group border-border bg-muted relative flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-xl border shadow-sm"
+                        className="group border-border bg-muted relative flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-xl border shadow-sm transition-colors duration-300 hover:bg-black/10 dark:hover:bg-white/10"
                         onClick={handlePhotoClick}
                     >
                         {intern.foto ? (
@@ -254,6 +261,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                     alt={intern.name}
                                     className="h-full w-full object-cover object-top transition-transform duration-300 group-hover:scale-105"
                                 />
+
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-300 hover:opacity-100">
                                     <span className="text-xs font-semibold text-white">
                                         {uploading
@@ -264,12 +272,28 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             </>
                         ) : (
                             <div className="text-muted-foreground flex flex-col items-center gap-1 p-3 text-center">
-                                <UserIcon className="h-8 w-8" />
+                                {/* Icon default, sembunyi saat hover */}
+                                <UserIcon className="size-8 group-hover:hidden" />
+
+                                {/* Icon upload, tampil saat hover */}
+                                <UploadIcon className="hidden size-8 group-hover:block" />
 
                                 <span className="text-xs font-semibold">
-                                    {uploading
-                                        ? "Mengupload..."
-                                        : "Upload Foto"}
+                                    {uploading ? (
+                                        "Mengupload..."
+                                    ) : (
+                                        <>
+                                            {/* Tampil normal, sembunyi saat hover */}
+                                            <span className="group-hover:hidden">
+                                                Belum ada foto
+                                            </span>
+
+                                            {/* Sembunyi normal, tampil saat hover */}
+                                            <span className="hidden group-hover:inline">
+                                                Unggah foto
+                                            </span>
+                                        </>
+                                    )}
                                 </span>
                             </div>
                         )}
@@ -315,7 +339,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => setShowToleransiModal(true)}
+                                onClick={() => setShowToleranceModal(true)}
                                 className="text-muted-foreground hover:text-foreground h-7 px-2 font-medium"
                             >
                                 <ClockIcon className="mr-1 h-4 w-4" />
@@ -403,9 +427,14 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         <DialogTitle className="text-xl font-bold tracking-tight">
                             Edit Informasi Karyawan
                         </DialogTitle>
+
+                        <DialogDescription className="text-sm">
+                            Perbarui nama, divisi, poin, dan jadwal kerja
+                            karyawan di sini.
+                        </DialogDescription>
                     </DialogHeader>
 
-                    <InternForm
+                    <InternEditForm
                         show={showForm}
                         setShow={setShowForm}
                         data={data}
@@ -414,6 +443,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         divisions={divisions}
                         onSubmit={(e) => handleSubmit(e as unknown as Event)}
                         onCancel={handleCloseForm}
+                        processing={processing}
                     />
                 </DialogContent>
             </Dialog>
@@ -449,18 +479,19 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 />
             </div>
 
-            <ToleransiModal
-                show={showToleransiModal}
+            <InternToleranceModal
+                show={showToleranceModal}
                 intern={intern}
-                onClose={() => setShowToleransiModal(false)}
-                onSave={handleSaveToleransi}
+                onClose={() => setShowToleranceModal(false)}
+                onSave={handleSaveTolerance}
+                processing={isSavingTolerance}
             />
 
             {/* Modal Dialog Edit Kehadiran Terpadu (Status & Jam Pulang) */}
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
                 <DialogContent className="max-w-[400px] bg-white p-6">
                     <DialogHeader>
-                        <DialogTitle className="text-lg font-bold text-gray-900">
+                        <DialogTitle className="text-lg font-bold">
                             Edit Kehadiran{" "}
                             {editingAttendance &&
                                 `(${formatDate((editingAttendance as unknown as { date: string }).date)})`}
@@ -478,10 +509,9 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         }}
                         className="space-y-4"
                     >
-                        <div className="space-y-1.5">
-                            <label className="mb-1 block text-sm font-semibold text-gray-700">
-                                Status Kehadiran
-                            </label>
+                        <div className="space-y-2">
+                            <Label className="">Status Kehadiran</Label>
+
                             <Select
                                 value={selectedStatus}
                                 onValueChange={(value) => {
@@ -496,6 +526,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                         className="capitalize"
                                     />
                                 </SelectTrigger>
+
                                 <SelectContent className="bg-white">
                                     <SelectItem value="hadir">Hadir</SelectItem>
                                     <SelectItem value="izin">Izin</SelectItem>
@@ -505,10 +536,8 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             </Select>
                         </div>
 
-                        <div className="space-y-1.5">
-                            <label className="block text-sm font-semibold text-gray-700">
-                                Jam Pulang
-                            </label>
+                        <div className="space-y-2">
+                            <Label className="">Jam Pulang</Label>
 
                             <TimePicker
                                 value={checkOutValue}
@@ -534,7 +563,17 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                 disabled={isSaving}
                                 className="bg-primary text-primary-foreground hover:bg-primary/90 font-semibold"
                             >
-                                {isSaving ? "Menyimpan..." : "Simpan"}
+                                {isSaving ? (
+                                    <>
+                                        <Loader2Icon className="size-4 animate-spin" />
+                                        Menyimpan...
+                                    </>
+                                ) : (
+                                    <>
+                                        <SaveIcon className="size-4" />
+                                        Simpan
+                                    </>
+                                )}
                             </Button>
                         </div>
                     </form>
@@ -586,9 +625,11 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Hapus Jam Pulang</AlertDialogTitle>
+                        <AlertDialogTitle className="text-xl font-bold">
+                            Hapus Jam Pulang
+                        </AlertDialogTitle>
 
-                        <AlertDialogDescription>
+                        <AlertDialogDescription className="text-sm">
                             Apakah Anda yakin ingin menghapus catatan jam pulang
                             untuk baris kehadiran ini? Tindakan ini tidak dapat
                             dibatalkan.
@@ -606,9 +647,20 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
                         <AlertDialogAction
                             onClick={handleDeleteCheckOut}
-                            className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                            disabled={isSaving}
+                            variant="destructive"
                         >
-                            Hapus
+                            {isSaving ? (
+                                <>
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    Menghapus...
+                                </>
+                            ) : (
+                                <>
+                                    <TrashIcon className="size-4" />
+                                    Ya, Hapus
+                                </>
+                            )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

@@ -12,6 +12,7 @@
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
@@ -20,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import InputError from "@/components/InputError";
-import { XIcon, UploadCloudIcon } from "lucide-react";
+import { XIcon, UploadCloudIcon, Loader2Icon, SaveIcon } from "lucide-react";
 import {
     Select,
     SelectContent,
@@ -50,7 +51,6 @@ interface InternFormModalProps {
     setData: (key: any, value: any) => void;
     processing: boolean;
     errors: Record<string, string>;
-    isEditMode: boolean;
     divisions: Division[];
     photoPreview: string | null;
     setPhotoPreview: (preview: string | null) => void;
@@ -67,7 +67,7 @@ const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
  * @param props Properti modal.
  * @returns Komponen modal form.
  */
-export default function InternFormModal({
+export default function InternAddModal({
     show,
     onClose,
     onSubmit,
@@ -75,7 +75,6 @@ export default function InternFormModal({
     setData,
     processing,
     errors,
-    isEditMode,
     divisions,
     photoPreview,
     setPhotoPreview,
@@ -98,16 +97,20 @@ export default function InternFormModal({
             <DialogContent className="custom-scrollbar max-h-[90vh] max-w-[95vw] overflow-y-auto md:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold tracking-tight">
-                        {isEditMode ? "Edit Karyawan" : "Tambah Karyawan"}
+                        Tambah Karyawan
                     </DialogTitle>
+
+                    <DialogDescription>
+                        Silahkan isi informasi profil dan jadwal kerja untuk
+                        karyawan baru.
+                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-6">
                     <div className="flex flex-col gap-6 md:flex-row">
                         <div className="flex flex-col items-center gap-2">
                             <Label className="cursor-pointer">
-                                {photoPreview ||
-                                (isEditMode && currentIntern?.foto) ? (
+                                {photoPreview || currentIntern?.foto ? (
                                     <div className="group relative h-60 w-40 overflow-hidden rounded-xl border">
                                         <img
                                             src={
@@ -222,7 +225,7 @@ export default function InternFormModal({
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Jadwal Kerja</Label>
+                                <Label>Jadwal Kerja Karyawan</Label>
                                 <div className="grid grid-cols-2 gap-3 pt-1 sm:grid-cols-3">
                                     <div className="border-border bg-card hover:bg-muted/30 flex items-center space-x-2 rounded-lg border p-2.5 transition-colors">
                                         <Checkbox
@@ -234,7 +237,7 @@ export default function InternFormModal({
                                         />
                                         <Label
                                             htmlFor="everyday"
-                                            className="cursor-pointer text-xs font-semibold select-none"
+                                            className="cursor-pointer text-sm select-none"
                                         >
                                             Setiap Hari
                                         </Label>
@@ -254,7 +257,7 @@ export default function InternFormModal({
                                             />
                                             <Label
                                                 htmlFor={day}
-                                                className="cursor-pointer text-xs font-medium capitalize select-none"
+                                                className="cursor-pointer text-sm capitalize select-none"
                                             >
                                                 {day}
                                             </Label>
@@ -265,7 +268,7 @@ export default function InternFormModal({
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-2 border-t pt-4">
+                    <div className="flex justify-end gap-2">
                         <Button
                             type="button"
                             variant="outline"
@@ -273,8 +276,19 @@ export default function InternFormModal({
                         >
                             Batal
                         </Button>
+
                         <Button type="submit" disabled={processing}>
-                            {isEditMode ? "Update" : "Simpan"}
+                            {processing ? (
+                                <>
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    Menyimpan...
+                                </>
+                            ) : (
+                                <>
+                                    <SaveIcon className="size-4" />
+                                    Simpan Karyawan
+                                </>
+                            )}
                         </Button>
                     </div>
                 </form>

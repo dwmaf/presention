@@ -30,17 +30,15 @@ interface InternCardProps {
 const STATUS_LABELS = {
     alpha: {
         label: "Tidak Hadir",
-        className: "bg-destructive/10 text-destructive border-destructive/20",
+        className: "bg-destructive/10 text-destructive",
     },
     izin: {
         label: "Izin",
-        className:
-            "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/30",
+        className: "bg-amber-100 text-amber-700",
     },
     sakit: {
         label: "Sakit",
-        className:
-            "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/30",
+        className: "bg-blue-100 text-blue-700",
     },
 };
 
@@ -53,10 +51,7 @@ function AttendanceBadge({
 
     if (!attendance) {
         return (
-            <Badge
-                variant="outline"
-                className="bg-destructive/10 text-destructive"
-            >
+            <Badge className="bg-destructive/10 text-destructive">
                 Tidak Hadir
             </Badge>
         );
@@ -65,7 +60,7 @@ function AttendanceBadge({
     if (attendance.status !== "hadir") {
         const config = STATUS_LABELS[attendance.status] || {
             label: attendance.status,
-            className: "bg-muted text-muted-foreground border-border",
+            className: "bg-muted text-muted-foreground",
         };
 
         return (
@@ -79,7 +74,7 @@ function AttendanceBadge({
         <div className="flex flex-wrap gap-1">
             <Badge
                 variant="outline"
-                className="dark:border-emerald- 900/30 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/20 dark:text-emerald-400"
+                className="bg-emerald-100 text-emerald-800"
             >
                 Hadir
             </Badge>
@@ -87,15 +82,12 @@ function AttendanceBadge({
             {attendance.terlambat ? (
                 <Badge
                     variant="outline"
-                    className="bg-amber-100 text-amber-800 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400"
+                    className="bg-amber-100 text-amber-800"
                 >
                     Telat {attendance.terlambat}m
                 </Badge>
             ) : (
-                <Badge
-                    variant="outline"
-                    className="bg-sky-100 text-sky-800 dark:border-sky-900/30 dark:bg-sky-950/20 dark:text-sky-400"
-                >
+                <Badge variant="outline" className="bg-sky-100 text-sky-800">
                     Tepat Waktu
                 </Badge>
             )}
@@ -103,7 +95,7 @@ function AttendanceBadge({
             {attendance.check_out && (
                 <Badge
                     variant="outline"
-                    className="bg-indigo-100 text-indigo-800 dark:bg-indigo-950/20 dark:text-indigo-400"
+                    className="bg-indigo-100 text-indigo-800"
                 >
                     Pulang
                 </Badge>
@@ -133,7 +125,7 @@ export default function InternCard({
             : "bg-primary/10 text-primary";
 
     const fingerprintStyle = hasFingerprint
-        ? "text-emerald-700 dark:text-emerald-400"
+        ? "text-emerald-700"
         : "text-destructive";
 
     const divisionName = intern.division?.nama_divisi ?? "-";
@@ -141,7 +133,9 @@ export default function InternCard({
     return (
         <Card
             onClick={onClick}
-            className="bg-card flex w-full cursor-pointer flex-col overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+            className={`bg-card flex w-full cursor-pointer flex-col overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:rotate-1 hover:shadow-md ${
+                intern.foto ? "" : "pt-0 pb-[1.5rem]"
+            }`}
         >
             {/* Foto Karyawan */}
             {intern.foto ? (
