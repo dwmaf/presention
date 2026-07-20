@@ -80,7 +80,7 @@ export function GlobalSearch() {
                     if (query) setIsOpen(true);
                 }}
                 onBlur={() => setTimeout(() => setIsOpen(false), 200)}
-                className="bg-muted/20 focus-visible:ring-sidebar-ring h-9 w-full border-none pl-9 shadow-none focus-visible:ring-1"
+                className="bg-muted/20 focus-visible:ring-sidebar-ring focus-visible:border-primary h-9 w-full border pl-9 shadow-none focus-visible:ring-0"
             />
 
             {isOpen && hasResults && (
