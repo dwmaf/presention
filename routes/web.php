@@ -55,6 +55,8 @@ Route::middleware('auth')->group(function () {
         ->name('interns.fingerprint.resetGroup');
 
     Route::put('/interns/{intern}/toggle-active', [InternController::class, 'toggleActive'])->name('interns.toggleActive');
+
+    Route::get('/search', [App\Http\Controllers\SearchController::class, 'index'])->name('search');
 });
 
 require __DIR__ . '/auth.php';

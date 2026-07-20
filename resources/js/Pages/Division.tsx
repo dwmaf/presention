@@ -20,6 +20,7 @@ import DivisionDeleteModal from "@/features/divisions/components/DivisionDeleteM
 import { useDivision } from "@/features/divisions/hooks/useDivision";
 import type { DivisionProps } from "@/features/divisions/types/division";
 import { PuzzleSmall } from "@/components/PuzzleIcons";
+import { useEffect } from "react";
 
 /**
  * Komponen utama halaman Divisi.
@@ -53,6 +54,22 @@ export default function Division({
         assignIntern,
         removeIntern,
     } = useDivision({ divisions, allInterns });
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const showId = params.get("show");
+
+        if (showId && divisions.length > 0) {
+            const foundDivision = divisions.find(
+                (d) => d.id === Number(showId),
+            );
+            if (foundDivision) {
+                openDetailModal(foundDivision);
+                // Bersihkan URL
+                window.history.replaceState({}, "", route("divisions.index"));
+            }
+        }
+    }, [divisions]);
 
     return (
         <AuthenticatedLayout>

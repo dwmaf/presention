@@ -15,6 +15,7 @@ import { AppSidebar } from "@/features/sidebar/app-sidebar";
 import { Separator } from "@base-ui/react";
 import { SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { GlobalSearch } from "@/components/GlobalSearch";
 
 interface AuthenticatedLayoutProps {
     header?: ReactNode;
@@ -43,14 +44,7 @@ export default function AuthenticatedLayout({
                     />
 
                     {/* Search Bar */}
-                    <div className="relative w-full max-w-xs md:max-w-sm">
-                        <SearchIcon className="text-muted-foreground absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2" />
-                        <Input
-                            type="search"
-                            placeholder="Cari karyawan, divisi..."
-                            className="bg-muted/20 focus-visible:ring-sidebar-ring h-9 w-full border-none pl-9 shadow-none focus-visible:ring-1"
-                        />
-                    </div>
+                    <GlobalSearch />
                 </header>
 
                 <main className="min-h-screen flex-1 bg-gray-50 p-4 md:p-8">

@@ -125,6 +125,21 @@ export default function Intern({ auth, interns, divisions }: InternProps) {
         }
     };
 
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const showId = params.get("show");
+
+        if (showId && interns.length > 0) {
+            const foundIntern = interns.find((i) => i.id === Number(showId));
+            if (foundIntern) {
+                setCurrentIntern(foundIntern);
+                setIsDetailOpen(true);
+                // Bersihkan URL agar modal tidak terbuka lagi saat di-refresh
+                window.history.replaceState({}, "", route("interns.index"));
+            }
+        }
+    }, [interns]);
+
     // * Form state untuk create/update
     const { data, setData, post, processing, errors, reset, clearErrors } =
         useForm<InternFormState>({
