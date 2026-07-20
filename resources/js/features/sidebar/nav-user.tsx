@@ -69,9 +69,9 @@ export function NavUser({ user }: UserProps) {
                     </DropdownMenuTrigger>
 
                     <DropdownMenuContent
-                        className="min-w-(--anchor-width) rounded-lg"
+                        className="w-(--anchor-width) min-w-52 rounded-lg"
                         side="bottom"
-                        align="start"
+                        align="end"
                         sideOffset={4}
                     >
                         <DropdownMenuGroup>
