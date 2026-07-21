@@ -40,22 +40,27 @@ export default function DivisionCard({
     onEdit,
     onDelete,
 }: DivisionCardProps) {
+    const activeCount = division.interns
+        ? division.interns.filter((i) => i.is_active !== false).length
+        : (division.interns_count ?? 0);
+
     return (
-        <Card className="flex flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+        <Card className="flex flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:rotate-1">
             {/* Row atas: ikon dan jumlah anggota */}
             <div className="flex items-start justify-between">
-                <PuzzleBig />
+                <PuzzleBig className="text-primary" />
+
                 <Badge
                     variant="secondary"
-                    className="rounded-full px-3 py-1 font-semibold text-gray-600"
+                    className="rounded-full px-3 font-semibold text-gray-600"
                 >
-                    {division.interns_count ?? 0} Anggota
+                    {activeCount} Anggota Aktif
                 </Badge>
             </div>
 
             {/* Nama Divisi */}
             <CardHeader className="p-0">
-                <CardTitle className="text-xl leading-snug font-bold text-gray-900">
+                <CardTitle className="text-xl leading-snug font-bold">
                     {division.nama_divisi}
                 </CardTitle>
             </CardHeader>
@@ -76,7 +81,7 @@ export default function DivisionCard({
                 <Button
                     variant="outline"
                     onClick={onDetail}
-                    className="flex-1 border-blue-600 font-semibold text-blue-600 hover:bg-blue-50"
+                    className="hover:text-primary border-primary text-primary flex-1 font-semibold hover:bg-blue-50"
                 >
                     Lihat Detail
                 </Button>
@@ -86,15 +91,15 @@ export default function DivisionCard({
                     onClick={onDelete}
                     className="px-3"
                 >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon className="size-4" />
                 </Button>
 
                 <Button
                     variant="outline"
                     onClick={onEdit}
-                    className="border-gray-200 bg-yellow-100/50 px-3 hover:bg-yellow-50 hover:text-yellow-600"
+                    className="border-gray-200 bg-yellow-100 px-3 shadow-none hover:bg-yellow-200 hover:text-yellow-600"
                 >
-                    <EditIcon className="h-4 w-4 text-yellow-700" />
+                    <EditIcon className="size-4 text-yellow-700" />
                 </Button>
             </CardFooter>
         </Card>

@@ -12,7 +12,11 @@ class DivisionController extends Controller
     public function index()
     {
         $divisions = Division::withCount('interns')->with('interns')->get();
-        $allInterns = Intern::select('id', 'name', 'foto', 'division_id')->orderBy('name')->get();
+
+        $allInterns = Intern::select('id', 'name', 'foto', 'division_id', 'is_active')
+            ->orderBy('name')
+            ->get();
+
         return Inertia::render('Division', [
             'divisions'  => $divisions,
             'allInterns' => $allInterns,
@@ -34,16 +38,16 @@ class DivisionController extends Controller
         return redirect()->back()->with('success', 'Anggota berhasil dihapus.');
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Division $division)
     {
         $validatedData = $request->validate([
             'nama_divisi' => 'required|string|max:255',
             'deskripsi'   => 'nullable|string',
         ]);
-        
+
         Division::create($validatedData);
 
-        return redirect()->back()->with('success', 'Data Divisi saved successfully!');
+        return redirect()->back()->with('success', "Data Divisi {$division->nama_divisi} berhasil ditambahkan!");
     }
 
     public function update(Request $request, Division $division)
@@ -55,17 +59,17 @@ class DivisionController extends Controller
 
         $division->update($validatedData);
 
-        return redirect()->back()->with('success', 'Data Divisi updated successfully!');
+        return redirect()->back()->with('success', "Data Divisi {$division->nama_divisi} berhasil diperbarui!");
     }
 
     public function destroy(Division $division)
     {
         if ($division->interns()->exists()) {
-            return redirect()->back()->with('error', 'Cannot delete division because there are interns associated with it.');
+            return redirect()->back()->with('error', 'Divisi tidak dapat dihapus karena masih ada karyawan yang terdaftar di dalamnya.');
         }
 
         $division->delete();
 
-        return redirect()->back()->with('success', 'Data Divisi deleted successfully!');
+        return redirect()->back()->with('success', "Divisi {$division->nama_divisi} berhasil dihapus!");
     }
 }

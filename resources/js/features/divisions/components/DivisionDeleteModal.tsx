@@ -19,6 +19,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import type { DivisionData } from "../types/division";
+import { Loader2Icon, TrashIcon } from "lucide-react";
 
 interface DivisionDeleteModalProps {
     show: boolean;
@@ -45,7 +46,10 @@ export default function DivisionDeleteModal({
         <AlertDialog open={show} onOpenChange={(open) => !open && onClose()}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Hapus Divisi</AlertDialogTitle>
+                    <AlertDialogTitle className="text-xl font-bold tracking-tight">
+                        Hapus Divisi
+                    </AlertDialogTitle>
+
                     <AlertDialogDescription>
                         Apakah Anda yakin ingin menghapus divisi{" "}
                         <strong className="text-foreground">
@@ -55,19 +59,31 @@ export default function DivisionDeleteModal({
                         dibatalkan.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={onClose} disabled={processing}>
                         Batal
                     </AlertDialogCancel>
+
                     <AlertDialogAction
                         onClick={(e) => {
                             e.preventDefault();
                             onDelete();
                         }}
                         disabled={processing}
-                        className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                        variant="destructive"
                     >
-                        {processing ? "Menghapus..." : "Hapus"}
+                        {processing ? (
+                            <>
+                                <Loader2Icon className="size-4 animate-spin" />
+                                Menghapus...
+                            </>
+                        ) : (
+                            <>
+                                <TrashIcon className="size-4" />
+                                Ya, Hapus
+                            </>
+                        )}
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

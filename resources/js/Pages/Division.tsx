@@ -53,6 +53,7 @@ export default function Division({
         deleteDivision,
         assignIntern,
         removeIntern,
+        isRemovingIntern,
     } = useDivision({ divisions, allInterns });
 
     useEffect(() => {
@@ -87,13 +88,14 @@ export default function Division({
                             operasional dan pengembangan UPA PKK UNTAN.
                         </p>
                     </div>
+
                     <Button
                         onClick={() => openFormModal(null)}
-                        variant="outline"
-                        className="text- indigo-700 flex items-center gap-2 self-start rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold whitespace-nowrap shadow-sm transition hover:bg-gray-50 sm:self-auto"
+                        size="lg"
+                        className=""
                     >
-                        <PuzzleSmall />
-                        Tambah Divisi
+                        <PuzzleSmall className="size-5 text-white" />
+                        Tambah Divisi Baru
                     </Button>
                 </div>
 
@@ -142,6 +144,7 @@ export default function Division({
                 memberSuggestions={memberSuggestions}
                 onAssign={assignIntern}
                 onRemove={removeIntern}
+                processing={isRemovingIntern}
             />
 
             {/* Modal Konfirmasi Hapus Divisi */}

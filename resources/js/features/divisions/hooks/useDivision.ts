@@ -71,8 +71,10 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     const memberSuggestions = useMemo(() => {
         if (!modal.detail) return [];
         const memberIds = new Set(modal.detail.interns?.map((i) => i.id) ?? []);
+
         return allInterns.filter(
             (i) =>
+                i.is_active !== false &&
                 !memberIds.has(i.id) &&
                 i.name.toLowerCase().includes(memberSearch.toLowerCase()),
         );
@@ -120,10 +122,18 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
         const options = {
             onSuccess: () => {
                 closeFormModal();
-                toast.success("Berhasil!");
+                toast.success(
+                    isEditMode
+                        ? "Data divisi berhasil diperbarui."
+                        : "Divisi baru berhasil ditambahkan.",
+                );
             },
             onError: () => {
-                toast.error("Terjadi kesalahan.");
+                toast.error(
+                    isEditMode
+                        ? "Gagal memperbarui data divisi."
+                        : "Gagal menambahkan divisi baru.",
+                );
             },
         };
 
@@ -148,11 +158,16 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
                 if (props.flash?.error) {
                     toast.error(props.flash.error);
                 } else {
-                    toast.success("Divisi dihapus!");
+                    toast.success(
+                        props.flash?.success ||
+                            `Divisi ${selectedDivision.nama_divisi} berhasil dihapus!`,
+                    );
                 }
             },
             onError: () => {
-                toast.error("Gagal menghapus.");
+                toast.error(
+                    `Gagal menghapus divisi ${selectedDivision.nama_divisi}.`,
+                );
             },
         });
     };
@@ -167,21 +182,31 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
                 onSuccess: () => {
                     setMemberSearch("");
                     setShowAddMember(false);
-                    toast.success("Anggota ditambahkan!");
+                    toast.success(
+                        `${intern.name} berhasil ditambahkan ke divisi ${modal.detail?.nama_divisi}.`,
+                    );
                 },
             },
         );
     };
 
+    const [isRemovingIntern, setIsRemovingIntern] = useState<boolean>(false);
+
     const removeIntern = (intern: DivisionMember) => {
         if (!modal.detail) return;
+
+        setIsRemovingIntern(true);
+
         router.delete(
             route("divisions.removeIntern", [modal.detail.id, intern.id]),
             {
                 preserveScroll: true,
                 onSuccess: () => {
-                    toast.success("Anggota dihapus!");
+                    toast.success(
+                        `${intern.name} berhasil dihapus dari divisi ${modal.detail?.nama_divisi}.`,
+                    );
                 },
+                onFinish: () => setIsRemovingIntern(false),
             },
         );
     };
@@ -207,5 +232,6 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
         deleteDivision,
         assignIntern,
         removeIntern,
+        isRemovingIntern,
     };
 }

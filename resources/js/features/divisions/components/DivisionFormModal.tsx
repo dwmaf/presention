@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import InputError from "@/components/InputError";
 import type { DivisionFormState } from "../types/division";
 import { PuzzleSmall } from "@/components/PuzzleIcons";
+import { Loader2Icon, SaveIcon } from "lucide-react";
 
 interface DivisionFormModalProps {
     show: boolean;
@@ -53,26 +54,24 @@ export default function DivisionFormModal({
     return (
         <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-[560px] p-6">
-                <DialogHeader className="mb-4">
+                <DialogHeader>
                     <div className="flex items-center gap-3">
-                        <PuzzleSmall />
-                        <DialogTitle className="text-lg font-bold text-gray-900">
-                            {isEditMode ? "Edit Divisi" : "Tambah Divisi"}
+                        <PuzzleSmall className="text-primary size-6" />
+
+                        <DialogTitle className="text-xl font-bold">
+                            Tambah Divisi
                         </DialogTitle>
                     </div>
-                    <DialogDescription className="text-sm text-gray-500">
-                        Isi data untuk menambahkan divisi baru.
+
+                    <DialogDescription className="text-sm">
+                        Tambahkan divisi baru dengan mengisi form di bawah.
                     </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    <div>
-                        <Label
-                            htmlFor="nama_divisi"
-                            className="mb-1 block text-sm font-semibold text-gray-700"
-                        >
-                            Nama Divisi
-                        </Label>
+                    <div className="space-y-2">
+                        <Label htmlFor="nama_divisi">Nama Divisi</Label>
+
                         <Input
                             id="nama_divisi"
                             type="text"
@@ -81,7 +80,7 @@ export default function DivisionFormModal({
                                 setData("nama_divisi", e.target.value)
                             }
                             placeholder="Contoh: IT, HRD, dll"
-                            className="w-full focus:ring-2 focus:ring-indigo-400"
+                            className="w-full focus-visible:ring-0"
                         />
                         <InputError
                             message={errors.nama_divisi}
@@ -89,16 +88,14 @@ export default function DivisionFormModal({
                         />
                     </div>
 
-                    <div>
-                        <Label
-                            htmlFor="deskripsi"
-                            className="mb-1 block text-sm font-semibold text-gray-700"
-                        >
+                    <div className="space-y-2">
+                        <Label htmlFor="deskripsi">
                             Deskripsi{" "}
                             <span className="font-normal text-gray-400">
                                 (opsional)
                             </span>
                         </Label>
+
                         <Textarea
                             id="deskripsi"
                             value={data.deskripsi}
@@ -107,7 +104,7 @@ export default function DivisionFormModal({
                             }
                             rows={3}
                             placeholder="Deskripsikan tugas dan tanggung jawab divisi ini..."
-                            className="w-full resize-none focus:ring-2 focus:ring-indigo-400"
+                            className="min-h-20 w-full focus-visible:ring-0"
                         />
                         <InputError
                             message={errors.deskripsi}
@@ -125,12 +122,22 @@ export default function DivisionFormModal({
                             Batal
                         </Button>
 
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                            className="bg-blue-600 font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                        >
-                            {isEditMode ? "Update" : "Simpan"}
+                        <Button type="submit" disabled={processing}>
+                            {processing ? (
+                                <>
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    {isEditMode
+                                        ? "Memperbarui..."
+                                        : "Menyimpan..."}
+                                </>
+                            ) : (
+                                <>
+                                    <SaveIcon className="size4" />
+                                    {isEditMode
+                                        ? "Perbarui Divisi"
+                                        : "Simpan Divisi"}
+                                </>
+                            )}
                         </Button>
                     </div>
                 </form>

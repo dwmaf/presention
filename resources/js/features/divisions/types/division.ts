@@ -15,6 +15,7 @@ export interface DivisionMember {
     id: number;
     name: string;
     foto?: string | null;
+    is_active?: boolean;
 }
 
 /**
