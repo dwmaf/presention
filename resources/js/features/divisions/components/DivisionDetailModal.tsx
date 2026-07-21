@@ -95,7 +95,7 @@ export default function DivisionDetailModal({
                             </DialogTitle>
                         </div>
 
-                        <DialogDescription className="line-clamp-2 text-sm text-gray-500">
+                        <DialogDescription className="line-clamp-3 text-sm text-gray-500">
                             {division.deskripsi || (
                                 <span className="text-gray-400 italic">
                                     Belum ada deskripsi.
@@ -124,7 +124,7 @@ export default function DivisionDetailModal({
                             setShowAddMember((v) => !v);
                             setMemberSearch("");
                         }}
-                        className="text-primary flex h-auto items-center p-0 text-sm font-semibold hover:underline"
+                        className="text-primary flex h-auto items-center py-2 text-sm font-semibold hover:underline focus-visible:ring-0"
                     >
                         <UserPlusIcon className="size-4" />
                         Tambah Anggota
