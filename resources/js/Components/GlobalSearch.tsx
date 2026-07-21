@@ -1,3 +1,10 @@
+/**
+ * Komponen pencarian global.
+ * Menangani input pencarian dari pengguna dan mengambil data (karyawan & divisi) dari server.
+ * Menampilkan hasil pencarian dalam bentuk dropdown yang interaktif.
+ *
+ * @returns Komponen antarmuka pencarian global.
+ */
 import { useState, useEffect } from "react";
 import { SearchIcon, UsersIcon, LayersIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -23,7 +30,7 @@ export function GlobalSearch() {
                 const res = await axios.get(route("search", { q: query }));
                 setResults(res.data);
                 setIsOpen(true);
-                setSelectedIndex(-1); // Reset selection when results change
+                setSelectedIndex(-1);
             } catch (err) {
                 console.error(err);
             }
@@ -35,7 +42,6 @@ export function GlobalSearch() {
     const hasResults =
         results.interns.length > 0 || results.divisions.length > 0;
 
-    // Combine results for easier keyboard navigation mapping
     const combinedResults = [
         ...results.interns.map((i: any) => ({ ...i, type: "intern" })),
         ...results.divisions.map((d: any) => ({ ...d, type: "division" })),
@@ -135,7 +141,6 @@ export function GlobalSearch() {
                             </h4>
                             {results.divisions.map(
                                 (div: any, index: number) => {
-                                    // Offset index for divisions by the number of interns
                                     const globalIndex =
                                         results.interns.length + index;
                                     const isSelected =

@@ -1,5 +1,12 @@
 import type { SVGProps } from "react";
 
+/**
+ * Ikon dekoratif berbentuk puzzle (ukuran besar).
+ * Mewakili logo atau visual identitas divisi dalam aplikasi.
+ *
+ * @param props Properti SVG standar bawaan React.
+ * @returns Elemen SVG ikon puzzle.
+ */
 export const PuzzleBig = (props: SVGProps<SVGSVGElement>) => (
     <svg
         width="40"
