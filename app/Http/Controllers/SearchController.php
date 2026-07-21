@@ -22,8 +22,8 @@ class SearchController extends Controller
       return response()->json(['interns' => [], 'divisions' => []]);
     }
 
-    $interns = Intern::where('name', 'like', "%{$query}%")
-      ->orWhere('nim', 'like', "%{$query}%") // Sesuaikan field pencarian
+    $interns = Intern::where('is_active', '!=', false)
+      ->where('name', 'like', "%{$query}%")
       ->limit(5)
       ->get(['id', 'name', 'foto']);
 
