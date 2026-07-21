@@ -4,26 +4,31 @@
  * Layer       : UI (Component)
  *
  * Description:
- * Menampilkan kartu profil ringkas untuk karyawan (intern), mendukung
- * mode presensi dan visualisasi sisa poin serta status sidik jari.
+ * Kartu komponen interaktif untuk menampilkan identitas karyawan magang,
+ * status keaktifan, poin, divisi, dan riwayat presensi harian.
  * ============================================================================
  */
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Fingerprint } from "lucide-react";
+import type { KeyboardEvent } from "react";
 
 import type { InternData } from "@/features/interns/types/intern";
 
-interface AttendanceData {
+export interface AttendanceData {
     status: "hadir" | "alpha" | "izin" | "sakit";
     terlambat?: number;
     check_out?: boolean;
 }
 
-interface InternCardProps {
+/**
+ * Kontrak properti untuk komponen Kartu Karyawan.
+ */
+export interface InternCardProps {
     intern: InternData;
     onClick: () => void;
+    variant?: "default" | "attendance";
     attendance?: AttendanceData | null;
 }
 
@@ -40,7 +45,7 @@ const STATUS_LABELS = {
         label: "Sakit",
         className: "bg-blue-100 text-blue-700",
     },
-};
+} as const;
 
 function AttendanceBadge({
     attendance,
@@ -58,10 +63,7 @@ function AttendanceBadge({
     }
 
     if (attendance.status !== "hadir") {
-        const config = STATUS_LABELS[attendance.status] || {
-            label: attendance.status,
-            className: "bg-muted text-muted-foreground",
-        };
+        const config = STATUS_LABELS[attendance.status];
 
         return (
             <Badge variant="outline" className={config.className}>
@@ -105,18 +107,17 @@ function AttendanceBadge({
 }
 
 /**
- * Komponen kartu karyawan.
- *
- * @param props Properti kartu.
- * @returns Komponen kartu profil karyawan.
+ * Komponen kartu profil karyawan interaktif.
+ * Mendukung mode default (menampilkan divisi) dan mode presensi (menampilkan badge kehadiran).
  */
 export default function InternCard({
     intern,
     onClick,
+    variant = "default",
     attendance,
 }: InternCardProps) {
     const rawPoin = intern.poin ?? 0;
-    const poin = rawPoin < 0 ? 0 : rawPoin;
+    const poin = Math.max(0, rawPoin);
     const hasFingerprint = !!intern.fingerprint_data;
 
     const poinStyle =
@@ -130,19 +131,32 @@ export default function InternCard({
 
     const divisionName = intern.division?.nama_divisi ?? "-";
 
+    // ? Fallback pengecekan attendance untuk menjaga kompatibilitas mundur jika prop variant tidak diberikan.
+    const isAttendanceMode =
+        variant === "attendance" || attendance !== undefined;
+
+    const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onClick();
+        }
+    };
+
     return (
         <Card
             onClick={onClick}
-            className={`bg-card flex w-full cursor-pointer flex-col overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:rotate-1 hover:shadow-md ${
+            role="button"
+            tabIndex={0}
+            onKeyDown={handleKeyDown}
+            className={`bg-card focus-visible:ring-ring flex w-full cursor-pointer flex-col overflow-hidden transition-all duration-200 hover:scale-[1.01] hover:rotate-1 hover:shadow-md focus-visible:ring-2 focus-visible:outline-none ${
                 intern.foto ? "" : "pt-0 pb-[1.5rem]"
             }`}
         >
-            {/* Foto Karyawan */}
             {intern.foto ? (
                 <img
                     className="aspect-square w-full object-cover object-top"
                     src={`/storage/${intern.foto}`}
-                    alt={intern.name}
+                    alt={`Foto profil ${intern.name}`}
                 />
             ) : (
                 <div className="bg-muted text-muted-foreground flex aspect-square w-full items-center justify-center text-sm font-medium">
@@ -151,13 +165,11 @@ export default function InternCard({
             )}
 
             <CardContent className="flex flex-1 flex-col justify-between gap-3">
-                {/* Nama Karyawan */}
                 <p className="text-card-foreground h-10 text-lg leading-tight font-semibold tracking-tight">
                     {intern.name}
                 </p>
 
-                {/* Info Divisi / Absensi */}
-                {attendance !== undefined ? (
+                {isAttendanceMode ? (
                     <div>
                         <AttendanceBadge attendance={attendance} />
                     </div>
@@ -167,13 +179,12 @@ export default function InternCard({
                     </p>
                 )}
 
-                {/* Footer Status */}
                 <div className="mt-auto flex items-center gap-2">
                     <Badge className={`font-medium ${poinStyle}`}>
                         {poin} Poin
                     </Badge>
 
-                    {attendance === undefined && (
+                    {!isAttendanceMode && (
                         <Fingerprint className={`size-4 ${fingerprintStyle}`} />
                     )}
                 </div>

@@ -1,14 +1,4 @@
-/**
- * ============================================================================
- * Hook        : useInternPhoto
- * Layer       : Feature (Hook)
- *
- * Description:
- * Mengelola upload dan pembaruan foto profil karyawan.
- * ============================================================================
- */
-
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
 
@@ -18,18 +8,13 @@ interface UseInternPhotoProps {
 
 /**
  * Hook kustom untuk upload foto karyawan.
- *
- * @param props Properti hook.
- * @returns State upload dan fungsi handler input file.
  */
 export function useInternPhoto({ internId }: UseInternPhotoProps) {
     const [uploading, setUploading] = useState<boolean>(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handlePhotoClick = () => {
-        const fileInput = document.getElementById(
-            "photo-upload",
-        ) as HTMLInputElement;
-        fileInput?.click();
+        fileInputRef.current?.click();
     };
 
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,21 +39,23 @@ export function useInternPhoto({ internId }: UseInternPhotoProps) {
 
         router.post(`/interns/${internId}/update-photo`, formData, {
             onSuccess: () => {
-                setUploading(false);
                 toast.success("Foto berhasil diubah!");
                 router.reload();
             },
             onError: (err) => {
-                setUploading(false);
                 toast.error(
                     "Gagal mengubah foto: " + Object.values(err).join(", "),
                 );
+            },
+            onFinish: () => {
+                setUploading(false);
             },
         });
     };
 
     return {
         uploading,
+        fileInputRef,
         handlePhotoClick,
         handlePhotoChange,
     };

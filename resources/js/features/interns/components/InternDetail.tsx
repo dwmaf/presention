@@ -1,11 +1,11 @@
 /**
  * ============================================================================
  * Component   : InternDetail
- * Layer       : UI (Component)
+ * Layer       : Feature (Component)
  *
  * Description:
- * Menampilkan detail profil karyawan, riwayat absensi, grafik/statistik,
- * serta kontrol edit foto, toleransi, status, dan hapus karyawan.
+ * Komponen tampilan detail profil lengkap karyawan magang, termasuk foto profil,
+ * divisi, statistik absensi, tabel riwayat presensi, dan modal-modal aksi terkait.
  * ============================================================================
  */
 
@@ -28,8 +28,9 @@ import {
     TrashIcon,
 } from "lucide-react";
 
-// @ts-ignore
-import AttendanceTable from "@/components/AttendanceTable";
+import AttendanceTable, {
+    type AttendanceRecord,
+} from "@/components/AttendanceTable";
 import InternEditForm from "./InternEditForm";
 import InternToleranceModal from "@/features/interns/components/InternToleranceModal";
 import {
@@ -75,11 +76,17 @@ import {
 } from "@/components/ui/select";
 import TimePicker from "@/components/TimePicker";
 import { Label } from "@/components/ui/label";
+import type { KeyboardEvent } from "react";
 
-interface InternDetailProps {
+/**
+ * Kontrak properti untuk komponen detail karyawan magang.
+ */
+export interface InternDetailProps {
     intern: InternData;
     divisions: Division[];
 }
+
+type ExtendedAttendance = Attendance & AttendanceRecord & { date: string };
 
 const ATTENDANCE_STYLE: Record<string, string> = {
     hadir: "bg-green-100 text-green-700",
@@ -102,15 +109,13 @@ const getAttendanceLabel = (status: string) =>
     ATTENDANCE_LABEL[status] || "Tidak ada";
 
 /**
- * Komponen detail profil karyawan magang.
- *
- * @param props Properti komponen.
- * @returns Komponen detail karyawan magang.
+ * Komponen detail profil karyawan magang. Mengordinasikan tampilan statistik
+ * dan modal-modal mutasi data.
  */
 export default function InternDetail({ intern, divisions }: InternDetailProps) {
     if (!intern) return null;
 
-    // * Panggil hooks terpisah
+    // ? Memanggil kustom hooks untuk memisahkan logika aksi dan state
     const { uploading, handlePhotoClick, handlePhotoChange } = useInternPhoto({
         internId: intern.id,
     });
@@ -130,6 +135,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         handleSaveAttendance,
         handleDeleteCheckOut,
         isSaving,
+        isDeletingCheckOut,
     } = useInternAttendance();
 
     const {
@@ -151,9 +157,9 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         handleSaveTolerance,
         handleDeleteIntern,
         isSavingTolerance,
+        isDeleting,
     } = useInternActions({ internId: intern.id });
 
-    // ── Derived States ─────────────────────────────────────────
     const rawPoin = intern.poin ?? 0;
     const poin = rawPoin < 0 ? 0 : rawPoin;
     const poinStyle =
@@ -178,7 +184,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
     };
 
     // ? Menampilkan status secara statis (tanpa klik inline)
-    const renderStatus = (attendance: Attendance) => {
+    const renderStatus = (attendance: ExtendedAttendance) => {
         return (
             <Badge
                 className={`font-medium ${getAttendanceStyle(attendance.status)}`}
@@ -189,7 +195,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
     };
 
     // ? Menampilkan menu aksi dengan 2 pilihan: Edit dan Hapus
-    const renderActions = (attendance: Attendance) => {
+    const renderActions = (attendance: ExtendedAttendance) => {
         return (
             <div className="relative inline-block text-left">
                 <DropdownMenu>
@@ -246,11 +252,23 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
         }
     };
 
+    const handlePhotoKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            if (!uploading) {
+                handlePhotoClick();
+            }
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
                     <div
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={handlePhotoKeyDown}
                         className="group border-border bg-muted relative flex h-36 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-xl border shadow-sm transition-colors duration-300 hover:bg-black/10 dark:hover:bg-white/10"
                         onClick={handlePhotoClick}
                     >
@@ -272,10 +290,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             </>
                         ) : (
                             <div className="text-muted-foreground flex flex-col items-center gap-1 p-3 text-center">
-                                {/* Icon default, sembunyi saat hover */}
                                 <UserIcon className="size-8 group-hover:hidden" />
-
-                                {/* Icon upload, tampil saat hover */}
                                 <UploadIcon className="hidden size-8 group-hover:block" />
 
                                 <span className="text-xs font-semibold">
@@ -283,12 +298,9 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                                         "Mengupload..."
                                     ) : (
                                         <>
-                                            {/* Tampil normal, sembunyi saat hover */}
                                             <span className="group-hover:hidden">
                                                 Belum ada foto
                                             </span>
-
-                                            {/* Sembunyi normal, tampil saat hover */}
                                             <span className="hidden group-hover:inline">
                                                 Unggah foto
                                             </span>
@@ -441,7 +453,7 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                         setData={setData}
                         errors={errors}
                         divisions={divisions}
-                        onSubmit={(e) => handleSubmit(e as unknown as Event)}
+                        onSubmit={handleSubmit}
                         onCancel={handleCloseForm}
                         processing={processing}
                     />
@@ -473,9 +485,15 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 </div>
 
                 <AttendanceTable
-                    attendances={intern.attendances || []}
-                    renderActions={(att) => renderActions(att as Attendance)}
-                    renderStatus={(att) => renderStatus(att as Attendance)}
+                    attendances={
+                        (intern.attendances as ExtendedAttendance[]) || []
+                    }
+                    renderActions={(att) =>
+                        renderActions(att as ExtendedAttendance)
+                    }
+                    renderStatus={(att) =>
+                        renderStatus(att as ExtendedAttendance)
+                    }
                 />
             </div>
 
@@ -487,14 +505,13 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                 processing={isSavingTolerance}
             />
 
-            {/* Modal Dialog Edit Kehadiran Terpadu (Status & Jam Pulang) */}
             <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
                 <DialogContent className="max-w-[400px] bg-white p-6">
                     <DialogHeader>
                         <DialogTitle className="text-lg font-bold">
                             Edit Kehadiran{" "}
                             {editingAttendance &&
-                                `(${formatDate((editingAttendance as unknown as { date: string }).date)})`}
+                                `(${formatDate((editingAttendance as ExtendedAttendance).date)})`}
                         </DialogTitle>
 
                         <DialogDescription className="text-muted-foreground text-sm">
@@ -582,7 +599,9 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
             <AlertDialog
                 open={confirmingDeletion}
-                onOpenChange={setConfirmingDeletion}
+                onOpenChange={(open) =>
+                    !open && !isDeleting && setConfirmingDeletion(false)
+                }
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -607,13 +626,23 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                     </AlertDialogHeader>
 
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogCancel disabled={isDeleting}>
+                            Batal
+                        </AlertDialogCancel>
 
                         <AlertDialogAction
                             onClick={handleDeleteIntern}
+                            disabled={isDeleting}
                             className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                         >
-                            Hapus Permanen
+                            {isDeleting ? (
+                                <>
+                                    <Loader2Icon className="size-4 animate-spin" />
+                                    Menghapus...
+                                </>
+                            ) : (
+                                "Hapus Permanen"
+                            )}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -621,7 +650,11 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
 
             <AlertDialog
                 open={confirmingCheckOutDeletion}
-                onOpenChange={setConfirmingCheckOutDeletion}
+                onOpenChange={(open) =>
+                    !open &&
+                    !isDeletingCheckOut &&
+                    setConfirmingCheckOutDeletion(false)
+                }
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
@@ -641,16 +674,17 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                             onClick={() => {
                                 setConfirmingCheckOutDeletion(false);
                             }}
+                            disabled={isDeletingCheckOut}
                         >
                             Batal
                         </AlertDialogCancel>
 
                         <AlertDialogAction
                             onClick={handleDeleteCheckOut}
-                            disabled={isSaving}
+                            disabled={isDeletingCheckOut}
                             variant="destructive"
                         >
-                            {isSaving ? (
+                            {isDeletingCheckOut ? (
                                 <>
                                     <Loader2Icon className="size-4 animate-spin" />
                                     Menghapus...

@@ -12,12 +12,11 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
+import axios from "axios";
 import type { Attendance } from "../types/intern";
 
 /**
  * Hook pengelola status presensi harian karyawan.
- *
- * @returns State dan fungsi kontrol modal kehadiran.
  */
 export function useInternAttendance() {
     const [showEditModal, setShowEditModal] = useState<boolean>(false);
@@ -28,8 +27,9 @@ export function useInternAttendance() {
     const [confirmingCheckOutDeletion, setConfirmingCheckOutDeletion] =
         useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
+    const [isDeletingCheckOut, setIsDeletingCheckOut] =
+        useState<boolean>(false);
 
-    // * Buka modal dan inisialisasi input dengan data baris terpilih
     const handleOpenEditModal = (attendance: Attendance) => {
         setEditingAttendance(attendance);
         setSelectedStatus(attendance.status);
@@ -39,47 +39,38 @@ export function useInternAttendance() {
         setShowEditModal(true);
     };
 
-    // * Simpan pembaruan status dan jam pulang sekaligus secara berurutan menggunakan router Inertia
-    const handleSaveAttendance = (status: string, checkOut: string | null) => {
+    const handleSaveAttendance = async (
+        status: string,
+        checkOut: string | null,
+    ) => {
         if (!editingAttendance) return;
         setIsSaving(true);
 
-        // ? 1. Update status kehadiran
-        router.put(
-            `/attendances/${editingAttendance.id}/status`,
-            { status },
-            {
-                onSuccess: () => {
-                    // ? 2. Setelah status sukses, update jam pulang
-                    router.put(
-                        `/attendances/${editingAttendance.id}/check-out`,
-                        { check_out: checkOut || null },
-                        {
-                            onSuccess: () => {
-                                toast.success("Kehadiran berhasil diperbarui!");
-                                setShowEditModal(false);
-                                setEditingAttendance(null);
-                            },
-                            onError: () => {
-                                toast.error("Gagal memperbarui jam pulang.");
-                            },
-                            onFinish: () => {
-                                setIsSaving(false);
-                            },
-                        },
-                    );
-                },
-                onError: () => {
-                    toast.error("Gagal memperbarui status kehadiran.");
-                    setIsSaving(false);
-                },
-            },
-        );
+        try {
+            await Promise.all([
+                axios.put(`/attendances/${editingAttendance.id}/status`, {
+                    status,
+                }),
+                axios.put(`/attendances/${editingAttendance.id}/check-out`, {
+                    check_out: checkOut || null,
+                }),
+            ]);
+
+            toast.success("Kehadiran berhasil diperbarui!");
+            setShowEditModal(false);
+            setEditingAttendance(null);
+
+            router.reload();
+        } catch (error) {
+            toast.error("Gagal memperbarui kehadiran.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    // * Hapus catatan jam pulang
     const handleDeleteCheckOut = () => {
         if (editingAttendance) {
+            setIsDeletingCheckOut(true);
             router.put(
                 `/attendances/${editingAttendance.id}/check-out`,
                 { check_out: null },
@@ -91,6 +82,9 @@ export function useInternAttendance() {
                     },
                     onError: () => {
                         toast.error("Gagal menghapus jam pulang.");
+                    },
+                    onFinish: () => {
+                        setIsDeletingCheckOut(false);
                     },
                 },
             );
@@ -112,5 +106,6 @@ export function useInternAttendance() {
         handleSaveAttendance,
         handleDeleteCheckOut,
         isSaving,
+        isDeletingCheckOut,
     };
 }

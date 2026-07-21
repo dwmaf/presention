@@ -1,11 +1,11 @@
 /**
  * ============================================================================
- * Component   : ToleransiModal
- * Layer       : UI (Component)
+ * Component   : InternToleranceModal
+ * Layer       : Feature
  *
  * Description:
- * Modal dialog untuk mengatur hari toleransi keterlambatan beserta batasan jam masuk.
- * Menggunakan sistem komponen visual terpadu shadcn (Dialog, Input, Checkbox, Button).
+ * Merender modal interaktif untuk mengatur jadwal toleransi keterlambatan
+ * karyawan magang per hari kerja.
  * ============================================================================
  */
 
@@ -23,52 +23,66 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import TimePicker from "../../../components/TimePicker";
 import { Loader2Icon, SaveIcon } from "lucide-react";
+import type { InternData } from "@/features/interns/types/intern";
 
 const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
 type DayType = (typeof DAYS)[number];
 
+// ? Menghasilkan kunci dinamis yang secara strict dipetakan ke InternData untuk menjamin keamanan tipe.
+type ToleranceDayKey = `toleransi_${DayType}`;
+type ToleranceTimeKey = `toleransi_${DayType}_time`;
+
+/**
+ * Menyimpan konfigurasi toleransi keterlambatan individu per hari,
+ * memastikan batas waktu hanya diterapkan ketika hari tersebut diaktifkan.
+ */
 export interface InternToleranceConfig {
     checked: boolean;
     time: string;
 }
 
+/**
+ * Memetakan setiap hari kerja (Senin-Jumat) ke konfigurasi toleransinya masing-masing
+ * untuk dikirimkan secara kolektif ke backend.
+ */
 export type InternToleranceState = Record<DayType, InternToleranceConfig>;
 
+/**
+ * Menentukan data karyawan target dan fungsi callback untuk menangani
+ * penyelesaian atau pembatalan konfigurasi toleransi.
+ */
 export interface InternToleranceModalProps {
     show: boolean;
-    intern: unknown;
+    intern: InternData | null;
     onClose: () => void;
     onSave: (data: InternToleranceState) => void;
     processing?: boolean;
 }
 
 /**
- * Modal konfigurasi hari toleransi keterlambatan magang.
- *
- * @param props Properti komponen.
- * @returns Dialog modal toleransi.
+ * Merender modal interaktif untuk mengatur jadwal toleransi keterlambatan karyawan magang.
+ * Komponen ini memisahkan logika pengaturan waktu per hari dari form profil utama
+ * untuk mengisolasi kompleksitas state dan mencegah re-render form utama.
  */
 export default function InternToleranceModal({
     show,
     intern,
     onClose,
     onSave,
-    processing,
+    processing = false,
 }: InternToleranceModalProps) {
     const createInitialState = (): InternToleranceState => {
         const state = {} as InternToleranceState;
 
-        // ? Cast safely inside the hook to read dynamic keys from database
-        const internData = intern as Record<string, unknown> | null;
-
         DAYS.forEach((day) => {
+            const boolKey = `toleransi_${day}` as ToleranceDayKey;
+            const timeKey = `toleransi_${day}_time` as ToleranceTimeKey;
+
             state[day] = {
-                checked: Boolean(internData?.[`toleransi_${day}`]),
+                checked: Boolean(intern?.[boolKey]),
                 time:
-                    (internData?.[`toleransi_${day}_time`] as string)?.slice(
-                        0,
-                        5,
-                    ) || "08:30",
+                    (intern?.[timeKey] as string | undefined)?.slice(0, 5) ||
+                    "08:30",
             };
         });
 
@@ -107,7 +121,12 @@ export default function InternToleranceModal({
     };
 
     return (
-        <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+        <Dialog
+            open={show}
+            onOpenChange={(open) => {
+                if (!open && !processing) onClose();
+            }}
+        >
             <DialogContent className="no-scrollbar flex max-h-[90vh] max-w-[95vw] flex-col overflow-y-auto bg-white sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold tracking-tight">
@@ -124,7 +143,7 @@ export default function InternToleranceModal({
                     {DAYS.map((day) => (
                         <div
                             key={day}
-                            className="border-gray-250 cursor- pointer flex items-center justify-between gap-3 rounded-lg border bg-gray-50/20 px-3 py-2 hover:bg-gray-50/50"
+                            className="border-gray-250 flex cursor-pointer items-center justify-between gap-3 rounded-lg border bg-gray-50/20 px-3 py-2 hover:bg-gray-50/50"
                         >
                             <div className="flex items-center gap-2">
                                 <Checkbox
@@ -156,6 +175,7 @@ export default function InternToleranceModal({
                         type="button"
                         variant="outline"
                         onClick={onClose}
+                        disabled={processing}
                         className="flex-1 border-gray-200 bg-white"
                     >
                         Batal
@@ -169,12 +189,12 @@ export default function InternToleranceModal({
                     >
                         {processing ? (
                             <>
-                                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                                <Loader2Icon className="size-4 animate-spin" />
                                 Menyimpan...
                             </>
                         ) : (
                             <>
-                                <SaveIcon className="mr-2 h-4 w-4" />
+                                <SaveIcon className="size-4" />
                                 Simpan
                             </>
                         )}

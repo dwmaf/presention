@@ -1,14 +1,3 @@
-/**
- * ============================================================================
- * Component   : InternDeleteModal
- * Layer       : UI (Component)
- *
- * Description:
- * Modal konfirmasi menggunakan AlertDialog Shadcn untuk memverifikasi
- * tindakan penghapusan data karyawan (intern).
- * ============================================================================
- */
-
 import {
     AlertDialog,
     AlertDialogAction,
@@ -21,7 +10,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Loader2Icon, TrashIcon } from "lucide-react";
 
-interface InternDeleteModalProps {
+/**
+ * Kontrak properti untuk modal konfirmasi penghapusan karyawan.
+ */
+export interface InternDeleteModalProps {
     show: boolean;
     onClose: () => void;
     onDelete: () => void;
@@ -29,6 +21,9 @@ interface InternDeleteModalProps {
     internName?: string;
 }
 
+/**
+ * Modal konfirmasi untuk memverifikasi tindakan penghapusan data karyawan.
+ */
 export default function InternDeleteModal({
     show,
     onClose,
@@ -37,7 +32,12 @@ export default function InternDeleteModal({
     internName,
 }: InternDeleteModalProps) {
     return (
-        <AlertDialog open={show} onOpenChange={(open) => !open && onClose()}>
+        <AlertDialog
+            open={show}
+            onOpenChange={(open) => {
+                if (!open && !processing) onClose();
+            }}
+        >
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-xl font-bold">
@@ -47,7 +47,7 @@ export default function InternDeleteModal({
                     <AlertDialogDescription className="text-sm">
                         Apakah Anda yakin ingin menghapus data{" "}
                         <span className="text-foreground font-semibold">
-                            {internName ? internName : "karyawan ini"}
+                            {internName || "karyawan ini"}
                         </span>
                         ? Tindakan ini bersifat permanen dan tidak dapat
                         dibatalkan.

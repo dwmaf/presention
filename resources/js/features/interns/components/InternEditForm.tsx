@@ -21,7 +21,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-// @ts-ignore
 import InputError from "@/components/InputError";
 import type { Division } from "@/features/interns/types/intern";
 import { Loader2Icon, SaveIcon } from "lucide-react";
@@ -37,7 +36,7 @@ const DAYS = [
 type DayKey = (typeof DAYS)[number]["key"];
 
 /**
- * Kontrak struktur data dasar untuk form karyawan.
+ * Struktur data dasar yang dibutuhkan oleh formulir pengeditan profil karyawan.
  */
 export interface BaseInternFormData {
     name: string;
@@ -52,7 +51,7 @@ export interface BaseInternFormData {
 }
 
 /**
- * Properti komponen InternForm dengan dukungan tipe generik.
+ * Kontrak properti generik untuk komponen InternEditForm.
  */
 export interface InternFormProps<T extends BaseInternFormData> {
     show: boolean;
@@ -68,9 +67,6 @@ export interface InternFormProps<T extends BaseInternFormData> {
 
 /**
  * Form detail input informasi profil karyawan.
- *
- * @param props Properti komponen.
- * @returns Elemen form input karyawan.
  */
 export default function InternEditForm<T extends BaseInternFormData>({
     show,
@@ -102,7 +98,6 @@ export default function InternEditForm<T extends BaseInternFormData>({
 
     return (
         <form className="space-y-4" onSubmit={onSubmit}>
-            {/* Input Nama */}
             <div className="space-y-1.5">
                 <Label htmlFor="name">Nama</Label>
                 <Input
@@ -115,7 +110,6 @@ export default function InternEditForm<T extends BaseInternFormData>({
                 {errors.name && <InputError message={errors.name} />}
             </div>
 
-            {/* Pilihan Divisi - Menggunakan Shadcn Select */}
             <div className="space-y-1.5">
                 <Label htmlFor="division">Divisi</Label>
                 <Select
@@ -150,7 +144,6 @@ export default function InternEditForm<T extends BaseInternFormData>({
                 <InputError message={errors.division_id} />
             </div>
 
-            {/* Matriks Pilihan Jadwal */}
             <div className="space-y-2">
                 <Label>Jadwal (Pilih hari masuk)</Label>
 
@@ -213,7 +206,6 @@ export default function InternEditForm<T extends BaseInternFormData>({
                 )}
             </div>
 
-            {/* Input Poin Absensi */}
             <div className="space-y-1.5">
                 <Label htmlFor="poin">Poin</Label>
                 <Input
@@ -228,22 +220,18 @@ export default function InternEditForm<T extends BaseInternFormData>({
                 <InputError message={errors.poin} />
             </div>
 
-            {/* Aksi Tombol */}
             <div className="flex justify-end gap-2 pt-2">
                 <Button
                     type="button"
                     variant="outline"
                     onClick={onCancel}
-                    className="w-flex-1 border-gray-200 bg-white"
+                    disabled={processing}
+                    className="flex-1 border-gray-200 bg-white"
                 >
                     Batal
                 </Button>
 
-                <Button
-                    type="submit"
-                    disabled={processing}
-                    className="w-flex-1"
-                >
+                <Button type="submit" disabled={processing} className="flex-1">
                     {processing ? (
                         <>
                             <Loader2Icon className="size-4 animate-spin" />

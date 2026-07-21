@@ -1,15 +1,3 @@
-/**
- * ============================================================================
- * Component   : InternResetModal
- * Layer       : UI (Component)
- *
- * Description:
- * Modal konfirmasi menggunakan AlertDialog Shadcn untuk memverifikasi
- * tindakan reset poin bulanan seluruh karyawan (intern), dilengkapi dengan
- * warning deteksi tanggal.
- * ============================================================================
- */
-
 import {
     AlertDialog,
     AlertDialogAction,
@@ -22,7 +10,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangleIcon, Loader2Icon, RotateCcwIcon } from "lucide-react";
 
-interface InternResetModalProps {
+/**
+ * Kontrak properti untuk modal konfirmasi reset poin karyawan.
+ */
+export interface InternResetModalProps {
     show: boolean;
     onClose: () => void;
     onConfirm: () => void;
@@ -30,6 +21,9 @@ interface InternResetModalProps {
     processing?: boolean;
 }
 
+/**
+ * Modal konfirmasi untuk mengeksekusi reset poin bulanan seluruh karyawan.
+ */
 export default function InternResetModal({
     show,
     onClose,
@@ -38,11 +32,16 @@ export default function InternResetModal({
     processing = false,
 }: InternResetModalProps) {
     return (
-        <AlertDialog open={show} onOpenChange={(open) => !open && onClose()}>
+        <AlertDialog
+            open={show}
+            onOpenChange={(open) => {
+                if (!open && !processing) onClose();
+            }}
+        >
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle className="text-foreground flex items-center gap-2 text-xl font-bold">
-                        <AlertTriangleIcon className="h-5.5 w-5.5 shrink-0 text-orange-500" />
+                        <AlertTriangleIcon className="size-5 shrink-0 text-orange-500" />
                         Konfirmasi Reset Poin
                     </AlertDialogTitle>
 
@@ -65,7 +64,7 @@ export default function InternResetModal({
                 </AlertDialogHeader>
 
                 <AlertDialogFooter>
-                    <AlertDialogCancel onClick={onClose}>
+                    <AlertDialogCancel onClick={onClose} disabled={processing}>
                         Batal
                     </AlertDialogCancel>
 
@@ -74,6 +73,7 @@ export default function InternResetModal({
                             e.preventDefault();
                             onConfirm();
                         }}
+                        disabled={processing}
                         variant="destructive"
                     >
                         {processing ? (

@@ -1,29 +1,10 @@
-/**
- * ============================================================================
- * Type        : Intern Types
- * Layer       : Feature (Type)
- *
- * Description:
- * Definisi tipe data dan antarmuka (interface) entitas Karyawan (Intern).
- * ============================================================================
- */
-
-/**
- * Representasi data divisi.
- */
 export interface Division {
     id: number;
     nama_divisi: string;
 }
 
-/**
- * Status absensi kehadiran.
- */
 export type AttendanceStatus = "hadir" | "alpha" | "izin" | "sakit";
 
-/**
- * Riwayat absensi harian karyawan.
- */
 export interface Attendance {
     id: number;
     tanggal: string;
@@ -34,7 +15,9 @@ export interface Attendance {
 }
 
 /**
- * Profil lengkap karyawan magang (intern).
+ * Entitas domain utama karyawan magang (intern) yang menggabungkan profil identitas,
+ * relasi divisi, poin performa, data biometrik sidik jari, jadwal kerja mingguan,
+ * serta batas toleransi jam keterlambatan per hari.
  */
 export interface InternData {
     id: number;
@@ -42,12 +25,25 @@ export interface InternData {
     division_id: number;
     poin: number;
     foto?: string | null;
-    fingerprint_data?: any;
+    fingerprint_data?: unknown;
+
     senin: boolean;
     selasa: boolean;
     rabu: boolean;
     kamis: boolean;
     jumat: boolean;
+
+    toleransi_senin?: boolean;
+    toleransi_senin_time?: string | null;
+    toleransi_selasa?: boolean;
+    toleransi_selasa_time?: string | null;
+    toleransi_rabu?: boolean;
+    toleransi_rabu_time?: string | null;
+    toleransi_kamis?: boolean;
+    toleransi_kamis_time?: string | null;
+    toleransi_jumat?: boolean;
+    toleransi_jumat_time?: string | null;
+
     division?: Division;
     total_kehadiran?: number;
     total_jam?: number;
@@ -59,9 +55,6 @@ export interface InternData {
     is_active?: boolean;
 }
 
-/**
- * Ringkasan absensi karyawan untuk dashboard.
- */
 export interface InternAttendanceSummary {
     id: number;
     name: string;

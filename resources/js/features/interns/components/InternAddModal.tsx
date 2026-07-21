@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * Component   : InternFormModal
+ * Component   : InternAddModal
  * Layer       : UI (Component)
  *
  * Description:
@@ -29,10 +29,13 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useState, useEffect } from "react";
 
-// * Import tipe sentral
 import type { Division, InternData } from "@/features/interns/types/intern";
 
+/**
+ * Kontrak properti untuk komponen modal penambahan karyawan magang.
+ */
 interface InternFormModalProps {
     show: boolean;
     onClose: () => void;
@@ -48,24 +51,21 @@ interface InternFormModalProps {
         kamis: boolean;
         jumat: boolean;
     };
-    setData: (key: any, value: any) => void;
+    setData: <K extends keyof InternFormModalProps["data"]>(
+        key: K,
+        value: InternFormModalProps["data"][K],
+    ) => void;
     processing: boolean;
     errors: Record<string, string>;
     divisions: Division[];
-    photoPreview: string | null;
-    setPhotoPreview: (preview: string | null) => void;
-    isAllDaysChecked: () => boolean;
-    handleToggleAllDays: (checked: boolean) => void;
     currentIntern: InternData | null;
 }
 
 const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
 
 /**
- * Komponen modal form data karyawan.
- *
- * @param props Properti modal.
- * @returns Komponen modal form.
+ * Komponen modal untuk mengelola penambahan atau perubahan data karyawan.
+ * Menangani state lokal untuk preview foto dan logika checklist jadwal hari kerja.
  */
 export default function InternAddModal({
     show,
@@ -76,12 +76,27 @@ export default function InternAddModal({
     processing,
     errors,
     divisions,
-    photoPreview,
-    setPhotoPreview,
-    isAllDaysChecked,
-    handleToggleAllDays,
     currentIntern,
 }: InternFormModalProps) {
+    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+    // ? Membersihkan preview foto ketika modal ditutup untuk mencegah data stale.
+    useEffect(() => {
+        if (!show) {
+            setPhotoPreview(null);
+        }
+    }, [show]);
+
+    const isAllDaysChecked = () => {
+        return DAYS.every((day) => data[day]);
+    };
+
+    const handleToggleAllDays = (checked: boolean) => {
+        DAYS.forEach((day) => {
+            setData(day, checked);
+        });
+    };
+
     const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
@@ -93,7 +108,10 @@ export default function InternAddModal({
     };
 
     return (
-        <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
+        <Dialog
+            open={show}
+            onOpenChange={(open) => !open && !processing && onClose()}
+        >
             <DialogContent className="custom-scrollbar max-h-[90vh] max-w-[95vw] overflow-y-auto md:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold tracking-tight">
@@ -119,7 +137,7 @@ export default function InternAddModal({
                                                     : `/storage/${currentIntern?.foto}`
                                             }
                                             className="h-full w-full object-cover object-top"
-                                            alt="Preview"
+                                            alt="Preview Foto Karyawan"
                                         />
                                         <div className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 transition-opacity duration-200 hover:opacity-100">
                                             <span className="text-xs font-semibold text-white">
@@ -190,7 +208,7 @@ export default function InternAddModal({
                                             : undefined
                                     }
                                     onValueChange={(val) =>
-                                        setData("division_id", val)
+                                        setData("division_id", val || "")
                                     }
                                 >
                                     <SelectTrigger
@@ -246,7 +264,7 @@ export default function InternAddModal({
                                     {DAYS.map((day) => (
                                         <div
                                             key={day}
-                                            className="border-border bg-card hover:bg-muted/30 flex items-center space-x-2 rounded-lg border p-2.5 transition-colors"
+                                            className="border-border bg-card hover:bg-muted/30 transition- colors flex items-center space-x-2 rounded-lg border p-2.5"
                                         >
                                             <Checkbox
                                                 id={day}
@@ -273,6 +291,7 @@ export default function InternAddModal({
                             type="button"
                             variant="outline"
                             onClick={onClose}
+                            disabled={processing}
                         >
                             Batal
                         </Button>

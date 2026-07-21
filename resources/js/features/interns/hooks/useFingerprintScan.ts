@@ -27,14 +27,13 @@ interface FingerprintUser {
 }
 
 /**
- * Langkah-langkah status pemindaian sidik jari.
+ * Merepresentasikan tahapan siklus status pemindaian sidik jari untuk mengontrol
+ * alur interaksi visual pada antarmuka biometrik.
  */
 export type ScanStep = "idle" | "scanning" | "submitting" | "success" | "error";
 
 interface UseFingerprintScanProps {
-    /** Database sidik jari karyawan magang */
     fingerprintDatabase: FingerprintUser[];
-    /** Callback ketika pemindaian dan pencatatan kehadiran sukses */
     onSuccess?: () => void;
 }
 
@@ -96,7 +95,6 @@ export function useFingerprintScan({
 
     const isScanning = scanStep === "scanning" || scanStep === "submitting";
 
-    // ? Derivasi teks status pemindaian untuk visualisasi UI
     const statusText = useMemo(() => {
         switch (scanStep) {
             case "scanning":
@@ -171,11 +169,13 @@ export function useFingerprintScan({
             }
         } catch (err) {
             let message = "Gagal mencatat presensi! Silahkan coba lagi";
-            if (err instanceof Error) {
-                message = err.message;
-            } else if (axios.isAxiosError(err) && err.response?.data?.message) {
+
+            if (axios.isAxiosError(err) && err.response?.data?.message) {
                 message = err.response.data.message as string;
+            } else if (err instanceof Error) {
+                message = err.message;
             }
+
             setFeedback({ type: "error", message });
             setScanStep("error");
         }
@@ -185,13 +185,6 @@ export function useFingerprintScan({
         setScanStep("idle");
         setFeedback(null);
     }, []);
-
-    // ? Menutup modal dan membersihkan feedback secara otomatis
-    useEffect(() => {
-        if (!feedback) return;
-        const timeout = setTimeout(() => setFeedback(null), 5000);
-        return () => clearTimeout(timeout);
-    }, [feedback]);
 
     useEffect(() => {
         if (scanStep === "success" || scanStep === "error") {

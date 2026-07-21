@@ -1,13 +1,3 @@
-/**
- * ============================================================================
- * Hook        : useInternActions
- * Layer       : Feature (Hook)
- *
- * Description:
- * Mengelola tindakan umum karyawan magang seperti hapus data dan set toleransi.
- * ============================================================================
- */
-
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
@@ -17,25 +7,34 @@ interface UseInternActionsProps {
 }
 
 /**
+ * Menyusun struktur payload toleransi per hari yang siap dikirimkan ke endpoint backend.
+ */
+export type TolerancePayload = Record<
+    string,
+    { checked: boolean; time: string }
+>;
+
+/**
  * Hook kustom untuk aksi toleransi keterlambatan dan penghapusan karyawan.
- *
- * @param props Properti hook.
- * @returns State modal aksi dan fungsi pengirim mutasi API.
  */
 export function useInternActions({ internId }: UseInternActionsProps) {
     const [showToleranceModal, setShowToleranceModal] =
         useState<boolean>(false);
     const [confirmingDeletion, setConfirmingDeletion] =
         useState<boolean>(false);
-    const [isSavingTolerance, setIsSavingTolerance] = useState<boolean>(false);
+    const [confirmingToggleActive, setConfirmingToggleActive] =
+        useState<boolean>(false);
 
-    const handleSaveTolerance = (toleransiDays: any) => {
+    const [isSavingTolerance, setIsSavingTolerance] = useState<boolean>(false);
+    const [isDeleting, setIsDeleting] = useState<boolean>(false);
+    const [isTogglingActive, setIsTogglingActive] = useState<boolean>(false);
+
+    const handleSaveTolerance = (toleransiDays: TolerancePayload) => {
         setIsSavingTolerance(true);
         router.put(`/interns/${internId}/update-toleransi`, toleransiDays, {
             onSuccess: () => {
                 setShowToleranceModal(false);
                 toast.success("Toleransi keterlambatan berhasil diubah!");
-                router.reload();
             },
             onError: (err) => {
                 toast.error(
@@ -48,23 +47,22 @@ export function useInternActions({ internId }: UseInternActionsProps) {
     };
 
     const handleDeleteIntern = () => {
-        router.delete(route("interns.destroy", internId), {
+        setIsDeleting(true);
+        router.delete(`/interns/${internId}`, {
             onSuccess: () => {
                 toast.success("Data berhasil dihapus selamanya.");
                 setConfirmingDeletion(false);
-                window.location.reload();
             },
             onError: () => {
                 toast.error("Gagal menghapus data.");
                 setConfirmingDeletion(false);
             },
+            onFinish: () => setIsDeleting(false),
         });
     };
 
-    const [confirmingToggleActive, setConfirmingToggleActive] =
-        useState<boolean>(false);
-
     const handleToggleActive = () => {
+        setIsTogglingActive(true);
         router.put(
             `/interns/${internId}/toggle-active`,
             {},
@@ -77,6 +75,7 @@ export function useInternActions({ internId }: UseInternActionsProps) {
                     setConfirmingToggleActive(false);
                     toast.error("Gagal mengubah status keaktifan.");
                 },
+                onFinish: () => setIsTogglingActive(false),
             },
         );
     };
@@ -92,5 +91,7 @@ export function useInternActions({ internId }: UseInternActionsProps) {
         handleDeleteIntern,
         handleToggleActive,
         isSavingTolerance,
+        isDeleting,
+        isTogglingActive,
     };
 }

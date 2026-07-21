@@ -1,28 +1,7 @@
-/**
- * ============================================================================
- * Hook        : useInternForm
- * Layer       : Feature (Hook)
- *
- * Description:
- * Mengelola formulir perubahan data profil dasar karyawan magang.
- * ============================================================================
- */
-
-import { useState } from "react";
-import { router, useForm } from "@inertiajs/react";
+import { useState, type FormEvent } from "react";
+import { useForm } from "@inertiajs/react";
 import { toast } from "sonner";
-
-interface InternData {
-    id: number;
-    name: string;
-    division_id: number;
-    poin: number;
-    senin: boolean;
-    selasa: boolean;
-    rabu: boolean;
-    kamis: boolean;
-    jumat: boolean;
-}
+import type { InternData } from "../types/intern";
 
 interface UseInternFormProps {
     intern: InternData;
@@ -30,9 +9,6 @@ interface UseInternFormProps {
 
 /**
  * Hook kustom untuk kontrol form edit data karyawan.
- *
- * @param props Properti hook.
- * @returns Form Inertia state, error, dan handler submit/cancel.
  */
 export function useInternEditForm({ intern }: UseInternFormProps) {
     const [showForm, setShowForm] = useState<boolean>(false);
@@ -48,7 +24,7 @@ export function useInternEditForm({ intern }: UseInternFormProps) {
         poin: (intern?.poin ?? 5) < 0 ? 0 : (intern?.poin ?? 5),
     });
 
-    const handleSubmit = (e: Event) => {
+    const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         put(`/interns/${intern.id}`, {
             onSuccess: () => {
