@@ -10,17 +10,12 @@ import {
 import type { InternAttendanceSummary } from "@/features/interns/types/intern";
 
 interface InternAttendanceSummaryTableProps {
-    /** Data ringkasan absensi */
     interns: InternAttendanceSummary[];
-    /** Jumlah data asli sebelum difilter */
     originalLength: number;
 }
 
 /**
- * Komponen tabel ringkasan absensi berbasis Shadcn.
- *
- * @param props Properti komponen.
- * @returns Elemen tabel absensi Shadcn.
+ * Menampilkan tabel ringkasan absensi.
  */
 export function InternAttendanceSummaryTable({
     interns,

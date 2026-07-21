@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { router } from "@inertiajs/react";
 import type { DateRange } from "react-day-picker";
 import type { InternAttendanceSummary } from "@/features/interns/types/intern";
@@ -28,13 +28,13 @@ interface UseAttendanceDashboardProps {
     endDate?: string;
 }
 
-declare function route(name: string, params?: any): string;
+declare function route(
+    name: string,
+    params?: Record<string, string | number | undefined>,
+): string;
 
 /**
  * Hook untuk memisahkan logic dari UI Dashboard Absensi.
- *
- * @param props Properti absensi.
- * @returns State dan fungsi pengendali.
  */
 export function useAttendanceDashboard({
     interns,
@@ -48,6 +48,14 @@ export function useAttendanceDashboard({
         from: startDate ? new Date(startDate) : new Date(),
         to: endDate ? new Date(endDate) : new Date(),
     });
+
+    // * Sinkronisasi state lokal dengan props jika navigasi browser berubah
+    useEffect(() => {
+        setDateRange({
+            from: startDate ? new Date(startDate) : new Date(),
+            to: endDate ? new Date(endDate) : new Date(),
+        });
+    }, [startDate, endDate]);
 
     const handleDateRangeChange = (newValue: DateRange | undefined) => {
         setDateRange(newValue);
@@ -75,8 +83,8 @@ export function useAttendanceDashboard({
             return;
         }
 
-        const start = dateRange.from.toISOString().split("T")[0];
-        const end = dateRange.to.toISOString().split("T")[0];
+        const start = formatDate(dateRange.from);
+        const end = formatDate(dateRange.to);
 
         window.location.href = route("dashboard.export", {
             start_date: start,
