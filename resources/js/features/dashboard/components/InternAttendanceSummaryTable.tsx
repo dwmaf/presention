@@ -1,3 +1,4 @@
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Table,
     TableBody,
@@ -53,11 +54,20 @@ export function InternAttendanceSummaryTable({
                     interns.map((intern) => (
                         <TableRow key={intern.id}>
                             <TableCell className="flex justify-center">
-                                <img
-                                    src={`/storage/${intern.foto}`}
-                                    alt={intern.name}
-                                    className="h-10 w-10 rounded-full object-cover"
-                                />
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage
+                                        src={
+                                            intern.foto
+                                                ? `/storage/${intern.foto}`
+                                                : undefined
+                                        }
+                                        alt={intern.name}
+                                        className="object-cover"
+                                    />
+                                    <AvatarFallback>
+                                        {intern.name.charAt(0).toUpperCase()}
+                                    </AvatarFallback>
+                                </Avatar>
                             </TableCell>
                             <TableCell>
                                 <div className="font-medium text-gray-900">
