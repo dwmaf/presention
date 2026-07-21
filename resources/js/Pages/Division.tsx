@@ -24,9 +24,6 @@ import { useEffect } from "react";
 
 /**
  * Komponen utama halaman Divisi.
- *
- * @param props Properti dari Laravel Inertia Controller.
- * @returns Halaman daftar divisi.
  */
 export default function Division({
     divisions,
@@ -105,6 +102,13 @@ export default function Division({
                         <DivisionCard
                             key={division.id}
                             division={division}
+                            activeCount={
+                                division.interns
+                                    ? division.interns.filter(
+                                          (i) => i.is_active !== false,
+                                      ).length
+                                    : (division.interns_count ?? 0)
+                            }
                             onDetail={() => openDetailModal(division)}
                             onEdit={() => openFormModal(division)}
                             onDelete={() => openDeleteModal(division)}
@@ -137,6 +141,13 @@ export default function Division({
                 show={!!modal.detail}
                 onClose={closeDetailModal}
                 division={modal.detail}
+                activeCount={
+                    modal.detail?.interns
+                        ? modal.detail.interns.filter(
+                              (i) => i.is_active !== false,
+                          ).length
+                        : (modal.detail?.interns_count ?? 0)
+                }
                 memberSearch={memberSearch}
                 setMemberSearch={setMemberSearch}
                 showAddMember={showAddMember}

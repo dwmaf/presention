@@ -37,9 +37,6 @@ interface DivisionFormModalProps {
 
 /**
  * Modal dialog penambahan dan pengubahan divisi.
- *
- * @param props Properti form modal.
- * @returns Modal form divisi.
  */
 export default function DivisionFormModal({
     show,
@@ -59,12 +56,14 @@ export default function DivisionFormModal({
                         <PuzzleSmall className="text-primary size-6" />
 
                         <DialogTitle className="text-xl font-bold">
-                            Tambah Divisi
+                            {isEditMode ? "Edit Divisi" : "Tambah Divisi"}
                         </DialogTitle>
                     </div>
 
                     <DialogDescription className="text-sm">
-                        Tambahkan divisi baru dengan mengisi form di bawah.
+                        {isEditMode
+                            ? "Perbarui informasi divisi dengan mengubah form di bawah."
+                            : "Tambahkan divisi baru dengan mengisi form di bawah."}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -132,7 +131,7 @@ export default function DivisionFormModal({
                                 </>
                             ) : (
                                 <>
-                                    <SaveIcon className="size4" />
+                                    <SaveIcon className="size-4" />
                                     {isEditMode
                                         ? "Perbarui Divisi"
                                         : "Simpan Divisi"}

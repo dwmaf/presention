@@ -8,6 +8,7 @@
  * ============================================================================
  */
 
+import { useMemo } from "react";
 import {
     Dialog,
     DialogContent,
@@ -46,6 +47,7 @@ interface DivisionDetailModalProps {
     show: boolean;
     onClose: () => void;
     division: DivisionData | null;
+    activeCount: number;
     memberSearch: string;
     setMemberSearch: (value: string) => void;
     showAddMember: boolean;
@@ -58,14 +60,12 @@ interface DivisionDetailModalProps {
 
 /**
  * Dialog rincian divisi dan manajemen anggota.
- *
- * @param props Properti modal detail divisi.
- * @returns Modal detail divisi.
  */
 export default function DivisionDetailModal({
     show,
     onClose,
     division,
+    activeCount,
     memberSearch,
     setMemberSearch,
     showAddMember,
@@ -75,11 +75,16 @@ export default function DivisionDetailModal({
     onRemove,
     processing = false,
 }: DivisionDetailModalProps) {
-    if (!division) return null;
+    const sortedInterns = useMemo(() => {
+        if (!division?.interns) return [];
+        return [...division.interns].sort((a, b) => {
+            const activeA = a.is_active !== false ? 1 : 0;
+            const activeB = b.is_active !== false ? 1 : 0;
+            return activeB - activeA;
+        });
+    }, [division?.interns]);
 
-    const activeCount = division.interns
-        ? division.interns.filter((i) => i.is_active !== false).length
-        : 0;
+    if (!division) return null;
 
     return (
         <Dialog open={show} onOpenChange={(open) => !open && onClose()}>
@@ -206,133 +211,122 @@ export default function DivisionDetailModal({
                         </TableHeader>
 
                         <TableBody className="divide-y divide-gray-100">
-                            {division.interns && division.interns.length > 0 ? (
-                                // 1. Clone array dan urutkan: aktif di atas, nonaktif di bawah
-                                [...division.interns]
-                                    .sort((a, b) => {
-                                        const activeA =
-                                            a.is_active !== false ? 1 : 0;
-                                        const activeB =
-                                            b.is_active !== false ? 1 : 0;
-                                        return activeB - activeA;
-                                    })
-                                    .map((intern) => {
-                                        const isInactive =
-                                            intern.is_active === false;
+                            {sortedInterns.length > 0 ? (
+                                sortedInterns.map((intern) => {
+                                    const isInactive =
+                                        intern.is_active === false;
 
-                                        return (
-                                            // 2. Beri efek abu-abu jika tidak aktif
-                                            <TableRow
-                                                key={intern.id}
-                                                className={
-                                                    isInactive
-                                                        ? "bg-gray-50/50 opacity-60"
-                                                        : ""
-                                                }
-                                            >
-                                                <TableCell className="px-4 py-2">
-                                                    <Avatar
-                                                        className={`size-8 ${isInactive ? "grayscale" : ""}`}
-                                                    >
-                                                        {intern.foto ? (
-                                                            <AvatarImage
-                                                                src={`/storage/${intern.foto}`}
-                                                                alt={
-                                                                    intern.name
-                                                                }
-                                                            />
-                                                        ) : null}
-
-                                                        <AvatarFallback className="bg-gray-200 text-xs">
-                                                            {intern.name
-                                                                .substring(0, 2)
-                                                                .toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                </TableCell>
-
-                                                <TableCell className="max-w-[200px] truncate px-4 py-2 font-medium text-gray-800">
-                                                    {intern.name}
-                                                    {isInactive && (
-                                                        <span className="ml-2 rounded-md bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
-                                                            Nonaktif
-                                                        </span>
-                                                    )}
-                                                </TableCell>
-
-                                                <TableCell className="px-4 py-2 text-center">
-                                                    <AlertDialog>
-                                                        <AlertDialogTrigger
-                                                            render={
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="size-8 text-red-400 hover:bg-red-50 hover:text-red-600"
-                                                                >
-                                                                    <TrashIcon className="size-4" />
-                                                                </Button>
-                                                            }
+                                    return (
+                                        // 2. Beri efek abu-abu jika tidak aktif
+                                        <TableRow
+                                            key={intern.id}
+                                            className={
+                                                isInactive
+                                                    ? "bg-gray-50/50 opacity-60"
+                                                    : ""
+                                            }
+                                        >
+                                            <TableCell className="px-4 py-2">
+                                                <Avatar
+                                                    className={`size-8 ${isInactive ? "grayscale" : ""}`}
+                                                >
+                                                    {intern.foto ? (
+                                                        <AvatarImage
+                                                            src={`/storage/${intern.foto}`}
+                                                            alt={intern.name}
                                                         />
-                                                        <AlertDialogContent>
-                                                            <AlertDialogHeader>
-                                                                <AlertDialogTitle className="text-xl font-bold tracking-tight">
-                                                                    Hapus
-                                                                    Anggota?
-                                                                </AlertDialogTitle>
+                                                    ) : null}
 
-                                                                <AlertDialogDescription>
-                                                                    Apakah kamu
-                                                                    yakin ingin
-                                                                    menghapus{" "}
-                                                                    <strong className="text-black">
-                                                                        {
-                                                                            intern.name
-                                                                        }
-                                                                    </strong>{" "}
-                                                                    dari{" "}
+                                                    <AvatarFallback className="bg-gray-200 text-xs">
+                                                        {intern.name
+                                                            .substring(0, 2)
+                                                            .toUpperCase()}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                            </TableCell>
+
+                                            <TableCell className="max-w-[200px] truncate px-4 py-2 font-medium text-gray-800">
+                                                {intern.name}
+                                                {isInactive && (
+                                                    <span className="ml-2 rounded-md bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
+                                                        Nonaktif
+                                                    </span>
+                                                )}
+                                            </TableCell>
+
+                                            <TableCell className="px-4 py-2 text-center">
+                                                <AlertDialog>
+                                                    <AlertDialogTrigger
+                                                        render={
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="size-8 text-red-400 hover:bg-red-50 hover:text-red-600"
+                                                                aria-label="Hapus anggota dari divisi"
+                                                            >
+                                                                <TrashIcon className="size-4" />
+                                                            </Button>
+                                                        }
+                                                    />
+                                                    <AlertDialogContent>
+                                                        <AlertDialogHeader>
+                                                            <AlertDialogTitle className="text-xl font-bold tracking-tight">
+                                                                Hapus Anggota?
+                                                            </AlertDialogTitle>
+
+                                                            <AlertDialogDescription>
+                                                                Apakah kamu
+                                                                yakin ingin
+                                                                menghapus{" "}
+                                                                <strong className="text-black">
                                                                     {
-                                                                        division.nama_divisi
+                                                                        intern.name
                                                                     }
-                                                                    ?
-                                                                </AlertDialogDescription>
-                                                            </AlertDialogHeader>
+                                                                </strong>{" "}
+                                                                dari{" "}
+                                                                {
+                                                                    division.nama_divisi
+                                                                }
+                                                                ?
+                                                            </AlertDialogDescription>
+                                                        </AlertDialogHeader>
 
-                                                            <AlertDialogFooter>
-                                                                <AlertDialogCancel>
-                                                                    Batal
-                                                                </AlertDialogCancel>
+                                                        <AlertDialogFooter>
+                                                            <AlertDialogCancel>
+                                                                Batal
+                                                            </AlertDialogCancel>
 
-                                                                <AlertDialogAction
-                                                                    variant="destructive"
-                                                                    onClick={() =>
-                                                                        onRemove(
-                                                                            intern,
-                                                                        )
-                                                                    }
-                                                                    disabled={
-                                                                        processing
-                                                                    }
-                                                                >
-                                                                    {processing ? (
-                                                                        <>
-                                                                            <Loader2Icon className="size-4 animate-spin" />
-                                                                            Menghapus...
-                                                                        </>
-                                                                    ) : (
-                                                                        <>
-                                                                            <TrashIcon className="size-4" />
-                                                                            Ya,
-                                                                            Hapus
-                                                                        </>
-                                                                    )}
-                                                                </AlertDialogAction>
-                                                            </AlertDialogFooter>
-                                                        </AlertDialogContent>
-                                                    </AlertDialog>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
+                                                            <AlertDialogAction
+                                                                variant="destructive"
+                                                                onClick={() =>
+                                                                    onRemove(
+                                                                        intern,
+                                                                    )
+                                                                }
+                                                                disabled={
+                                                                    processing
+                                                                }
+                                                            >
+                                                                {processing ? (
+                                                                    <>
+                                                                        <Loader2Icon className="size-4 animate-spin" />
+                                                                        Menghapus...
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <TrashIcon className="size-4" />
+                                                                        Ya,
+                                                                        Hapus
+                                                                    </>
+                                                                )}
+                                                            </AlertDialogAction>
+                                                        </AlertDialogFooter>
+                                                    </AlertDialogContent>
+                                                </AlertDialog>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             ) : (
                                 <TableRow>
                                     <TableCell

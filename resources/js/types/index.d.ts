@@ -11,6 +11,16 @@
 import { PageProps as InertiaPageProps } from "@inertiajs/core";
 import { AxiosInstance } from "axios";
 
+export interface AuthUser {
+    id: number;
+    name: string;
+    email: string;
+}
+
+export interface Auth {
+    user: AuthUser;
+}
+
 declare global {
     interface Window {
         axios: AxiosInstance;
@@ -26,6 +36,6 @@ declare global {
 
 declare module "@inertiajs/core" {
     interface PageProps extends InertiaPageProps {
-        // * Definisikan struktur PageProps kustom dari Laravel di sini.
+        auth: Auth;
     }
 }

@@ -9,7 +9,7 @@
  * ============================================================================
  */
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useForm, router } from "@inertiajs/react";
 import { toast } from "sonner";
 import type {
@@ -25,25 +25,34 @@ interface UseDivisionProps {
 
 /**
  * Hook pengelola state dan aksi divisi.
- *
- * @param props Properti pembantu inisialisasi hook.
- * @returns State, handler modal, submit form, dan assign/remove intern.
  */
 export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     // * State untuk mengontrol visibilitas dialog & detail aktif
     const [modal, setModal] = useState<{
         form: boolean;
         delete: boolean;
-        detail: DivisionData | null;
+        detailId: number | null;
     }>({
         form: false,
         delete: false,
-        detail: null,
+        detailId: null,
     });
 
-    const [isEditMode, setIsEditMode] = useState<boolean>(false);
     const [selectedDivision, setSelectedDivision] =
         useState<DivisionData | null>(null);
+
+    const isEditMode = !!selectedDivision;
+
+    const activeDetail = useMemo(
+        () => divisions.find((d) => d.id === modal.detailId) || null,
+        [divisions, modal.detailId],
+    );
+
+    const exportedModal = {
+        form: modal.form,
+        delete: modal.delete,
+        detail: activeDetail,
+    };
 
     // * State pencarian dan panel tambah anggota divisi
     const [memberSearch, setMemberSearch] = useState<string>("");
@@ -58,19 +67,10 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     // * Form handler kosong untuk operasi Hapus Divisi
     const deleteForm = useForm({});
 
-    // ? Menjaga detail divisi tetap sinkron saat props dari server berubah (reactive)
-    useEffect(() => {
-        if (!modal.detail) return;
-        const updated = divisions.find((d) => d.id === modal.detail?.id);
-        if (updated) {
-            setModal((prev) => ({ ...prev, detail: updated }));
-        }
-    }, [divisions, modal.detail]);
-
     // ? Menyarankan intern yang belum bergabung ke divisi terpilih
     const memberSuggestions = useMemo(() => {
-        if (!modal.detail) return [];
-        const memberIds = new Set(modal.detail.interns?.map((i) => i.id) ?? []);
+        if (!activeDetail) return [];
+        const memberIds = new Set(activeDetail.interns?.map((i) => i.id) ?? []);
 
         return allInterns.filter(
             (i) =>
@@ -78,10 +78,9 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
                 !memberIds.has(i.id) &&
                 i.name.toLowerCase().includes(memberSearch.toLowerCase()),
         );
-    }, [allInterns, modal.detail, memberSearch]);
+    }, [allInterns, activeDetail, memberSearch]);
 
     const openFormModal = (division: DivisionData | null = null) => {
-        setIsEditMode(!!division);
         setSelectedDivision(division);
         form.setData({
             nama_divisi: division?.nama_divisi ?? "",
@@ -108,11 +107,11 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     };
 
     const openDetailModal = (division: DivisionData) => {
-        setModal((prev) => ({ ...prev, detail: division }));
+        setModal((prev) => ({ ...prev, detailId: division.id }));
     };
 
     const closeDetailModal = () => {
-        setModal((prev) => ({ ...prev, detail: null }));
+        setModal((prev) => ({ ...prev, detailId: null }));
         setShowAddMember(false);
         setMemberSearch("");
     };
@@ -173,9 +172,9 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     };
 
     const assignIntern = (intern: DivisionMember) => {
-        if (!modal.detail) return;
+        if (!activeDetail) return;
         router.post(
-            route("divisions.assignIntern", modal.detail.id),
+            route("divisions.assignIntern", activeDetail.id),
             { intern_id: intern.id },
             {
                 preserveScroll: true,
@@ -183,7 +182,7 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
                     setMemberSearch("");
                     setShowAddMember(false);
                     toast.success(
-                        `${intern.name} berhasil ditambahkan ke divisi ${modal.detail?.nama_divisi}.`,
+                        `${intern.name} berhasil ditambahkan ke divisi ${activeDetail.nama_divisi}.`,
                     );
                 },
             },
@@ -193,17 +192,17 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     const [isRemovingIntern, setIsRemovingIntern] = useState<boolean>(false);
 
     const removeIntern = (intern: DivisionMember) => {
-        if (!modal.detail) return;
+        if (!activeDetail) return;
 
         setIsRemovingIntern(true);
 
         router.delete(
-            route("divisions.removeIntern", [modal.detail.id, intern.id]),
+            route("divisions.removeIntern", [activeDetail.id, intern.id]),
             {
                 preserveScroll: true,
                 onSuccess: () => {
                     toast.success(
-                        `${intern.name} berhasil dihapus dari divisi ${modal.detail?.nama_divisi}.`,
+                        `${intern.name} berhasil dihapus dari divisi ${activeDetail.nama_divisi}.`,
                     );
                 },
                 onFinish: () => setIsRemovingIntern(false),
@@ -212,7 +211,7 @@ export function useDivision({ divisions, allInterns }: UseDivisionProps) {
     };
 
     return {
-        modal,
+        modal: exportedModal,
         isEditMode,
         selectedDivision,
         memberSearch,

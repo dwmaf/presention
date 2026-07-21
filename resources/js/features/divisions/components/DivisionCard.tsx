@@ -23,6 +23,7 @@ import { PuzzleBig } from "@/components/PuzzleIcons";
 
 interface DivisionCardProps {
     division: DivisionData;
+    activeCount: number;
     onDetail: () => void;
     onEdit: () => void;
     onDelete: () => void;
@@ -30,20 +31,14 @@ interface DivisionCardProps {
 
 /**
  * Komponen kartu presentasi divisi.
- *
- * @param props Properti kartu divisi.
- * @returns Komponen visual kartu divisi.
  */
 export default function DivisionCard({
     division,
+    activeCount,
     onDetail,
     onEdit,
     onDelete,
 }: DivisionCardProps) {
-    const activeCount = division.interns
-        ? division.interns.filter((i) => i.is_active !== false).length
-        : (division.interns_count ?? 0);
-
     return (
         <Card className="flex flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm transition-all duration-200 hover:scale-[1.01] hover:rotate-1">
             {/* Row atas: ikon dan jumlah anggota */}
@@ -90,6 +85,7 @@ export default function DivisionCard({
                     variant="destructive"
                     onClick={onDelete}
                     className="px-3"
+                    aria-label="Hapus divisi"
                 >
                     <TrashIcon className="size-4" />
                 </Button>
@@ -98,6 +94,7 @@ export default function DivisionCard({
                     variant="outline"
                     onClick={onEdit}
                     className="border-gray-200 bg-yellow-100 px-3 shadow-none hover:bg-yellow-200 hover:text-yellow-600"
+                    aria-label="Edit divisi"
                 >
                     <EditIcon className="size-4 text-yellow-700" />
                 </Button>

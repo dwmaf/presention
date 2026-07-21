@@ -31,9 +31,6 @@ interface DivisionDeleteModalProps {
 
 /**
  * Dialog konfirmasi hapus divisi.
- *
- * @param props Properti modal konfirmasi.
- * @returns Dialog konfirmasi.
  */
 export default function DivisionDeleteModal({
     show,

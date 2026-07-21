@@ -8,6 +8,8 @@
  * ============================================================================
  */
 
+import type { Auth } from "@/types";
+
 /**
  * Representasi profil singkat karyawan magang (intern) dalam divisi.
  */
@@ -27,22 +29,6 @@ export interface DivisionData {
     deskripsi?: string | null;
     interns_count?: number;
     interns?: DivisionMember[];
-}
-
-/**
- * Representasi data user login.
- */
-export interface AuthUser {
-    id: number;
-    name: string;
-    email: string;
-}
-
-/**
- * Representasi prop autentikasi.
- */
-export interface Auth {
-    user: AuthUser;
 }
 
 /**
