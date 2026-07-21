@@ -14,6 +14,11 @@ class AdminFingerprintController extends Controller
         'backup'  => ['fingerprint_4', 'fingerprint_5', 'fingerprint_6'],
     ];
 
+    /**
+     * Menampilkan halaman pendaftaran sidik jari admin.
+     *
+     * @return \Inertia\Response Halaman UI pendaftaran beserta status data sidik jari saat ini.
+     */
     public function index()
     {
         $user = Auth::user();
@@ -34,6 +39,14 @@ class AdminFingerprintController extends Controller
         ]);
     }
 
+    /**
+     * Menyimpan data template sidik jari baru ke dalam grup yang dipilih (Primary/Backup).
+     *
+     * Mencegah penimpaan data jika grup sidik jari sudah memiliki template sebelumnya.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan berisi data grup dan 3 sampel sidik jari.
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses atau error.
+     */
     public function storeGroup(Request $request)
     {
         $data = $request->validate([
@@ -67,6 +80,14 @@ class AdminFingerprintController extends Controller
         return back()->with('success', 'Sidik jari Admin berhasil disimpan.');
     }
 
+    /**
+     * Mengosongkan data sidik jari pada grup yang dipilih.
+     *
+     * Digunakan sebelum melakukan pendaftaran ulang (re-enroll) pada grup tersebut.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan berisi identifier grup (primary/backup).
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses.
+     */
     public function resetGroup(Request $request)
     {
         $data = $request->validate([

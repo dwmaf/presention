@@ -9,10 +9,12 @@ use Illuminate\Http\Request;
 class SearchController extends Controller
 {
   /**
-   * Cari karyawan dan divisi.
+   * Mencari data karyawan magang dan divisi secara global.
    *
-   * @param Request $request
-   * @return \Illuminate\Http\JsonResponse
+   * Digunakan untuk fitur pencarian instan pada antarmuka pengguna.
+   *
+   * @param \Illuminate\Http\Request $request Permintaan yang berisi parameter kueri 'q'.
+   * @return \Illuminate\Http\JsonResponse Data hasil pencarian maksimal 5 entri per kategori.
    */
   public function index(Request $request)
   {

@@ -23,6 +23,14 @@ class InternController extends Controller
         ]);
     }
 
+    /**
+     * Menyimpan data karyawan magang baru ke database.
+     *
+     * Mengelola unggahan foto dan menetapkan jadwal absensi default.
+     *
+     * @param \Illuminate\Http\Request $request Data dari form pembuatan karyawan magang.
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses.
+     */
     public function store(Request $request)
     {
         $validatedData = $request->validate([
@@ -40,7 +48,6 @@ class InternController extends Controller
             'poin' => 'nullable|integer|min:0',
         ]);
 
-        // Pastikan checkbox yang tidak dikirim jadi false
         $validatedData['senin']  = $request->boolean('senin');
         $validatedData['selasa'] = $request->boolean('selasa');
         $validatedData['rabu']   = $request->boolean('rabu');
@@ -83,7 +90,7 @@ class InternController extends Controller
         $validatedData['kamis']  = $request->boolean('kamis');
         $validatedData['jumat']  = $request->boolean('jumat');
 
-        // kalau tidak dikirim, pakai nilai lama (biar aman)
+        // ? Mempertahankan poin sebelumnya jika input tidak menyertakan data poin baru.
         $validatedData['poin'] = (int) ($validatedData['poin'] ?? ($intern->poin ?? 0));
 
         if ($request->hasFile('foto')) {
@@ -94,7 +101,7 @@ class InternController extends Controller
             $path = $request->file('foto')->store('foto', 'public');
             $validatedData['foto'] = $path;
         } else {
-            // Jika tidak ada file baru yang diupload, jangan hapus data foto yang lama
+            // * Pertahankan foto lama di storage jika tidak ada upload foto baru.
             unset($validatedData['foto']);
         }
 
@@ -145,7 +152,7 @@ class InternController extends Controller
             'jumat.time'    => 'required_if:jumat.checked,true',
         ]);
 
-        // Mapping: Key 'senin' dari React -> Kolom 'toleransi_senin' di DB
+        // ? Mapping struktur data boolean UI ke kolom spesifik toleransi harian di database.
         $intern->update([
             'toleransi_senin'      => $request->input('senin.checked') ?? false,
             'toleransi_senin_time' => $request->input('senin.time') ?? '08:30:00',
@@ -166,11 +173,20 @@ class InternController extends Controller
         return redirect()->back()->with('success', 'Toleransi keterlambatan berhasil diperbarui.');
     }
 
+    /**
+     * Mengekspor riwayat presensi karyawan magang ke format CSV.
+     *
+     * Menghasilkan file CSV yang berisi detail kehadiran harian beserta ringkasan
+     * total kehadiran, izin, sakit, alpha, dan rata-rata jam masuk/pulang untuk keperluan pelaporan.
+     *
+     * @param \App\Models\Intern $intern Model karyawan magang yang datanya akan diekspor.
+     * @return \Illuminate\Http\Response File CSV yang siap diunduh.
+     */
     public function exportAttendanceCsv(Intern $intern)
     {
         $filename = 'kehadiran_' . str_replace(' ', '_', strtolower($intern->name)) . '_' . now()->format('Ymd') . '.csv';
 
-        // Ambil semua data yang dibutuhkan terlebih dahulu (bukan di dalam callback)
+        // * Mengambil data secara penuh sebelum stream CSV untuk menghindari query N+1 di dalam loop.
         $attendances = $intern->attendances()->orderBy('date', 'asc')->get();
 
         // Pre-compute summary agar tidak ada DB query di dalam stream
@@ -184,7 +200,6 @@ class InternController extends Controller
             'avg_jam_pulang'  => $intern->avg_jam_pulang,
         ];
 
-        // Bangun CSV di memory
         $handle = fopen('php://memory', 'w+');
 
         fputcsv($handle, ['Tanggal', 'Hari', 'Status', 'Jam Masuk', 'Jam Pulang', 'Terlambat (menit)']);
@@ -226,11 +241,9 @@ class InternController extends Controller
             Storage::disk('public')->delete($intern->foto);
         }
 
-        // 2. Hapus Semua Data Absensi Terkait (Cascade Manual)
-        // Ini penting supaya tidak ada data "yatim piatu" (orphan records) di tabel attendances
+        // ! Hapus paksa riwayat presensi terkait saat data karyawan dihapus untuk hindari orphan records.
         $intern->attendances()->delete();
 
-        // hapus data intern
         $intern->delete();
 
         return redirect()->back()->with('success', 'Data magang beserta riwayat absensinya berhasil dihapus.');
@@ -260,7 +273,13 @@ class InternController extends Controller
     }
 
     /**
-     * Mengaktifkan atau menonaktifkan status karyawan magang.
+     * Mengubah status keaktifan karyawan magang.
+     *
+     * Digunakan untuk menonaktifkan akun karyawan magang yang sudah selesai masa magangnya,
+     * sehingga tidak lagi muncul di daftar presensi tanpa menghapus riwayat datanya.
+     *
+     * @param \App\Models\Intern $intern Model karyawan magang yang akan diubah statusnya.
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses.
      */
     public function toggleActive(Intern $intern)
     {

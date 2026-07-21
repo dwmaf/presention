@@ -13,18 +13,26 @@ use Illuminate\Support\Facades\DB;
 
 class AttendanceController extends Controller
 {
+    /**
+     * Menampilkan halaman presensi harian.
+     *
+     * Memicu pembuatan data alpha otomatis jika melihat data hari ini.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan filter tanggal.
+     * @return \Inertia\Response Halaman presensi beserta data karyawan dan sidik jari admin.
+     */
     public function index(Request $request)
     {
         // ? Ambil filter tanggal tunggal dari request, jika kosong gunakan hari ini
         $selectedDate = $request->input('date', Carbon::today()->toDateString());
         $today = Carbon::today()->toDateString();
 
-        // ? Picu pembuatan record 'alpha' otomatis jika hari ini adalah hari kerja
+        // * Memicu auto-alpha jika filter adalah hari ini untuk pastikan data presensi harian terbuat.
         if ($selectedDate === $today) {
             $this->generateDailyAttendances();
         }
 
-        // ? Tentukan kolom jadwal berdasarkan hari dari tanggal yang dipilih
+        // * Memetakan nama hari Inggris ke kolom DB jadwal.
         $hariMap = [
             'Monday'    => 'senin',
             'Tuesday'   => 'selasa',
@@ -43,13 +51,13 @@ class AttendanceController extends Controller
         if ($kolomJadwal) {
             $query->where($kolomJadwal, true);
         } else {
-            // ? Jika Sabtu/Minggu, tampilkan kosong
+            // ! Abaikan query jika filter jatuh pada hari libur (Sabtu/Minggu).
             $query->whereRaw('1 = 0');
         }
 
         $interns = $query->get();
 
-        // Ambil data sidik jari semua Admin (User)
+        // * Format sidik jari admin untuk SDK mesin fingerprint.
         $users = User::all();
         $adminFingerprints = [];
         foreach ($users as $user) {
@@ -84,6 +92,12 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Menampilkan dasbor statistik presensi mingguan/bulanan.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan filter rentang tanggal.
+     * @return \Inertia\Response Halaman dasbor beserta kalkulasi jam kerja dan kehadiran.
+     */
     public function dashboard(Request $request)
     {
         // Ambil date range dari request atau gunakan default (minggu ini)
@@ -134,6 +148,12 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Mengekspor statistik presensi ke format CSV.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan filter rentang tanggal.
+     * @return \Illuminate\Http\Response File CSV siap unduh.
+     */
     public function exportDashboardCsv(Request $request)
     {
         $startDate = $request->input('start_date', Carbon::today()->startOfWeek()->toDateString());
@@ -195,6 +215,15 @@ class AttendanceController extends Controller
         ]);
     }
 
+    /**
+     * Memperbarui status kehadiran karyawan secara manual (misal: izin/sakit).
+     *
+     * Menyesuaikan pengurangan atau pengembalian poin secara otomatis berdasarkan perubahan status.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan berisi status baru.
+     * @param \App\Models\Attendance $attendance Model presensi yang diubah.
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses.
+     */
     public function updateStatus(Request $request, Attendance $attendance)
     {
         $request->validate([
@@ -224,6 +253,13 @@ class AttendanceController extends Controller
         return redirect()->back()->with('success', 'Status kehadiran berhasil diperbarui.');
     }
 
+    /**
+     * Memperbarui waktu check-out karyawan secara manual.
+     *
+     * @param \Illuminate\Http\Request $request Permintaan berisi jam check-out baru.
+     * @param \App\Models\Attendance $attendance Model presensi yang diubah.
+     * @return \Illuminate\Http\RedirectResponse Redirect kembali dengan pesan sukses.
+     */
     public function updateCheckOut(Request $request, Attendance $attendance)
     {
         $request->validate([
@@ -237,16 +273,24 @@ class AttendanceController extends Controller
         return redirect()->back()->with('success', 'Jam pulang berhasil diperbarui.');
     }
 
+    /**
+     * Memproses presensi harian karyawan magang.
+     *
+     * Menangani logika check-in dan check-out. Memperhitungkan batas waktu toleransi
+     * keterlambatan harian untuk menentukan apakah poin perlu dikurangi atau dikembalikan.
+     * Mencegah pengurangan poin ganda jika sistem otomatis sudah menandai alpha.
+     *
+     * @param \Illuminate\Http\Request $request Data permintaan yang berisi intern_id.
+     * @return \Illuminate\Http\JsonResponse Respon JSON berisi status keberhasilan dan pesan.
+     */
     public function store(Request $request)
     {
-        // === LOGIKA AUTO RESET POIN (Lazy Trigger) ===
+        // ? Mencegah race condition saat beberapa request mencoba melakukan reset poin bersamaan di awal bulan.
         $flagName = 'reset_poin_' . now()->format('Y_m'); // Contoh: reset_poin_2024_03
 
-        // Cek cepat apakah flag sudah ada di DB (supaya ga berat)
         $isAlreadyDone = SystemLog::where('action_name', $flagName)->exists();
 
         if (!$isAlreadyDone) {
-            // Gunakan Transaction agar aman dari Race Condition
             DB::beginTransaction();
             try {
                 // Coba buat flag record baru
@@ -262,8 +306,7 @@ class AttendanceController extends Controller
 
                 DB::commit();
             } catch (\Exception $e) {
-                // Jika error (biasanya karena Duplicate Entry violation/balapan), rollback.
-                // Artinya reset sudah dilakukan oleh request lain milidetik sebelumnya.
+                // * Rollback jika request lain telah menyelesaikan reset dalam milidetik yang sama.
                 DB::rollBack();
             }
         }
@@ -289,7 +332,7 @@ class AttendanceController extends Controller
         if (!$attendance || !$attendance->check_in) {
             $checkInTime = $now->format('H:i');
 
-            // === LOGIKA BARU: CEK FLAG toleransi ===
+            // ? Menyesuaikan batas waktu keterlambatan jika karyawan memiliki jadwal toleransi khusus hari ini.
             $dayIndex = strtolower($now->format('l')); // monday, tuesday...
             $toleransiMap = [
                 'monday'    => ['flag' => 'toleransi_senin', 'time' => 'toleransi_senin_time'],
@@ -309,11 +352,10 @@ class AttendanceController extends Controller
                 }
             }
 
-            // Logic Terlambat: Bandingkan jam sekarang vs deadline
             // Jika jam sekarang > deadline, maka late.
             $isLate = ($now->format('H:i:s') > $deadlineTime);
 
-            // === B. LOGIKA POIN (FIX BUG INFINITY) ===
+            // ? Mengembalikan potongan poin jika sistem otomatis sudah menandai alpha pagi ini, dikalkulasi berdasarkan jam aktual kedatangan.
             // Cek: Apakah poin user sudah dipotong sistem tadi pagi?
             // Tandanya adalah record sudah ada DAN statusnya 'alpha'.
             if ($attendance && $attendance->status === 'alpha') {
@@ -326,7 +368,7 @@ class AttendanceController extends Controller
                 }
             }
 
-            // Safety net: Pastikan poin tidak pernah lebih dari 5 (Hard Cap)
+            // ! Hard cap poin maksimal tidak boleh melebihi 5.
             if ($intern->poin > 5) {
                 $intern->update(['poin' => 5]);
             }
@@ -402,6 +444,14 @@ class AttendanceController extends Controller
         ], 500);
     }
 
+    /**
+     * Membuat data presensi otomatis dengan status 'alpha'.
+     *
+     * Dijalankan untuk memastikan karyawan magang yang jadwalnya masuk hari ini,
+     * tetapi belum melakukan check-in, mendapatkan status alpha dan pengurangan poin harian.
+     *
+     * @return void
+     */
     private function generateDailyAttendances()
     {
         $hariIniIndex = strtolower(now()->locale('en')->isoFormat('dddd')); // Pakai en biar pasti cocok key-nya
@@ -429,7 +479,7 @@ class AttendanceController extends Controller
             $data = [];
 
             foreach ($internsTanpaPresensi as $i) {
-                // LOGIKA BARU: Kurangi 2 poin, tapi jangan sampai minus
+                // * Kurangi 2 poin sebagai penalti alpha otomatis (poin dicegah menjadi negatif).
                 // Menggunakan max(0, hitungan) memastikan nilai minimal adalah 0
                 $i->decrement('poin', 2);
 
