@@ -19,20 +19,42 @@ import {
     SidebarMenuItem,
 } from "@/components/ui/sidebar";
 
-interface NavItem {
+/**
+ * Interface untuk item menu navigasi utama.
+ */
+export interface NavItem {
+    /** Judul label menu. */
     title: string;
+    /** URL tujuan navigasi. */
     url: string;
+    /** Ikon visual menu. */
     icon: ReactNode;
+    /** Menandakan apakah item menu sedang aktif. */
     isActive?: boolean;
 }
 
-export function NavMain({ items }: { items: NavItem[] }) {
+/**
+ * Properti komponen NavMain.
+ */
+export interface NavMainProps {
+    /** Daftar item navigasi utama. */
+    items: NavItem[];
+}
+
+/**
+ * Komponen penyusun daftar menu navigasi utama sidebar.
+ *
+ * @param props Properti komponen NavMain.
+ * @returns Elemen grup menu navigasi sidebar.
+ */
+export function NavMain({ items }: NavMainProps) {
     return (
         <SidebarGroup>
             <SidebarGroupLabel>Menu Utama</SidebarGroupLabel>
+
             <SidebarMenu>
                 {items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
+                    <SidebarMenuItem key={item.url}>
                         <SidebarMenuButton
                             size="md"
                             tooltip={item.title}

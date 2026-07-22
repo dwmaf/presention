@@ -22,22 +22,58 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
     SidebarMenu,
-    SidebarMenuButton as SidebarMenuButton,
+    SidebarMenuButton,
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
 import { ChevronsUpDownIcon, BadgeCheckIcon, LogOutIcon } from "lucide-react";
 
-interface UserProps {
-    user: {
-        name: string;
-        email: string;
-        avatar: string;
-    };
+/**
+ * Data profil pengguna yang diterima oleh komponen NavUser.
+ */
+export interface NavUserData {
+    /** Nama pengguna. */
+    name: string;
+    /** Email atau role pengguna. */
+    email: string;
+    /** URL foto avatar pengguna. */
+    avatar: string;
 }
 
-export function NavUser({ user }: UserProps) {
+/**
+ * Properti untuk komponen NavUser.
+ */
+export interface NavUserProps {
+    /** Detail profil pengguna yang sedang login. */
+    user: NavUserData;
+}
+
+/**
+ * Memformat inisial nama pengguna untuk fallback avatar.
+ *
+ * @param name Nama pengguna.
+ * @returns 2 huruf inisial kapital.
+ */
+function getInitials(name: string): string {
+    if (!name) return "UP";
+    const initials = name
+        .trim()
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join("")
+        .toUpperCase();
+    return initials.slice(0, 2) || "UP";
+}
+
+/**
+ * Komponen footer sidebar untuk menampilkan profil pengguna dan menu dropdown akun.
+ *
+ * @param props Properti komponen NavUser.
+ * @returns Elemen menu profil pengguna sidebar.
+ */
+export function NavUser({ user }: NavUserProps) {
     const { isMobile } = useSidebar();
+    const initials = getInitials(user.name);
 
     return (
         <SidebarMenu>
@@ -53,7 +89,7 @@ export function NavUser({ user }: UserProps) {
                     >
                         <Avatar>
                             <AvatarImage src={user.avatar} alt={user.name} />
-                            <AvatarFallback>UPA</AvatarFallback>
+                            <AvatarFallback>{initials}</AvatarFallback>
                         </Avatar>
 
                         <div className="grid flex-1 text-left text-sm leading-tight">
@@ -70,7 +106,7 @@ export function NavUser({ user }: UserProps) {
 
                     <DropdownMenuContent
                         className="w-(--anchor-width) min-w-52 rounded-lg"
-                        side="bottom"
+                        side={isMobile ? "bottom" : "right"}
                         align="end"
                         sideOffset={4}
                     >
@@ -82,12 +118,17 @@ export function NavUser({ user }: UserProps) {
                                             src={user.avatar}
                                             alt={user.name}
                                         />
-                                        <AvatarFallback>UPA</AvatarFallback>
+
+                                        <AvatarFallback>
+                                            {initials}
+                                        </AvatarFallback>
                                     </Avatar>
+
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">
                                             {user.name}
                                         </span>
+
                                         <span className="text-muted-foreground truncate text-xs">
                                             {user.email}
                                         </span>
@@ -95,7 +136,9 @@ export function NavUser({ user }: UserProps) {
                                 </div>
                             </DropdownMenuLabel>
                         </DropdownMenuGroup>
+
                         <DropdownMenuSeparator />
+
                         <DropdownMenuItem
                             onClick={() =>
                                 router.get(route("profile.fingerprint"))
