@@ -467,18 +467,23 @@ export default function InternDetail({ intern, divisions }: InternDetailProps) {
                     </h3>
 
                     <div className="border-border bg-card/50 flex shrink-0 justify-between gap-4 rounded-lg border px-4 py-2 text-xs font-semibold">
-                        <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
-                            <SparklesIcon className="h-3.5 w-3.5 fill-emerald-500/20" />
+                        <span className="flex items-center gap-1 text-emerald-600">
+                            <SparklesIcon className="size-3.5 fill-emerald-500/20" />
                             Hadir: {intern.total_kehadiran || 0}
                         </span>
 
-                        <span className="flex items-center gap-1 border-r border-l px-4 text-amber-600 dark:text-amber-400">
-                            <SparklesIcon className="h-3.5 w-3.5 fill-amber-500/20" />
+                        <span className="flex items-center gap-1 border-r border-l px-4 text-amber-600">
+                            <SparklesIcon className="size-3.5 fill-amber-500/20" />
                             Izin: {intern.total_izin || 0}
                         </span>
 
+                        <span className="flex items-center gap-1 border-r pr-4 text-blue-600">
+                            <SparklesIcon className="size-3.5 fill-blue-500/20" />
+                            Sakit: {intern.total_sakit || 0}
+                        </span>
+
                         <span className="text-destructive flex items-center gap-1">
-                            <SparklesIcon className="fill-destructive/20 h-3.5 w-3.5" />
+                            <SparklesIcon className="fill-destructive/20 size-3.5" />
                             Alpha: {intern.total_alpha || 0}
                         </span>
                     </div>

@@ -50,6 +50,7 @@ export interface InternData {
     avg_jam_masuk?: string | null;
     avg_jam_pulang?: string | null;
     total_izin?: number;
+    total_sakit?: number;
     total_alpha?: number;
     attendances?: Attendance[];
     is_active?: boolean;
@@ -62,6 +63,7 @@ export interface InternAttendanceSummary {
     division?: Division;
     jumlah_hadir: number;
     jumlah_izin: number;
+    jumlah_sakit: number;
     jumlah_alpha: number;
     total_jam: number;
 }

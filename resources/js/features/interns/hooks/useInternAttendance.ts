@@ -39,33 +39,43 @@ export function useInternAttendance() {
         setShowEditModal(true);
     };
 
-    const handleSaveAttendance = async (
-        status: string,
-        checkOut: string | null,
-    ) => {
+    /**
+     * Memperbarui status dan jam pulang presensi karyawan.
+     *
+     * @param status Status presensi baru.
+     * @param checkOut Jam pulang baru (opsional).
+     */
+    const handleSaveAttendance = (status: string, checkOut: string | null) => {
         if (!editingAttendance) return;
         setIsSaving(true);
 
-        try {
-            await Promise.all([
-                axios.put(`/attendances/${editingAttendance.id}/status`, {
-                    status,
-                }),
-                axios.put(`/attendances/${editingAttendance.id}/check-out`, {
-                    check_out: checkOut || null,
-                }),
-            ]);
-
-            toast.success("Kehadiran berhasil diperbarui!");
-            setShowEditModal(false);
-            setEditingAttendance(null);
-
-            router.reload();
-        } catch (error) {
-            toast.error("Gagal memperbarui kehadiran.");
-        } finally {
-            setIsSaving(false);
-        }
+        router.put(
+            `/attendances/${editingAttendance.id}/status`,
+            { status },
+            {
+                onSuccess: () => {
+                    router.put(
+                        `/attendances/${editingAttendance.id}/check-out`,
+                        { check_out: checkOut || null },
+                        {
+                            onSuccess: () => {
+                                toast.success("Kehadiran berhasil diperbarui!");
+                                setShowEditModal(false);
+                                setEditingAttendance(null);
+                            },
+                            onError: () => {
+                                toast.error("Gagal memperbarui jam pulang.");
+                            },
+                            onFinish: () => setIsSaving(false),
+                        },
+                    );
+                },
+                onError: () => {
+                    toast.error("Gagal memperbarui status.");
+                    setIsSaving(false);
+                },
+            },
+        );
     };
 
     const handleDeleteCheckOut = () => {
