@@ -72,7 +72,7 @@ function getInitials(name: string): string {
  * @returns Elemen menu profil pengguna sidebar.
  */
 export function NavUser({ user }: NavUserProps) {
-    const { isMobile } = useSidebar();
+    const { isMobile, state } = useSidebar();
     const initials = getInitials(user.name);
 
     return (
@@ -94,7 +94,7 @@ export function NavUser({ user }: NavUserProps) {
 
                         <div className="grid flex-1 text-left text-sm leading-tight">
                             <span className="truncate font-semibold">
-                                {user.name}
+                                UPA PKK
                             </span>
                             <span className="text-muted-foreground truncate text-xs">
                                 {user.email}
@@ -106,7 +106,11 @@ export function NavUser({ user }: NavUserProps) {
 
                     <DropdownMenuContent
                         className="w-(--anchor-width) min-w-52 rounded-lg"
-                        side={isMobile ? "bottom" : "right"}
+                        side={
+                            isMobile || state === "expanded"
+                                ? "bottom"
+                                : "right"
+                        }
                         align="end"
                         sideOffset={4}
                     >
@@ -126,7 +130,7 @@ export function NavUser({ user }: NavUserProps) {
 
                                     <div className="grid flex-1 text-left text-sm leading-tight">
                                         <span className="truncate font-semibold">
-                                            {user.name}
+                                            UPA PKK
                                         </span>
 
                                         <span className="text-muted-foreground truncate text-xs">
