@@ -12,48 +12,85 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-// * Representasi model data anak magang (Intern)
+/**
+ * Representasi data anak magang (Intern) atau subjek pendaftar sidik jari.
+ */
 export interface Intern {
+    /** ID unik data subjek. */
     id: number;
+    /** Nama lengkap subjek. */
     name: string;
+    /** Data FMD sidik jari utama 1. */
     fingerprint_data?: string | null;
+    /** Data FMD sidik jari utama 2. */
     second_fingerprint_data?: string | null;
+    /** Data FMD sidik jari utama 3. */
     fingerprint_data_3?: string | null;
+    /** Data FMD sidik jari cadangan 1. */
     fingerprint_data_4?: string | null;
+    /** Data FMD sidik jari cadangan 2. */
     fingerprint_data_5?: string | null;
+    /** Data FMD sidik jari cadangan 3. */
     fingerprint_data_6?: string | null;
     [key: string]: unknown;
 }
 
+/**
+ * Struktur grup sidik jari (utama atau cadangan).
+ */
 export interface FingerprintGroup {
+    /** Identifikasi unik grup sidik jari. */
     id: "primary" | "backup";
+    /** Judul tampilan grup. */
     title: string;
+    /** Deskripsi petunjuk penggunaan scan. */
     subtitle: string;
+    /** Daftar nama kolom database penyimpan data FMD. */
     dbKeys: readonly string[];
 }
 
+/**
+ * State scan lokal per grup sidik jari.
+ */
 export interface GroupState {
+    /** Jumlah langkah scan yang telah diselesaikan (0-3). */
     step: number;
+    /** Array string FMD hasil scan lokal. */
     samples: string[];
+    /** Array string gambar pratinjau sidik jari (base64). */
     images: string[];
+    /** Pesan status proses scan. */
     status: string;
 }
 
+/**
+ * Pemetaan state untuk seluruh grup sidik jari.
+ */
 export type StateMap = Record<"primary" | "backup", GroupState>;
 
+/**
+ * Respon dari service hardware C# local (port 5000).
+ */
 interface EnrollResponse {
+    /** Status keberhasilan proses pendaftaran hardware. */
     success: boolean;
+    /** String FMD sidik jari jika sukses. */
     fmd?: string;
+    /** String gambar sidik jari (base64) jika ada. */
     image?: string;
+    /** Pesan error jika gagal. */
     message?: string;
 }
 
+/**
+ * Opsi parameter konfigurasi untuk hook useFingerprintEnrollment.
+ */
 export interface UseFingerprintOptions {
-    /** Data objek target yang berisi status sidik jari (misal: Intern atau fingerStatus) */
-    data: Record<string, any>;
-    /** Kolom database untuk grup utama */
+    /** Data objek target yang berisi status sidik jari (misal: Intern atau fingerStatus). */
+    data: Record<string, unknown>;
+    /** Daftar kolom database untuk grup utama. */
     primaryKeys: readonly string[];
-    /** Kolom database untuk grup cadangan */
+    /** Daftar kolom database untuk grup cadangan. */
     backupKeys: readonly string[];
 }
 
@@ -61,6 +98,7 @@ export interface UseFingerprintOptions {
  * Mengelola state capture sidik jari lokal dan komunikasi hardware.
  *
  * @param options Konfigurasi hook.
+ * @returns State dan aksi pengelola pendaftaran sidik jari.
  */
 export function useFingerprintEnrollment({
     data,
@@ -87,11 +125,9 @@ export function useFingerprintEnrollment({
         [primaryKeys, backupKeys],
     );
 
-    // * Memeriksa apakah database sudah memiliki data sidik jari
     const groupHasDb = (g: FingerprintGroup): boolean =>
         g.dbKeys.some((k) => !!data?.[k]);
 
-    // * Menghitung jumlah data sidik jari yang tersimpan di database
     const groupDbCount = (g: FingerprintGroup): number =>
         g.dbKeys.reduce((acc, k) => (data?.[k] ? acc + 1 : acc), 0);
 
@@ -116,7 +152,6 @@ export function useFingerprintEnrollment({
         return init;
     });
 
-    // * Mereset state scan lokal untuk satu grup
     const resetLocal = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
@@ -130,7 +165,7 @@ export function useFingerprintEnrollment({
         }));
     };
 
-    // * Menghubungi daemon hardware C# untuk menangkap sidik jari berikutnya
+    // ! Membutuhkan service C# FingerprintBridge.exe berjalan di http://localhost:5000/enroll
     const startNextCapture = async (
         groupId: "primary" | "backup",
     ): Promise<void> => {
@@ -148,27 +183,32 @@ export function useFingerprintEnrollment({
             return;
         }
 
-        const current = state[groupId];
-        if (current.samples.length >= 3) {
-            setState((prev) => ({
+        let isCapacityReached = false;
+
+        setState((prev) => {
+            const cur = prev[groupId];
+            if (cur.samples.length >= 3) {
+                isCapacityReached = true;
+                return {
+                    ...prev,
+                    [groupId]: {
+                        ...cur,
+                        status: "Sudah 3/3. Klik Simpan atau Reset Scan untuk ulang scan.",
+                    },
+                };
+            }
+            return {
                 ...prev,
                 [groupId]: {
-                    ...prev[groupId],
-                    status: "Sudah 3/3. Klik Simpan atau Reset Scan untuk ulang scan.",
+                    ...cur,
+                    status: `Menunggu sidik jari... (Scan ${cur.samples.length + 1}/3). Tempelkan jari lalu geser sedikit area tiap scan.`,
                 },
-            }));
-            return;
-        }
+            };
+        });
+
+        if (isCapacityReached) return;
 
         setActiveGroup(groupId);
-
-        setState((prev) => ({
-            ...prev,
-            [groupId]: {
-                ...prev[groupId],
-                status: `Menunggu sidik jari... (Scan ${prev[groupId].samples.length + 1}/3). Tempelkan jari lalu geser sedikit area tiap scan.`,
-            },
-        }));
 
         try {
             const response = await fetch("http://localhost:5000/enroll", {
@@ -213,8 +253,7 @@ export function useFingerprintEnrollment({
                     },
                 }));
             }
-        } catch (err) {
-            console.error(err);
+        } catch {
             setState((prev) => ({
                 ...prev,
                 [groupId]: {
@@ -227,7 +266,6 @@ export function useFingerprintEnrollment({
         }
     };
 
-    // * Mengubah status UI ke berhasil simpan
     const handleSaveSuccess = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
@@ -239,7 +277,6 @@ export function useFingerprintEnrollment({
         toast.success("Berhasil menyimpan sidik jari!");
     };
 
-    // * Mengubah status UI ke error simpan
     const handleSaveError = (
         groupId: "primary" | "backup",
         msg: string,
@@ -254,7 +291,6 @@ export function useFingerprintEnrollment({
         toast.error("Gagal menyimpan sidik jari: " + msg);
     };
 
-    // * Mengubah status UI ke berhasil reset
     const handleResetSuccess = (groupId: "primary" | "backup"): void => {
         setState((prev) => ({
             ...prev,
@@ -269,7 +305,6 @@ export function useFingerprintEnrollment({
         toast.success("Berhasil reset database sidik jari!");
     };
 
-    // * Mengubah status UI ke error reset
     const handleResetError = (
         groupId: "primary" | "backup",
         msg: string,
