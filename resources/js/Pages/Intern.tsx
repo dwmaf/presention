@@ -10,7 +10,7 @@
  */
 
 import { Head, router, useForm } from "@inertiajs/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 
 import InternCard from "@/features/interns/components/InternCard";
 import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
@@ -48,17 +48,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
-interface Auth {
-    user: {
-        id: number;
-        name: string;
-        email: string;
-    };
-}
-
-interface InternProps {
-    auth: Auth;
+/**
+ * Properti komponen halaman Intern.
+ */
+export interface InternProps {
+    /** Daftar data karyawan magang. */
     interns: InternData[];
+    /** Daftar divisi yang tersedia. */
     divisions: Division[];
 }
 
@@ -74,8 +70,6 @@ interface InternFormState {
     jumat: boolean;
     _method: "POST" | "put";
 }
-
-const DAYS = ["senin", "selasa", "rabu", "kamis", "jumat"] as const;
 
 /**
  * Komponen utama halaman manajemen Karyawan.
@@ -96,7 +90,6 @@ export default function Intern({ interns, divisions }: InternProps) {
     );
     const [isResetOpen, setIsResetOpen] = useState<boolean>(false);
 
-    const [photoPreview, setPhotoPreview] = useState<string | null>(null);
     const [backToTop, setBackToTop] = useState<boolean>(false);
 
     const [isToggleActiveOpen, setIsToggleActiveOpen] =
@@ -170,7 +163,6 @@ export default function Intern({ interns, divisions }: InternProps) {
     const openCreate = () => {
         reset();
         setCurrentIntern(null);
-        setPhotoPreview(null);
         setIsFormOpen(true);
         clearErrors();
     };
@@ -184,7 +176,6 @@ export default function Intern({ interns, divisions }: InternProps) {
             onSuccess: () => {
                 setIsFormOpen(false);
                 reset();
-                setPhotoPreview(null);
             },
         });
     };
@@ -218,30 +209,24 @@ export default function Intern({ interns, divisions }: InternProps) {
         });
     };
 
-    const isAllDaysChecked = () => {
-        return DAYS.every((day) => data[day]);
-    };
-
-    const handleToggleAllDays = (checked: boolean) => {
-        const updated = {} as Record<(typeof DAYS)[number], boolean>;
-        DAYS.forEach((d) => (updated[d] = checked));
-        setData({ ...data, ...updated });
-    };
-
-    // * Filter pencarian karyawan di client-side
-    const filteredInterns = interns.filter((intern) => {
+    // ? Memoize filter pencarian karyawan di client-side
+    const filteredInterns = useMemo(() => {
         const keyword = search.toLowerCase();
-        return (
-            intern.name?.toLowerCase().includes(keyword) ||
-            intern.division?.nama_divisi?.toLowerCase().includes(keyword)
+        return interns.filter(
+            (intern) =>
+                intern.name?.toLowerCase().includes(keyword) ||
+                intern.division?.nama_divisi?.toLowerCase().includes(keyword),
         );
-    });
+    }, [interns, search]);
 
-    const activeInterns = filteredInterns.filter(
-        (intern) => intern.is_active !== false,
+    const activeInterns = useMemo(
+        () => filteredInterns.filter((intern) => intern.is_active !== false),
+        [filteredInterns],
     );
-    const inactiveInterns = filteredInterns.filter(
-        (intern) => intern.is_active === false,
+
+    const inactiveInterns = useMemo(
+        () => filteredInterns.filter((intern) => intern.is_active === false),
+        [filteredInterns],
     );
 
     const today = new Date();
@@ -302,7 +287,7 @@ export default function Intern({ interns, divisions }: InternProps) {
                         </div>
 
                         {isFirstDate && (
-                            <div className="flex animate-pulse items-center gap-2 rounded-lg border border-yellow-400 bg-yellow-100 px-3 py-1.5 text-sm text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400">
+                            <div className="text-yellow- 700 flex animate-pulse items-center gap-2 rounded-lg border border-yellow-400 bg-yellow-100 px-3 py-1.5 text-sm dark:bg-yellow-950/30 dark:text-yellow-400">
                                 Sudah tanggal 1, silakan reset poin.
                             </div>
                         )}
@@ -412,7 +397,10 @@ export default function Intern({ interns, divisions }: InternProps) {
                                         variant="outline"
                                         size="sm"
                                         onClick={() => {
-                                            window.location.href = `/interns/${currentIntern.id}/export-attendance`;
+                                            window.location.href = route(
+                                                "interns.exportAttendance",
+                                                currentIntern.id,
+                                            );
                                         }}
                                         className="flex items-center gap-1 border border-gray-200 bg-white focus-visible:ring-0"
                                     >
@@ -468,10 +456,6 @@ export default function Intern({ interns, divisions }: InternProps) {
                     processing={processing}
                     errors={errors}
                     divisions={divisions}
-                    photoPreview={photoPreview}
-                    setPhotoPreview={setPhotoPreview}
-                    isAllDaysChecked={isAllDaysChecked}
-                    handleToggleAllDays={handleToggleAllDays}
                     currentIntern={currentIntern}
                 />
 
