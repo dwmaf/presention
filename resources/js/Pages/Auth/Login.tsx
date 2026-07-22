@@ -21,11 +21,22 @@ import { EyeIcon } from "@/components/icons/eye";
 import { useAnimatableIcon } from "@/hooks/useAnimatableIcons";
 import { EyeOffIcon } from "@/components/ui/eye-off";
 
-interface LoginProps {
+/**
+ * Properti untuk halaman Login admin.
+ */
+export interface LoginProps {
+    /** Pesan status sesi (misal: setelah reset password). */
     status?: string;
+    /** Menandakan apakah fitur reset password diizinkan. */
     canResetPassword?: boolean;
 }
 
+/**
+ * Halaman login admin UPA PKK.
+ *
+ * @param props Properti halaman Login.
+ * @returns Tampilan halaman login admin.
+ */
 export default function Login({ status }: LoginProps) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: "",
@@ -158,8 +169,12 @@ export default function Login({ status }: LoginProps) {
                                     <button
                                         type="button"
                                         onClick={togglePasswordVisibility}
-                                        className="text-muted-foreground hover:text-foreground justify- center absolute top-1/2 right-3 flex -translate-y-1/2 cursor-pointer items-center"
-                                        tabIndex={-1}
+                                        aria-label={
+                                            showPassword
+                                                ? "Sembunyikan password"
+                                                : "Tampilkan password"
+                                        }
+                                        className="text-muted-foreground hover:text-foreground items- center absolute top-1/2 right-3 flex -translate-y-1/2 cursor-pointer justify-center"
                                     >
                                         <EyeIcon
                                             ref={eyeIcon.ref}
@@ -235,8 +250,7 @@ export default function Login({ status }: LoginProps) {
                     src="/login-image.png"
                     alt="Kantor UPA PKK"
                     loading="eager"
-                    // @ts-ignore - fetchpriority is standard but needs type override in some TS configurations
-                    fetchpriority="high"
+                    fetchPriority="high"
                     className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.6]"
                 />
                 {/* Overlay Gradasi Estetis */}
@@ -245,7 +259,7 @@ export default function Login({ status }: LoginProps) {
                 {/* Teks Promosi pada Banner */}
                 <div className="absolute right-10 bottom-10 left-10 z-10 space-y-2 text-white">
                     <h2 className="text-2xl font-bold tracking-tight">
-                        Printation | Sistem Presensi UPA PKK
+                        Presention | Sistem Presensi UPA PKK
                     </h2>
 
                     <p className="text-sm text-gray-200">
