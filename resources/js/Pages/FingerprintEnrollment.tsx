@@ -9,7 +9,10 @@
  * ============================================================================
  */
 
+import { useMemo } from "react";
+import type { ReactNode } from "react";
 import { Head, Link, useForm } from "@inertiajs/react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useFingerprintEnrollment } from "@/hooks/useFingerPrintEnrollment";
 import type { Intern } from "@/hooks/useFingerPrintEnrollment";
 import {
@@ -21,21 +24,34 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import AuthenticatedLayout from "@/layouts/AuthenticatedLayout";
-import { useMemo } from "react";
 
 /**
  * Properti untuk halaman pendaftaran sidik jari.
  */
 export interface FingerprintEnrollmentProps {
-    auth: {
-        user: {
-            id: number;
-            name: string;
-            email: string;
-            [key: string]: unknown;
-        };
-    };
+    /** Data subjek magang yang didaftarkan. */
     intern: Intern;
+}
+
+/**
+ * Memformat pesan status pendaftaran sidik jari dengan cetak tebal pada keyword penting.
+ *
+ * @param status String pesan status pendaftaran.
+ * @returns Node React dengan elemen cetak tebal jika mengandung keyword khusus.
+ */
+function renderStatusText(status: string): ReactNode {
+    if (!status.includes("Reset Scan")) {
+        return status;
+    }
+
+    return status
+        .split("Reset Scan")
+        .reduce<ReactNode[]>((acc, part, index) => {
+            if (index === 0) {
+                return [part];
+            }
+            return [...acc, <b key={index}>Reset Scan</b>, part];
+        }, []);
 }
 
 /**
@@ -167,22 +183,7 @@ export default function FingerprintEnrollment({
                             href={route("interns.index")}
                             className="flex items-center gap-2 font-semibold text-blue-700 hover:underline"
                         >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="18"
-                                height="18"
-                                viewBox="0 0 24 24"
-                                style={{ transform: "rotate(-90deg)" }}
-                            >
-                                <path
-                                    fill="none"
-                                    stroke="oklch(48.8% 0.243 264.376)"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M12 5v14m6-8l-6-6m-6 6l6-6"
-                                />
-                            </svg>
+                            <ArrowLeftIcon className="size-4" />
                             Kembali
                         </Link>
                     </div>
@@ -204,7 +205,7 @@ export default function FingerprintEnrollment({
                             return (
                                 <Card
                                     key={g.id}
-                                    className="flex flex-col border border-gray-100 bg-white p-0 shadow-sm"
+                                    className="flex flex-col border border-gray-100 bg-white p-0 shadow-xs"
                                 >
                                     <CardHeader className="border-b border-gray-50 bg-gray-50/50 p-5">
                                         <CardTitle className="text-lg font-bold text-gray-800">
@@ -261,7 +262,7 @@ export default function FingerprintEnrollment({
                                                         key={i}
                                                         className={`overflow-hidden rounded-lg border ${
                                                             st.images[i]
-                                                                ? "border-white bg-white shadow"
+                                                                ? "border-white bg-white shadow-xs"
                                                                 : "border-gray-200 bg-white"
                                                         }`}
                                                     >
@@ -292,40 +293,7 @@ export default function FingerprintEnrollment({
                                                         : "text-gray-600"
                                                 }`}
                                             >
-                                                {st.status.includes(
-                                                    "Reset Scan",
-                                                )
-                                                    ? st.status
-                                                          .split("Reset Scan")
-                                                          .reduce(
-                                                              (
-                                                                  acc,
-                                                                  part,
-                                                                  index,
-                                                              ) => {
-                                                                  if (
-                                                                      index ===
-                                                                      0
-                                                                  )
-                                                                      return [
-                                                                          part,
-                                                                      ] as any;
-                                                                  return [
-                                                                      ...acc,
-                                                                      <b
-                                                                          key={
-                                                                              index
-                                                                          }
-                                                                      >
-                                                                          Reset
-                                                                          Scan
-                                                                      </b>,
-                                                                      part,
-                                                                  ];
-                                                              },
-                                                              [] as any,
-                                                          )
-                                                    : st.status}
+                                                {renderStatusText(st.status)}
                                             </div>
                                         </div>
 
@@ -339,7 +307,7 @@ export default function FingerprintEnrollment({
                                                     hasDb ||
                                                     done
                                                 }
-                                                className="w-full font-bold shadow-sm"
+                                                className="w-full font-bold shadow-2xs"
                                             >
                                                 {hasDb
                                                     ? "Scan dikunci (DB sudah ada)"
@@ -354,7 +322,7 @@ export default function FingerprintEnrollment({
                                                 onClick={() => resetLocal(g.id)}
                                                 disabled={activeGroup !== null}
                                                 variant="outline"
-                                                className="w-full bg-white font-semibold shadow-sm"
+                                                className="w-full bg-white font-semibold shadow-2xs"
                                             >
                                                 Reset Scan
                                             </Button>
@@ -368,7 +336,7 @@ export default function FingerprintEnrollment({
                                                     <Button
                                                         type="submit"
                                                         disabled={isProcessing}
-                                                        className="w-full bg-emerald-600 font-bold text-white shadow-sm hover:bg-emerald-700"
+                                                        className="w-full bg-emerald-600 font-bold text-white shadow-2xs hover:bg-emerald-700"
                                                     >
                                                         {isProcessing
                                                             ? "Menyimpan..."
@@ -388,7 +356,7 @@ export default function FingerprintEnrollment({
                                                             activeGroup !== null
                                                         }
                                                         variant="destructive"
-                                                        className="w-full font-bold shadow-sm"
+                                                        className="w-full font-bold shadow-2xs"
                                                     >
                                                         {isProcessing
                                                             ? "Mereset Database..."
