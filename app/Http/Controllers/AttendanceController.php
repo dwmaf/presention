@@ -312,6 +312,38 @@ class AttendanceController extends Controller
         }
         // === END LOGIKA AUTO RESET POIN ===
 
+        $this->generateDailyAttendances();
+
+        $request->validate([
+            'intern_id' => 'required|exists:interns,id',
+        ]);
+
+        $intern = Intern::findOrFail($request->intern_id);
+        $today = Carbon::today()->toDateString();
+        $now = Carbon::now();
+
+        // * Periksa apakah hari ini adalah jadwal kerja karyawan magang.
+        $hariMap = [
+            'monday'    => 'senin',
+            'tuesday'   => 'selasa',
+            'wednesday' => 'rabu',
+            'thursday'  => 'kamis',
+            'friday'    => 'jumat',
+        ];
+        $dayIndex = strtolower($now->format('l'));
+        $kolomJadwal = $hariMap[$dayIndex] ?? null;
+
+        // ! Jika bukan hari kerja (akhir pekan) atau jadwal hari ini false, kembalikan pesan error.
+        if (!$kolomJadwal || !$intern->{$kolomJadwal}) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hari ini bukan jadwal kerja kamu ' . $intern->name . '!',
+            ], 400);
+        }
+
+        $attendance = Attendance::where('intern_id', $intern->id)
+            ->where('date', $today)
+            ->first();
 
         // Panggil generator data absen harian (Trigger)
         $this->generateDailyAttendances();
@@ -410,10 +442,13 @@ class AttendanceController extends Controller
             $checkInTime = Carbon::parse($today . ' ' . $attendance->check_in);
             $selisihMenit = abs($now->diffInMinutes($checkInTime));
 
+            // * Terapkan cooldown 30 menit dari jam check-in sebelum diizinkan check-out.
             if ($selisihMenit < 30) {
+                $sisaMenit = 30 - $selisihMenit;
+
                 return response()->json([
                     'success' => false,
-                    'message' => $intern->name . " Belum 30 menit dari waktu kamu hadir!",
+                    'message' => 'Kamu sudah absen hadir. Tunggu 30 menit untuk absen pulang (sisa ' . $sisaMenit . ' menit).',
                 ], 400);
             }
 
@@ -434,13 +469,13 @@ class AttendanceController extends Controller
         if ($attendance->check_in && $attendance->check_out) {
             return response()->json([
                 'success' => false,
-                'message' => "Kamu sudah melakukan Check In dan Check Out hari ini.",
+                'message' => "Kamu sudah absen hadir dan pulang di hari ini.",
             ], 400);
         }
 
         return response()->json([
             'success' => false,
-            'message' => "Terjadi kesalahan pada data presensi.",
+            'message' => "Terjadi kesalahan pada data presensi. Silahkan coba lagi.",
         ], 500);
     }
 

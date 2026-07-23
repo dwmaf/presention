@@ -12,7 +12,6 @@
 import { useState } from "react";
 import { router } from "@inertiajs/react";
 import { toast } from "sonner";
-import axios from "axios";
 import type { Attendance } from "../types/intern";
 
 /**
