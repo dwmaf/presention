@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Fingerprint } from "lucide-react";
 import type { KeyboardEvent } from "react";
+import { formatLateTime } from "@/lib/utils";
 
 import type { InternData } from "@/features/interns/types/intern";
 
@@ -86,7 +87,7 @@ function AttendanceBadge({
                     variant="outline"
                     className="bg-amber-100 text-amber-800"
                 >
-                    Telat {attendance.terlambat}m
+                    Telat {formatLateTime(attendance.terlambat)}
                 </Badge>
             ) : (
                 <Badge variant="outline" className="bg-sky-100 text-sky-800">

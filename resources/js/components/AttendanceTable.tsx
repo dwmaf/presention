@@ -16,6 +16,7 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "./ui/pagination";
+import { formatLateTime } from "@/lib/utils";
 
 export interface AttendanceRecord {
     id: number | string;
@@ -127,7 +128,7 @@ export default function AttendanceTable({
 
                                             {attendance.terlambat ? (
                                                 <span className="inline-flex items-center rounded-md bg-amber-50 px-1.5 py-0.5 text-xs font-semibold text-amber-700">
-                                                    (+{attendance.terlambat}m)
+                                                    (+{formatLateTime(attendance.terlambat)})
                                                 </span>
                                             ) : null}
                                         </div>
